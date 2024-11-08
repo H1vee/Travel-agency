@@ -1,0 +1,27 @@
+.Footer{
+display: flex;
+flex-direction: column;    
+
+    &-Description{
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    &-Option{
+        display: flex;
+        align-items:center;
+        gap: 20px;
+        justify-content: flex-end;
+    }
+        &-Main{
+        margin: 0;
+    }
+
+    &-AboutUs{
+        margin: 0;
+    }
+
+    &-Tours{
+        margin: 0;
+    }
+}
