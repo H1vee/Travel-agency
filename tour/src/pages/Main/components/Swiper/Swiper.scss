@@ -1,0 +1,31 @@
+.Swiper {
+  height: 800px;
+
+  &-Slide {
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  &-SlideWrapper {
+    width: 600px;
+    max-width: 80%;
+    padding: 16px;
+    box-sizing: border-box;
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  &-SlideTitle {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  &-SlideDescription {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+}

@@ -1,0 +1,32 @@
+.Hero{
+    margin-top: 100px;
+    height: 100vh; /* Висота секції на всю висоту екрану */
+    &-Airsection{
+        width: 100%;
+        height: 100%;
+        background-size: cover; /* Розтягує зображення на весь блок */
+        position: relative;
+    }
+    &-Text{
+ 
+         line-height: 1.6; 
+         color: #FFF;
+         text-align: left;
+         font-size: 24px;
+         margin: 0;
+         margin-right: 10%;
+         margin-left: -20%;
+         padding: 25%;
+         width: 400;
+    }
+    &-Button{
+        position: absolute; /* Абсолютне позиціонування кнопки */
+        left: 7.5%; /* Відступ від лівого краю контейнера  */
+        top: 65%; /* Відступ від нижнього краю контейнера */
+        transform: translate(-50%,-50%);
+    }
+    &-Text p{
+        width: 55%;
+
+    }
+}
