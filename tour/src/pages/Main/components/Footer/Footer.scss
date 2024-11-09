@@ -6,8 +6,8 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    background-color: #dddcd8;
-    padding: 70px 0;
+    background-color: #ffffff;
+    padding: 50px 0;
     &-Container{
         max-width: 1170px;
         margin: auto;
@@ -15,17 +15,18 @@
     &-row{
         display: flex;
         flex-wrap: wrap;
+        justify-content: center;
     }
     ul{
         list-style: none;
     }
     &-col{
-        width: 25%;
-        padding: 0 15px;
+        width: 50%;
+        padding: 0 200px;
     }
     h4{
         font-size: 18px;
-        color: #21130d;
+        color: #000000;
         text-transform: capitalize;
         margin-bottom: 35px;
         font-weight: 500;
@@ -36,7 +37,7 @@
             position: absolute;
             left: 0;
             bottom: -10px;
-            background-color: #ffffff;
+            background-color: #f1b8b8;
             height: 2px;
             width: 50px;
         }
@@ -47,14 +48,14 @@
     &-ListProp li a{
         font-size: 16px;
         text-transform: capitalize;
-        color: #bbbbbb;
+        color: #3e0606;
         text-decoration: none;
         font-weight: 300;
         display: block;
         transition: all 0.3s ease;
 
         &:hover{
-            color: #ffffff;
+            color: #d01313;
             padding-left: 8px;
         }
     }
