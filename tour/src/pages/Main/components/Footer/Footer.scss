@@ -1,27 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 .Footer{
-display: flex;
-flex-direction: column;    
-
-    &-Description{
+    line-height: 1.5;
+    font-family: 'Poppins',sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: #dddcd8;
+    padding: 70px 0;
+    &-Container{
+        max-width: 1170px;
+        margin: auto;
+    }
+    &-row{
         display: flex;
-        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+    ul{
+        list-style: none;
+    }
+    &-col{
+        width: 25%;
+        padding: 0 15px;
+    }
+    h4{
+        font-size: 18px;
+        color: #21130d;
+        text-transform: capitalize;
+        margin-bottom: 35px;
+        font-weight: 500;
+        position: relative;
+
+        &::before{
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            background-color: #ffffff;
+            height: 2px;
+            width: 50px;
+        }
+    }
+    &-ListProp li:not(:last-child){
+        margin-bottom: 10px;
+    }
+    &-ListProp li a{
+        font-size: 16px;
+        text-transform: capitalize;
+        color: #bbbbbb;
+        text-decoration: none;
+        font-weight: 300;
+        display: block;
+        transition: all 0.3s ease;
+
+        &:hover{
+            color: #ffffff;
+            padding-left: 8px;
+        }
     }
 
-    &-Option{
-        display: flex;
-        align-items:center;
-        gap: 20px;
-        justify-content: flex-end;
+    @media (max-width:767px) {
+        &-col{
+            width: 50%;
+            margin-bottom: 30px;
+        }
     }
-        &-Main{
-        margin: 0;
-    }
-
-    &-AboutUs{
-        margin: 0;
-    }
-
-    &-Tours{
-        margin: 0;
+    @media(max-width:574px){
+        &-col{
+            width: 100%;
+        }
     }
 }
