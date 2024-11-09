@@ -29,4 +29,35 @@
         width: 55%;
 
     }
+    @media (max-width:1366px) {
+        &-Text p{
+         font-size: 20px;
+        }
+
+        &-Button{
+            transform: translate(-30%,-25%);
+        }
+    }
+    @media (max-width:425px){
+        &-Text p{
+            font-size: 20px;
+            width: 100%;
+            margin-top: 240px;
+           }
+
+           &-Button{
+               transform: translate(-9%,0%);
+           }
+    }
+    @media (max-width:390px){
+        &-Text p{
+            font-size: 20px;
+            width: 100%;
+            margin-top: 170px;
+           }
+
+           &-Button{
+               transform: translate(-9%,0%);
+           }
+    }
 }
