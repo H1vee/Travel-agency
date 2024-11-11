@@ -1,4 +1,4 @@
-
+import './Navbar.scss'
 import {
   Navbar as NextNavbar, NavbarBrand, NavbarContent,
   NavbarItem, Link,
