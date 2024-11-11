@@ -4,4 +4,8 @@
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
+
+  @media (max-width: 400px) {
+    width: 40px;
+  }
 }

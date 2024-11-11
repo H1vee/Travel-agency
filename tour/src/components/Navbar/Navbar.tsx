@@ -9,7 +9,7 @@ export const Navbar = () => {
   return (
     <NextNavbar>
       <NavbarBrand >
-        <span className={''}>OpenWorld</span>
+        <span className={'Nav-Brand'}>OpenWorld</span>
         <Logo />
       </NavbarBrand>
       <NavbarContent justify="end">
