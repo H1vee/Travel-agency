@@ -1,6 +1,5 @@
 import {Navbar} from '../../components/Navbar/Navbar';
 import {Swiper} from './components/Swiper/Swiper';
-import {TextShadows} from './components/TextShadows/Shadows';
 import {Hero} from './components/Hero/Hero';
 import {Footer} from './components/Footer/Footer';
 import './Main.css';
