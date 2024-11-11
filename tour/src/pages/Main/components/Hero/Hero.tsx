@@ -2,6 +2,7 @@
 import ocean from './violet.jpeg'
 import './Hero.scss';
 import { Button } from '@nextui-org/react';
+import { Link } from 'react-router-dom';
 export const Hero = () =>{
 
     return(
@@ -12,7 +13,10 @@ export const Hero = () =>{
                     <p>Наша туристична агенція – ваш надійний гід у світі незабутніх подорожей. Ми спеціалізуємось на створенні унікальних туристичних програм, які поєднують комфорт</p>
                 </div>
                 <div className='Hero-Button'>
+                    <Link to = '/AboutUs'>
                         <Button color='secondary' variant='shadow' size='lg' radius='sm'>Про нас</Button>
+                    </Link>
+                        
                 </div>
             </div>
         </div>
