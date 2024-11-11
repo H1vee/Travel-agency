@@ -11,7 +11,6 @@ export const Footer =() =>{
                           <Link to='/AboutUs'>
                           <li><a href="#">About Us</a></li>
                           </Link>
-                          
                           <li><a href="#">Our Services</a></li>
                           <li><a href="#">Privacy Policy</a></li>
                         </ul>

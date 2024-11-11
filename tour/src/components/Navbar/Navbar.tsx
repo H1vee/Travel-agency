@@ -17,7 +17,7 @@ export const Navbar = () => {
           <Link className={'Nav-Links'} href={'/'} isBlock size="lg" color="foreground" underline="always">
             ГОЛОВНА
           </Link>
-          <Link className={'Nav-Links'} href={'/'} isBlock size="lg" color="foreground" >
+          <Link className={'Nav-Links'} href={'/Tours'} isBlock size="lg" color="foreground" >
             ПОШУК ТУРІВ
           </Link>
         </NavbarItem>
