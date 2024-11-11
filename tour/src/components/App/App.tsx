@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import {NextUIProvider} from "@nextui-org/react";
 import {Main} from '../../pages/Main/Main';
+import {AboutUs} from '../../pages/AboutUs/AboutUs';
 import {
   QueryClient,
   QueryClientProvider,
@@ -20,6 +21,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Main />} />
+            <Route path='/AboutUs' element={<AboutUs />}/>
           </Routes>
         </Router>
       </NextUIProvider>
