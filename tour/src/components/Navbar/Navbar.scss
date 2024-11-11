@@ -6,3 +6,17 @@
         font-size: 0.7rem;
     }
 }
+
+
+.Nav-Brand{
+    justify-content: flex-start;
+    padding-left: 10px;
+    font-size: 1.6rem;
+    @media (max-width: 1366px) {
+        font-size: 1.3rem;
+      }
+    
+      @media (max-width: 400px) {
+        font-size: 1rem;
+      }
+}
