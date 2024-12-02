@@ -1,20 +1,29 @@
 import {Card, CardHeader, CardBody, Image} from "@nextui-org/react";
-export const Cards =()=>{
-      return(
-        <Card className="py-4">
-        <CardHeader >
-        <p>Taiwan</p>
-        <small className="text-default-500">12 Tracks</small>
-        <h4 className="font-bold text-large">Frontend Radio</h4>
-      </CardHeader>
-      <CardBody className="overflow-visible py-2">
-        <Image
-          alt="Card background"
-          className="object-cover rounded-xl"
-          src="https://nextui.org/images/hero-card-complete.jpeg"
-          width={270}
-        />
-      </CardBody>
-        </Card>
-      )  
-};
+import { useQuery } from "@tanstack/react-query";
+
+interface Tour {
+  title: string;
+  description: string;
+  callToAction: string;
+  from: string;
+  to: string;
+  dateFrom: string;
+  dateTo: string;
+  imageSrc: string;
+}
+
+export const Cards : React.FC =()=>{
+    const {isPending,error,data} = useQuery({
+      queryKey : ['toursData'],
+      queryFn: async()=>{
+        const fetched = await fetch('/api/tours');
+        const tours:Tour[] = await fetched.json();
+        return tours;
+      },
+    })
+    
+  if(error){
+    return <p>Error</p>
+  }
+  
+}
