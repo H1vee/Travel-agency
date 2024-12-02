@@ -1,5 +1,6 @@
 import {Card, CardFooter, CardBody, Image} from "@nextui-org/react";
 import { useQuery } from "@tanstack/react-query";
+import "./Cards.scss";
 
 interface Tour {
   title: string;
@@ -29,22 +30,23 @@ export const Cards : React.FC =()=>{
     return <p>Loading...</p>;
   }
   return(
-    <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
+    <div className="Card">
       {data.map(tour=> (
-          <Card shadow="sm" isPressable onPress={() => console.log("item pressed")}>
-            <CardBody className="overflow-visible p-0">
+          <Card shadow="lg" isPressable className="Card-tour">
+            <CardBody className="Card-body">
             <Image
               shadow="sm"
               radius="lg"
               width="100%"
               alt={tour.title}
-              className="w-full object-cover h-[140px]"
               src={`http://127.0.0.1:1323${tour.imageSrc}`}
+              className="Card-image"
+              //src="./Taiwan.jpg"
             />
             </CardBody>
-            <CardFooter className="text-small justify-between">
-            <b>{tour.title}</b>
-            <p className="text-default-500">20</p>
+            <CardFooter className="Card-footer">
+            <b className="Tour-title">{tour.title}</b>
+            {/* <p className="Tour-price">20</p> */}
           </CardFooter>
           </Card>
       ))}
