@@ -1,11 +1,23 @@
 .Card{
     display: grid;
-    gap: 40px; 
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
-    justify-items: center; 
+    gap: 40px;
+    grid-template-columns: repeat(4, minmax(0,1fr)); // Автоматическое заполнение колонок
+    justify-content: center; // Центровка карточек в контейнере
+    padding: 0 20px; // Отступы от краев экрана
+    margin: 0 auto; // Центровка самого контейнера
 
+    @media (max-width: 1024px){
+        grid-template-columns: repeat(2, minmax(300px, 1fr));
+    }
+
+    @media (max-width: 768px){
+        grid-template-columns: repeat(1, minmax(300px, 1fr));
+    }
 
     &-tour{
+        max-width: 300px; // Ограничение ширины для карточек
+        width: 100%; // Поддержание гибкости
+        margin: 10px auto; 
         &:hover {
           transform: translateY(-4px);
           box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
