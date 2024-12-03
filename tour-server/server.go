@@ -52,6 +52,15 @@ func main() {
 			DateFrom:     time.Now(),
 			DateTo:       time.Now().Add(time.Hour * 24 * 7),
 			ImageSrc:     "/static/boston.jpg",
+		}, {
+			Title: "Тур на Мальдіви: Райське Задоволення на Островах!",
+			Description: "Пориньте у світ білосніжних пляжів, бірюзових лагун та незабутнього підводного світу. Мальдіви — ідеальне місце для відпочинку та романтики, де кожен день сповнений гармонії та краси.",
+			CallToAction: "ЗАБРОНЮВАТИ ЗАРАЗ",
+			From:         "Київ",
+			To:           "Карпати",
+			DateFrom:     time.Now(),
+			DateTo:       time.Now().Add(time.Hour * 24 * 7),
+			ImageSrc:     "/static/maldives.jpg",
 		}}
 		return c.JSON(http.StatusOK, tours)
 	})
