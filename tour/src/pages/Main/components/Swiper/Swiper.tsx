@@ -45,7 +45,7 @@ export const Swiper: React.FC = () => {
       className={'Swiper'}
       autoplay={{ delay: 5000 }}
     >
-      {data.map(tour => (
+      {data.slice(0,3).map(tour => (
         <SwiperSlide className={'Swiper-Slide'} style={{backgroundImage: `url("http://localhost:1323${tour.imageSrc}")`}}>
           <div className={'Swiper-SlideWrapper'}>
             <p className={'Swiper-SlideTitle'}>{tour.title}</p>
