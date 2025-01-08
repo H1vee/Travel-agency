@@ -1,0 +1,35 @@
+.search-bar {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Добавление тени */
+  border: 1px solid #ddd; /* Эмуляция свойства "bordered" */
+  border-radius: 8px;
+}
+
+.search-bar-body {
+  padding: 20px;
+}
+
+.search-title {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Добавьте фиксированный или адаптивный размер для строки поиска */
+.search-input {
+  width: 500px; /* Установите фиксированную ширину */
+  max-width: 100%; /* Адаптивность на маленьких экранах */
+  margin: 0 auto; /* Центрирование */
+}
+
+.search-button {
+  background: linear-gradient(90deg, #007BFF, #0056D2);
+  color: white;
+
+  &:hover {
+      background: linear-gradient(90deg, #0056D2, #003E9A);
+  }
+}
