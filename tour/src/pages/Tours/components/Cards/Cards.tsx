@@ -46,7 +46,7 @@ export const Cards : React.FC =()=>{
             </CardBody>
             <CardFooter className="Card-footer">
             <b className="Tour-title">{tour.title}</b>
-            {/* <p className="Tour-price">20</p> */}
+            <p className="Tour-price">12020₴</p>
           </CardFooter>
           </Card>
       ))}

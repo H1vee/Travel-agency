@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"time"
+	"tour-server/database"
 
 	"github.com/labstack/echo/v4"
 )
@@ -19,6 +20,10 @@ type Tour struct {
 }
 
 func main() {
+
+	database.InitDB()
+	defer database.DB.Close()
+
 	e := echo.New()
 	e.Static("/static", "static")
 	e.GET("/", func(c echo.Context) error {
@@ -53,15 +58,35 @@ func main() {
 			DateTo:       time.Now().Add(time.Hour * 24 * 7),
 			ImageSrc:     "/static/boston.jpg",
 		}, {
-			Title: "Тур на Мальдіви: Райське Задоволення на Островах!",
-			Description: "Пориньте у світ білосніжних пляжів, бірюзових лагун та незабутнього підводного світу. Мальдіви — ідеальне місце для відпочинку та романтики, де кожен день сповнений гармонії та краси.",
+			Title:        "Тур на Мальдіви: Райське Задоволення на Островах!",
+			Description:  "Пориньте у світ білосніжних пляжів, бірюзових лагун та незабутнього підводного світу. Мальдіви — ідеальне місце для відпочинку та романтики, де кожен день сповнений гармонії та краси.",
 			CallToAction: "ЗАБРОНЮВАТИ ЗАРАЗ",
 			From:         "Київ",
 			To:           "Карпати",
 			DateFrom:     time.Now(),
 			DateTo:       time.Now().Add(time.Hour * 24 * 7),
 			ImageSrc:     "/static/maldives.jpg",
-		}}
+		}, {
+			Title:        "Магія Сходу: Тур у Дубай",
+			Description:  "Сучасний мегаполіс, пустельні дюни, розкішні готелі та вражаюча архітектура. Відкрийте для себе казковий Дубай!",
+			CallToAction: "ЗАБРОНЮВАТИ ЗАРАЗ",
+			From:         "Харків",
+			To:           "Дубай",
+			DateFrom:     time.Now().Add(time.Hour * 24 * 7),
+			DateTo:       time.Now().Add(time.Hour * 24 * 14),
+			ImageSrc:     "/static/dubai.jpg",
+		},
+			{
+				Title:        "Італійський Роман: Від Риму до Венеції",
+				Description:  "Побачте Колізей, відчуйте шарм Флоренції та насолодіться прогулянкою на гондолі в Венеції. Італія чекає на вас!",
+				CallToAction: "ЗАБРОНЮВАТИ ЗАРАЗ",
+				From:         "Київ",
+				To:           "Італія",
+				DateFrom:     time.Now().Add(time.Hour * 24 * 14),
+				DateTo:       time.Now().Add(time.Hour * 24 * 21),
+				ImageSrc:     "/static/italy.jpg",
+			},
+		}
 		return c.JSON(http.StatusOK, tours)
 	})
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
