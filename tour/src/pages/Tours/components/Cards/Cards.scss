@@ -1,10 +1,10 @@
 .Card {
     display: grid;
-    gap: 2px ; 
+    gap: 30px ; 
     grid-template-columns: repeat(4, minmax(200px, 1fr)); 
     justify-content: center; 
     margin-top: 30px;
-
+    
     @media (max-width: 1024px) {
         grid-template-columns: repeat(2, minmax(300px, 1fr));
         gap: 30px;
@@ -41,5 +41,11 @@
     &-title {
         font-weight: bold;
         font-size: 1rem;
+    }
+    &-price {
+        margin-left: auto;
+        font-size: 1rem;
+        font-weight: bold;
+        color: #333; 
     }
 }
