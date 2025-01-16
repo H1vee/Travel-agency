@@ -3,14 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import "./Cards.scss";
 
 interface Tour {
-  title: string;
-  description: string;
-  callToAction: string;
-  from: string;
-  to: string;
-  dateFrom: string;
-  dateTo: string;
-  imageSrc: string;
+    id           :number   
+		title        :string  
+		description  :string  
+		price        :number
+		imageSrc     :string  
 }
 
 export const Cards : React.FC =()=>{
@@ -32,7 +29,7 @@ export const Cards : React.FC =()=>{
   return(
     <div className="Card">
       {data.map(tour=> (
-          <Card shadow="lg" isPressable className="Card-tour">
+          <Card key={tour.id} shadow="lg" isPressable className="Card-tour">
             <CardBody className="Card-body">
             <Image
               shadow="sm"
@@ -46,7 +43,7 @@ export const Cards : React.FC =()=>{
             </CardBody>
             <CardFooter className="Card-footer">
             <b className="Tour-title">{tour.title}</b>
-            <p className="Tour-price">12020₴</p>
+            <p className="Tour-price">{tour.price}</p>
           </CardFooter>
           </Card>
       ))}
