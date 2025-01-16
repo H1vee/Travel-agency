@@ -8,14 +8,12 @@ import { Loader } from '../Loader/Loader';
 import './Swiper.scss';
 
 interface Tour {
-  title: string;
-  description: string;
-  callToAction: string;
-  from: string;
-  to: string;
-  dateFrom: string;
-  dateTo: string;
-  imageSrc: string;
+  id           :number   
+  title        :string  
+  description  :string  
+  callToAction :string  
+  price        :number
+  imageSrc     :string  
 }
 
 export const Swiper: React.FC = () => {
@@ -46,7 +44,7 @@ export const Swiper: React.FC = () => {
       autoplay={{ delay: 5000 }}
     >
       {data.slice(0,3).map(tour => (
-        <SwiperSlide className={'Swiper-Slide'} style={{backgroundImage: `url("http://localhost:1323${tour.imageSrc}")`}}>
+        <SwiperSlide key={tour.id} className={'Swiper-Slide'} style={{backgroundImage: `url("http://localhost:1323${tour.imageSrc}")`}}>
           <div className={'Swiper-SlideWrapper'}>
             <p className={'Swiper-SlideTitle'}>{tour.title}</p>
             <span className={'Swiper-SlideDescription'}>{tour.description}</span>

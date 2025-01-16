@@ -22,7 +22,6 @@ type Tour struct {
 func main() {
 
 	database.InitDB()
-	defer database.DB.Close()
 
 	e := echo.New()
 	e.Static("/static", "static")
