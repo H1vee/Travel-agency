@@ -21,14 +21,16 @@ const (
 )
 
 func InitDB() {
-
-	var connStr string = fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
+	var err error
+	var connStr = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
-	DB, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
+
+	// Ініціалізуємо глобальну змінну DB
+	DB, err = gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Couldn't ping database: %v", err)
+		log.Fatalf("Couldn't open database: %v", err)
 	}
+
 	sqlDB, err := DB.DB()
 	if err != nil {
 		log.Fatalf("Couldn't get DB object: %v", err)
@@ -36,7 +38,7 @@ func InitDB() {
 
 	err = sqlDB.Ping()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Couldn't ping database: %v", err)
 	}
 
 	fmt.Println("Successfully connected to the database")

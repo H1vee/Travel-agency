@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 	"tour-server/database"
@@ -23,7 +24,9 @@ type Tour struct {
 func main() {
 
 	database.InitDB()
-
+	if database.DB == nil {
+		log.Fatal("Database connection is nil")
+	}
 	e := echo.New()
 	e.Static("/static", "static")
 
@@ -31,7 +34,7 @@ func main() {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
-	e.GET("/tours", api.GetToursForCards)
+	e.GET("/tours", api.GetToursForCards(database.DB))
 
 	// e.GET("/tours", func(c echo.Context) error {
 	// 	tours := []Tour{{

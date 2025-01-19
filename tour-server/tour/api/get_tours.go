@@ -1,25 +1,31 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
-	"tour-server/database"
 	"tour-server/tour/models"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
-func GetToursForCards(c echo.Context) error {
-	var tours []models.Tour
+func GetToursForCards(db *gorm.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if db == nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database connection is nil"})
+		}
+		var toursWithImages []models.Tour
+		err := db.Table("tours").
+			Select("tours.id, tours.description, tours.price, tour_card_images.image_src AS imageSrc").
+			Joins("LEFT JOIN tour_card_images ON tours.id = tour_card_images.tour_id").
+			Find(&toursWithImages).Error
 
-	// Запит до бази даних
-	if err := database.DB.Model(&models.Tour{}).Select("id, title, description, call_to_action, price, rating, image_src").
-		Find(&tours).Error; err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Could not fetch tours"})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Failed to fetch tours",
+			})
+		}
+
+		// Повернення результату у вигляді JSON
+		return c.JSON(http.StatusOK, toursWithImages)
 	}
-	for _, tour := range tours {
-		fmt.Println(tour)
-	}
-	// Повернення результату
-	return c.JSON(http.StatusOK, tours)
 }
