@@ -12,7 +12,6 @@ interface Tour {
   title        :string  
   description  :string  
   callToAction :string  
-  price        :number
   imageSrc     :string  
 }
 
@@ -20,7 +19,7 @@ export const Swiper: React.FC = () => {
   const { isPending, error, data } = useQuery({
     queryKey: ['toursData'],
     queryFn: async() => {
-      const fetched = await fetch('/api/tours');
+      const fetched = await fetch('/api/tourswiper');
       const tours: Tour[] = await fetched.json();
       return tours;
     },
