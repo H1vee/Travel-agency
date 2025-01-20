@@ -14,7 +14,7 @@ export const Cards : React.FC =()=>{
     const {isPending,error,data} = useQuery({
       queryKey : ['toursData'],
       queryFn: async()=>{
-        const fetched = await fetch('/api/tours');
+        const fetched = await fetch('/api/cards');
         const tours:Tour[] = await fetched.json();
         return tours;
       },
