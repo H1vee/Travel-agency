@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@heroui/date-picker": "^2.3.10",
     "@mantine/core": "^7.12.2",
     "@mantine/hooks": "^7.12.2",
     "@nextui-org/button": "^2.0.37",

@@ -1,87 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-.Footer{
-    line-height: 1.5;
-    font-family: 'Poppins',sans-serif;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    background-color: #ffffff;
-    padding: 50px 0;
-    &-Container{
-        max-width: 1170px;
-        margin: auto;
+footer {
+    background-color: #deded5;
+  
+    h5 {
+      letter-spacing: 2px;
+      color: #818963;
     }
-    &-row{
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
+  
+    a {
+      color: #4f4f4f;
+      text-decoration: none;
+  
+      &:hover {
+        text-decoration: underline;
+      }
     }
-    ul{
-        list-style: none;
+  
+    table {
+      color: #4f4f4f;
+      border-color: #666;
     }
-    &-col{
-        width: 50%;
-        padding: 0 200px;
-        z-index: 2;
+  
+    .text-center {
+      background-color: rgba(0, 0, 0, 0.2);
+  
+      a {
+        color: #000;
+      }
     }
-    h4{
-        font-size: 18px;
-        color: #000000;
-        text-transform: capitalize;
-        margin-bottom: 15px;
-        font-weight: 500;
-        position: relative;
-
-        &::before{
-            content: '';
-            position: absolute;
-            left: 65px;
-            bottom: -10%;
-            background-color: #f1b8b8;
-            height: 3px;
-            width: 50px;
-        }
-    }
-    &-ListProp li:not(:last-child){
-        margin-bottom: 10px;
-    }
-    &-ListProp li a{
-        font-size: 16px;
-        text-transform: capitalize;
-        color: #3e0606;
-        text-decoration: none;
-        font-weight: 300;
-        display: block;
-        transition: all 0.3s ease;
-
-        &:hover{
-            color: #d01313;
-            padding-left: 8px;
-        }
-    }
-
-    @media (max-width:1366px) {
-
-        
-    }
-    @media(max-width:400px){
-        &-col{
-            width: 100%;
-            padding: 0; 
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        h4{
-            margin-bottom: 10px;
-
-            &::before{
-                left: 150px;
-                bottom: 0px;
-                background-color: #f1b8b8;
-                height: 2px;
-                width: 91px;
-            }
-        }
-    }
-}
+  }
+  

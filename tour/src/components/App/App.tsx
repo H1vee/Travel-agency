@@ -8,6 +8,7 @@ import {NextUIProvider} from "@nextui-org/react";
 import {Main} from '../../pages/Main/Main';
 import {AboutUs} from '../../pages/AboutUs/AboutUs';
 import {Tours} from '../../pages/Tours/Tours';
+import { TourDetails } from '../../pages/TourDetails/TourDetails';
 import {
   QueryClient,
   QueryClientProvider,
@@ -24,6 +25,7 @@ function App() {
             <Route path="/" element={<Main />} />
             <Route path='/AboutUs' element={<AboutUs />}/>
             <Route path='/Tours' element={<Tours />}/>
+            <Route path='/TourDetails/:id' element={<TourDetails />}/>
           </Routes>
         </Router>
       </NextUIProvider>

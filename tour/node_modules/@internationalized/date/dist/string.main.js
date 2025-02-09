@@ -34,10 +34,10 @@ $parcel$export(module.exports, "parseDuration", () => $4c32e2d98e5a5134$export$e
 
 
 const $4c32e2d98e5a5134$var$TIME_RE = /^(\d{2})(?::(\d{2}))?(?::(\d{2}))?(\.\d+)?$/;
-const $4c32e2d98e5a5134$var$DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const $4c32e2d98e5a5134$var$DATE_TIME_RE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}))?(?::(\d{2}))?(?::(\d{2}))?(\.\d+)?$/;
-const $4c32e2d98e5a5134$var$ZONED_DATE_TIME_RE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}))?(?::(\d{2}))?(?::(\d{2}))?(\.\d+)?(?:([+-]\d{2})(?::?(\d{2}))?)?\[(.*?)\]$/;
-const $4c32e2d98e5a5134$var$ABSOLUTE_RE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}))?(?::(\d{2}))?(?::(\d{2}))?(\.\d+)?(?:(?:([+-]\d{2})(?::?(\d{2}))?)|Z)$/;
+const $4c32e2d98e5a5134$var$DATE_RE = /^([+-]\d{6}|\d{4})-(\d{2})-(\d{2})$/;
+const $4c32e2d98e5a5134$var$DATE_TIME_RE = /^([+-]\d{6}|\d{4})-(\d{2})-(\d{2})(?:T(\d{2}))?(?::(\d{2}))?(?::(\d{2}))?(\.\d+)?$/;
+const $4c32e2d98e5a5134$var$ZONED_DATE_TIME_RE = /^([+-]\d{6}|\d{4})-(\d{2})-(\d{2})(?:T(\d{2}))?(?::(\d{2}))?(?::(\d{2}))?(\.\d+)?(?:([+-]\d{2})(?::?(\d{2}))?)?\[(.*?)\]$/;
+const $4c32e2d98e5a5134$var$ABSOLUTE_RE = /^([+-]\d{6}|\d{4})-(\d{2})-(\d{2})(?:T(\d{2}))?(?::(\d{2}))?(?::(\d{2}))?(\.\d+)?(?:(?:([+-]\d{2})(?::?(\d{2}))?)|Z)$/;
 const $4c32e2d98e5a5134$var$DATE_TIME_DURATION_RE = /^((?<negative>-)|\+)?P((?<years>\d*)Y)?((?<months>\d*)M)?((?<weeks>\d*)W)?((?<days>\d*)D)?((?<time>T)((?<hours>\d*[.,]?\d{1,9})H)?((?<minutes>\d*[.,]?\d{1,9})M)?((?<seconds>\d*[.,]?\d{1,9})S)?)?$/;
 const $4c32e2d98e5a5134$var$requiredDurationTimeGroups = [
     'hours',
@@ -66,14 +66,18 @@ function $4c32e2d98e5a5134$export$6b862160d295c8e(value) {
 function $4c32e2d98e5a5134$export$588937bcd60ade55(value) {
     let m = value.match($4c32e2d98e5a5134$var$DATE_TIME_RE);
     if (!m) throw new Error('Invalid ISO 8601 date time string: ' + value);
-    let date = new (0, $625ad1e1f4c43bc1$exports.CalendarDateTime)($4c32e2d98e5a5134$var$parseNumber(m[1], 1, 9999), $4c32e2d98e5a5134$var$parseNumber(m[2], 1, 12), 1, m[4] ? $4c32e2d98e5a5134$var$parseNumber(m[4], 0, 23) : 0, m[5] ? $4c32e2d98e5a5134$var$parseNumber(m[5], 0, 59) : 0, m[6] ? $4c32e2d98e5a5134$var$parseNumber(m[6], 0, 59) : 0, m[7] ? $4c32e2d98e5a5134$var$parseNumber(m[7], 0, Infinity) * 1000 : 0);
+    let year = $4c32e2d98e5a5134$var$parseNumber(m[1], -9999, 9999);
+    let era = year < 1 ? 'BC' : 'AD';
+    let date = new (0, $625ad1e1f4c43bc1$exports.CalendarDateTime)(era, year < 1 ? -year + 1 : year, $4c32e2d98e5a5134$var$parseNumber(m[2], 1, 12), 1, m[4] ? $4c32e2d98e5a5134$var$parseNumber(m[4], 0, 23) : 0, m[5] ? $4c32e2d98e5a5134$var$parseNumber(m[5], 0, 59) : 0, m[6] ? $4c32e2d98e5a5134$var$parseNumber(m[6], 0, 59) : 0, m[7] ? $4c32e2d98e5a5134$var$parseNumber(m[7], 0, Infinity) * 1000 : 0);
     date.day = $4c32e2d98e5a5134$var$parseNumber(m[3], 0, date.calendar.getDaysInMonth(date));
     return date;
 }
 function $4c32e2d98e5a5134$export$fd7893f06e92a6a4(value, disambiguation) {
     let m = value.match($4c32e2d98e5a5134$var$ZONED_DATE_TIME_RE);
     if (!m) throw new Error('Invalid ISO 8601 date time string: ' + value);
-    let date = new (0, $625ad1e1f4c43bc1$exports.ZonedDateTime)($4c32e2d98e5a5134$var$parseNumber(m[1], 1, 9999), $4c32e2d98e5a5134$var$parseNumber(m[2], 1, 12), 1, m[10], 0, m[4] ? $4c32e2d98e5a5134$var$parseNumber(m[4], 0, 23) : 0, m[5] ? $4c32e2d98e5a5134$var$parseNumber(m[5], 0, 59) : 0, m[6] ? $4c32e2d98e5a5134$var$parseNumber(m[6], 0, 59) : 0, m[7] ? $4c32e2d98e5a5134$var$parseNumber(m[7], 0, Infinity) * 1000 : 0);
+    let year = $4c32e2d98e5a5134$var$parseNumber(m[1], -9999, 9999);
+    let era = year < 1 ? 'BC' : 'AD';
+    let date = new (0, $625ad1e1f4c43bc1$exports.ZonedDateTime)(era, year < 1 ? -year + 1 : year, $4c32e2d98e5a5134$var$parseNumber(m[2], 1, 12), 1, m[10], 0, m[4] ? $4c32e2d98e5a5134$var$parseNumber(m[4], 0, 23) : 0, m[5] ? $4c32e2d98e5a5134$var$parseNumber(m[5], 0, 59) : 0, m[6] ? $4c32e2d98e5a5134$var$parseNumber(m[6], 0, 59) : 0, m[7] ? $4c32e2d98e5a5134$var$parseNumber(m[7], 0, Infinity) * 1000 : 0);
     date.day = $4c32e2d98e5a5134$var$parseNumber(m[3], 0, date.calendar.getDaysInMonth(date));
     let plainDateTime = (0, $4ae0260a69729f1d$exports.toCalendarDateTime)(date);
     let ms;
@@ -91,7 +95,9 @@ function $4c32e2d98e5a5134$export$fd7893f06e92a6a4(value, disambiguation) {
 function $4c32e2d98e5a5134$export$5adfdab05168c219(value, timeZone) {
     let m = value.match($4c32e2d98e5a5134$var$ABSOLUTE_RE);
     if (!m) throw new Error('Invalid ISO 8601 date time string: ' + value);
-    let date = new (0, $625ad1e1f4c43bc1$exports.ZonedDateTime)($4c32e2d98e5a5134$var$parseNumber(m[1], 1, 9999), $4c32e2d98e5a5134$var$parseNumber(m[2], 1, 12), 1, timeZone, 0, m[4] ? $4c32e2d98e5a5134$var$parseNumber(m[4], 0, 23) : 0, m[5] ? $4c32e2d98e5a5134$var$parseNumber(m[5], 0, 59) : 0, m[6] ? $4c32e2d98e5a5134$var$parseNumber(m[6], 0, 59) : 0, m[7] ? $4c32e2d98e5a5134$var$parseNumber(m[7], 0, Infinity) * 1000 : 0);
+    let year = $4c32e2d98e5a5134$var$parseNumber(m[1], -9999, 9999);
+    let era = year < 1 ? 'BC' : 'AD';
+    let date = new (0, $625ad1e1f4c43bc1$exports.ZonedDateTime)(era, year < 1 ? -year + 1 : year, $4c32e2d98e5a5134$var$parseNumber(m[2], 1, 12), 1, timeZone, 0, m[4] ? $4c32e2d98e5a5134$var$parseNumber(m[4], 0, 23) : 0, m[5] ? $4c32e2d98e5a5134$var$parseNumber(m[5], 0, 59) : 0, m[6] ? $4c32e2d98e5a5134$var$parseNumber(m[6], 0, 59) : 0, m[7] ? $4c32e2d98e5a5134$var$parseNumber(m[7], 0, Infinity) * 1000 : 0);
     date.day = $4c32e2d98e5a5134$var$parseNumber(m[3], 0, date.calendar.getDaysInMonth(date));
     var _m_;
     if (m[8]) date.offset = $4c32e2d98e5a5134$var$parseNumber(m[8], -23, 23) * 3600000 + $4c32e2d98e5a5134$var$parseNumber((_m_ = m[9]) !== null && _m_ !== void 0 ? _m_ : '0', 0, 59) * 60000;
@@ -110,7 +116,10 @@ function $4c32e2d98e5a5134$export$f59dee82248f5ad4(time) {
 }
 function $4c32e2d98e5a5134$export$60dfd74aa96791bd(date) {
     let gregorianDate = (0, $4ae0260a69729f1d$exports.toCalendar)(date, new (0, $af14c9812fdceb33$exports.GregorianCalendar)());
-    return `${String(gregorianDate.year).padStart(4, '0')}-${String(gregorianDate.month).padStart(2, '0')}-${String(gregorianDate.day).padStart(2, '0')}`;
+    let year;
+    if (gregorianDate.era === 'BC') year = gregorianDate.year === 1 ? '0000' : '-' + String(Math.abs(1 - gregorianDate.year)).padStart(6, '00');
+    else year = String(gregorianDate.year).padStart(4, '0');
+    return `${year}-${String(gregorianDate.month).padStart(2, '0')}-${String(gregorianDate.day).padStart(2, '0')}`;
 }
 function $4c32e2d98e5a5134$export$4223de14708adc63(date) {
     // @ts-ignore

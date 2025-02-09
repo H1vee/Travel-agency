@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import { Loader } from '../Loader/Loader';
+import { Link } from 'react-router-dom';
 import './Swiper.scss';
 
 interface Tour {
@@ -37,17 +38,27 @@ export const Swiper: React.FC = () => {
     <SwiperBase
       modules={[Pagination, A11y, Autoplay]}
       slidesPerView={1}
-      navigation
+
       pagination={{ clickable: true }}
       className={'Swiper'}
       autoplay={{ delay: 5000 }}
     >
-      {data.slice(0,3).map(tour => (
+      {data.slice(0,4).map(tour => (
         <SwiperSlide key={tour.id} className={'Swiper-Slide'} style={{backgroundImage: `url("http://localhost:1323${tour.imageSrc}")`}}>
           <div className={'Swiper-SlideWrapper'}>
             <p className={'Swiper-SlideTitle'}>{tour.title}</p>
             <span className={'Swiper-SlideDescription'}>{tour.description}</span>
-            <Button className={'Swiper-SlideAction'} variant='shadow' color='secondary' radius='full'>{tour.callToAction}</Button>
+            <Link to={`/TourDetails/${tour.id}`}>
+            <Button 
+            className={'Swiper-SlideAction'}
+            variant='shadow'
+            color='secondary' 
+            radius='full'
+            >
+             {tour.callToAction}
+            </Button>
+            </Link>
+            
           </div>
         </SwiperSlide>
       ))}
