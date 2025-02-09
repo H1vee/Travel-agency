@@ -31,6 +31,8 @@ func main() {
 
 	e.GET("/tourswiper", api.GetToursForSwiper(database.DB))
 
+	e.GET("/tours/:id", api.GetTourById(database.DB))
+
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 
 }

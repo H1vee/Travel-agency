@@ -1,5 +1,6 @@
 import {Card, CardFooter, CardBody, Image} from "@nextui-org/react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from 'react-router-dom';
 import "./Cards.scss";
 
 interface Tour {
@@ -29,7 +30,8 @@ export const Cards : React.FC =()=>{
   return(
     <div className="Card">
       {data.map(tour=> (
-          <Card key={tour.id} shadow="lg" isPressable className="Card-tour">
+        <Link to={`/TourDetails/${tour.id}`} key={tour.id} className="Card-link">
+        <Card shadow="lg" isPressable className="Card-tour" >
             <CardBody className="Card-body">
             <Image
               shadow="sm"
@@ -46,6 +48,7 @@ export const Cards : React.FC =()=>{
             <p className="Tour-price">{tour.price}</p>
           </CardFooter>
           </Card>
+        </Link>  
       ))}
     </div>
   );

@@ -13,10 +13,10 @@ func GetTours(db *gorm.DB) echo.HandlerFunc {
 		if db == nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database connection is nil"})
 		}
-		var toursWithImages []models.Tour
+		var tours []models.Tour
 		err := db.Table("tours").
 			Select("*").
-			Find(&toursWithImages).Error
+			Find(&tours).Error
 
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -24,6 +24,6 @@ func GetTours(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		return c.JSON(http.StatusOK, toursWithImages)
+		return c.JSON(http.StatusOK, tours)
 	}
 }

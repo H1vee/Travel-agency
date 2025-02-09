@@ -80,6 +80,7 @@ export function startOfWeek(date: DateValue, locale: string): DateValue;
 export function endOfWeek(date: ZonedDateTime, locale: string): ZonedDateTime;
 export function endOfWeek(date: CalendarDateTime, locale: string): CalendarDateTime;
 export function endOfWeek(date: CalendarDate, locale: string): CalendarDate;
+export function endOfWeek(date: DateValue, locale: string): DateValue;
 /** Returns the number of weeks in the given month and locale. */
 export function getWeeksInMonth(date: DateValue, locale: string): number;
 /** Returns the lesser of the two provider dates. */
@@ -612,9 +613,6 @@ export class CopticCalendar extends EthiopicCalendar {
 }
 /** Creates a `Calendar` instance from a Unicode calendar identifier string. */
 export function createCalendar(name: string): Calendar;
-interface ResolvedDateTimeFormatOptions extends Intl.ResolvedDateTimeFormatOptions {
-    hourCycle?: Intl.DateTimeFormatOptions['hourCycle'];
-}
 interface DateRangeFormatPart extends Intl.DateTimeFormatPart {
     source: 'startRange' | 'endRange' | 'shared';
 }
@@ -630,7 +628,7 @@ export class DateFormatter implements Intl.DateTimeFormat {
     /** Formats a date range as an array of parts. */
     formatRangeToParts(start: Date, end: Date): DateRangeFormatPart[];
     /** Returns the resolved formatting options based on the values passed to the constructor. */
-    resolvedOptions(): ResolvedDateTimeFormatOptions;
+    resolvedOptions(): Intl.ResolvedDateTimeFormatOptions;
 }
 
 //# sourceMappingURL=types.d.ts.map
