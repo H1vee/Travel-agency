@@ -1,7 +1,7 @@
-import { Card, CardBody, CardHeader } from "@nextui-org/react";
+import { Card, CardBody, CardHeader, Button } from "@nextui-org/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom"; 
-
+import { Form } from "../Form/Form";
 interface Tour {
   id: number;
   title: string;
@@ -53,6 +53,7 @@ export const InfoSide = () => {
           </h3>
           <h3>Duration: {data.duration} days</h3>
           <h3>Опис: {data.detailed_description}</h3>
+          <Form/>
         </CardBody>
       </Card>
     </div>

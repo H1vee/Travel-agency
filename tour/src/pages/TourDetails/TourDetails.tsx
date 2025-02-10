@@ -2,6 +2,7 @@ import {Navbar} from '../../components/Navbar/Navbar';
 import { TourSwiper } from './components/Swiper/TourSwiper';
 import { InfoSide } from './components/InfoSide/InfoSide';
 import { TourDescriber } from './components/TourDescriber/TourDescriber';
+
 import './TourDetails.scss'
 export const TourDetails =()=>{
     return(
@@ -14,6 +15,7 @@ export const TourDetails =()=>{
           </div>
           <div className="TourDetails-side">
             <InfoSide />
+
           </div>
         </div>
         <div className="TourDetails-describer">
