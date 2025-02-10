@@ -23,11 +23,11 @@ export const InfoSide = () => {
       const fetched = await fetch(`/api/tours/${id}`);
       if (!fetched.ok) throw new Error("Tour not found");
       const rawTour: any = await fetched.json();
-
+      console.log("Raw tour data:", rawTour);
       return {
         ...rawTour,
-        date_from: new Date(rawTour.date_from),
-        date_to: new Date(rawTour.date_to),
+        date_from: new Date(Date.parse(rawTour.datefrom)),
+        date_to: new Date(Date.parse(rawTour.dateto)),
       };
     },
     enabled: !!id, 
@@ -48,8 +48,8 @@ export const InfoSide = () => {
           <h3>Rating: {data.rating}</h3>
           <h3>Status: {data.status}</h3>
           <h3>
-            {data.date_from.toLocaleDateString()} -{" "}
-            {data.date_to.toLocaleDateString()}
+              {data.date_from.toLocaleDateString("uk-UA")} -{" "}
+              {data.date_to.toLocaleDateString("uk-UA")}
           </h3>
           <h3>Duration: {data.duration} days</h3>
           <h3>Опис: {data.detailed_description}</h3>
