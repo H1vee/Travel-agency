@@ -30,36 +30,33 @@ export const Form =()=>{
             <>
               <ModalHeader className="flex flex-col gap-1">Log in</ModalHeader>
               <ModalBody>
+              <Input
+                isRequired
+                placeholder="Ваше ім'я"
+                label = "Ім'я"
+              />
+              <Input
+                isRequired
+                label="Номер телефону"
+                defaultValue="+380"
+              />
                 <Input
                   label="Email"
                   placeholder="Enter your email"
                   variant="bordered"
                 />
                 <Input
-                  label="Password"
-                  placeholder="Enter your password"
-                  type="password"
-                  variant="bordered"
+                  isRequired
+                  label="Кількість місць"
+                  defaultValue="1"
                 />
-                <div className="flex py-2 px-1 justify-between">
-                  <Checkbox
-                    classNames={{
-                      label: "text-small",
-                    }}
-                  >
-                    Remember me
-                  </Checkbox>
-                  <Link color="primary" href="#" size="sm">
-                    Forgot password?
-                  </Link>
-                </div>
               </ModalBody>
               <ModalFooter>
                 <Button color="danger" variant="flat" onPress={onClose}>
-                  Close
+                  Відмінити
                 </Button>
                 <Button color="primary" onPress={onClose}>
-                  Sign in
+                  Підтвердити
                 </Button>
               </ModalFooter>
             </>
