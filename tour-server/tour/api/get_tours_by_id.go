@@ -17,11 +17,14 @@ func GetTourById(db *gorm.DB) echo.HandlerFunc {
 		err := db.Table("tours").Debug().
 			Select(`tours.id, tours.title, tours.description, 
 				tours.call_to_action, tours.price, tours.rating, 
-				tours.detailed_description, tours.status_id, statuses.name as status,
+				tours.detailed_description, tours.status_id, statuses.name AS status,
 				tour_dates.date_from, tour_dates.date_to, 
-				EXTRACT(DAY FROM (tour_dates.date_to - tour_dates.date_from)) AS duration`).
+				EXTRACT(DAY FROM (tour_dates.date_to - tour_dates.date_from)) AS duration,
+				tours.total_seats,
+				COALESCE(tour_seats.available_seats, tours.total_seats) AS available_seats`).
 			Joins("JOIN statuses ON tours.status_id = statuses.id").
 			Joins("LEFT JOIN tour_dates ON tours.id = tour_dates.tour_id").
+			Joins("LEFT JOIN tour_seats ON tour_dates.id = tour_seats.tour_date_id").
 			Where("tours.id = ?", id).
 			Scan(&tour).Error
 

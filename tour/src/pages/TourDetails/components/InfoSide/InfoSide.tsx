@@ -12,6 +12,8 @@ interface Tour {
   date_from: Date;
   date_to: Date;
   duration: number;
+  total_seats: number;
+  available_seats: number;
 }
 
 export const InfoSide = () => {
@@ -52,6 +54,7 @@ export const InfoSide = () => {
               {data.date_to.toLocaleDateString("uk-UA")}
           </h3>
           <h3>Duration: {data.duration} days</h3>
+          <h3>Вільних місць: {data.totalSeats}\{data.availableSeats}</h3>
           <h3>Опис: {data.detailed_description}</h3>
           <Form/>
         </CardBody>
