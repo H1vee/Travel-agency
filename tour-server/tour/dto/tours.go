@@ -17,4 +17,6 @@ type TourDTO struct {
 	DateTo              time.Time `json:"dateto"`
 	Duration            uint      `json:"duration"`
 	DetailedDescription string    `json:"detailedDescription"`
+	TotalSeats          uint      `json:"totalSeats"`
+	AvailableSeats      uint      `json:"availableSeats"`
 }

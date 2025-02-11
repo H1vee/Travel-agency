@@ -9,4 +9,5 @@ type Tour struct {
 	Rating              float64 `json:"rating" gorm:"default:0.0"`
 	StatusID            uint    `json:"statusId" gorm:"not null"`
 	DetailedDescription string  `json:"detailedDescription"`
+	TotalSeats          int     `json:"total_seats"`
 }
