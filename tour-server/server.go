@@ -6,6 +6,7 @@ import (
 	"tour-server/database"
 	"tour-server/tour/api"
 	tourcard "tour-server/tourcardimage/api"
+	tourseats "tour-server/tourseats/api"
 
 	"github.com/labstack/echo/v4"
 )
@@ -32,6 +33,8 @@ func main() {
 	e.GET("/tourswiper", api.GetToursForSwiper(database.DB))
 
 	e.GET("/tours/:id", api.GetTourById(database.DB))
+
+	e.GET("/tour-seats/:id", tourseats.GetTourSeatsByTourID(database.DB))
 
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 
