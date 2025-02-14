@@ -2,19 +2,6 @@ import { Card, CardBody, CardHeader, Button } from "@nextui-org/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom"; 
 import { Form } from "../Form/Form";
-interface Tour {
-  id: number;
-  title: string;
-  status: string;
-  detailed_description: string;
-  rating: number;
-  country: string;
-  date_from: Date;
-  date_to: Date;
-  duration: number;
-  total_seats: number;
-  available_seats: number;
-}
 
 export const InfoSide = () => {
   const { id } = useParams(); 
