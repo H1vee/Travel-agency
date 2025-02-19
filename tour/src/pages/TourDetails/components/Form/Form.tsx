@@ -137,6 +137,7 @@ export const Form = () => {
                     isInvalid={!!seatsError}
                     errorMessage={seatsError}
                   />
+                  <p>Вартість:{data.price} </p>
                 </ModalBody>
                 <ModalFooter>
                   <Button color="danger" variant="flat" onPress={onClose}>
