@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	bookings "tour-server/bookings/api"
 	"tour-server/database"
 	"tour-server/tour/api"
 	tourcard "tour-server/tourcardimage/api"
@@ -35,6 +36,8 @@ func main() {
 	e.GET("/tours/:id", api.GetTourById(database.DB))
 
 	e.GET("/tour-seats/:id", tourseats.GetTourSeatsByTourID(database.DB))
+
+	e.POST("/tour/bookings", bookings.PostBookings(database.DB))
 
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 
