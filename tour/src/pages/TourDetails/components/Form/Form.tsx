@@ -17,6 +17,8 @@ export const Form = () => {
   
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState("");
+  const [email, setEmail] = useState("");
+
   
   const [phone, setPhone] = useState("+380");
   const [phoneError, setPhoneError] = useState("");
@@ -41,6 +43,11 @@ export const Form = () => {
   if (isPending) return <p>Loading...</p>;
   if (error) return <p>Error: {error.message}</p>;
   if (!data) return <p>Tour not found</p>;
+
+  const handleEmailChange = (e:React.ChangeEvent<HTMLInputElement>)=>{
+    setEmail(e.target.value)
+  }
+
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -82,11 +89,10 @@ export const Form = () => {
     } else {
       setSeatsError("");
     }
-
+    console.log("Seats input value:", value, "Parsed intSeats:", intSeats);
     setSeats(intSeats.toString());
   };
 
-  // Очистка формы
   const resetForm = () => {
     setName("");
     setNameError("");
@@ -94,7 +100,43 @@ export const Form = () => {
     setPhoneError("");
     setSeats("1");
     setSeatsError("");
+    console.log("Resetting form");
   };
+
+  const handleConfirm = async () => {
+    const bookingData = {
+      TourDateID: id,
+      CustomerName: name.trim(),
+      CustomerEmail: email.trim(),  
+      CustomerPhone: phone.trim(),
+      Seats: Number.isNaN(parseInt(seats, 10)) ? 1 : parseInt(seats, 10),
+      TotalPrice: data?.[0]?.price ? (data[0].price * parseInt(seats, 10)).toFixed(2) : 0,
+    };
+    console.log("BookingData being sent:", bookingData);
+
+    try {
+      console.log("BookingData being sent:", bookingData);
+      const response = await fetch("/tour/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bookingData),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Booking failed");
+      }
+  
+      const result = await response.json();
+      alert(result.message || "Booking successful");
+      resetForm();
+    } catch (error) {
+      console.error("Booking error:", error);
+      alert("Помилка при бронюванні. Спробуйте ще раз.");
+    }
+  };
+  
 
   return (
     <div className="Form">
@@ -128,7 +170,13 @@ export const Form = () => {
                     isInvalid={!!phoneError}
                     errorMessage={phoneError}
                   />
-                  <Input label="Email" placeholder="Enter your email" variant="bordered" />
+                  <Input 
+                  label="Email" 
+                  placeholder="Enter your email" 
+                  variant="bordered" 
+                  value={email}
+                  onChange={handleEmailChange}
+                  />
                   <Input
                     isRequired
                     label="Кількість місць"
@@ -145,8 +193,8 @@ export const Form = () => {
                   </Button>
                   <Button 
                     color="primary" 
-                    onPress={onClose} 
-                    isDisabled={!name.trim() || !phone.trim() || !seats.trim() || !!nameError || !!phoneError || !!seatsError}
+                    onPress={handleConfirm} 
+                    isDisabled={!name.trim() || !phone.trim() || !seats.trim() || !!nameError || !!phoneError || !!seatsError || parseInt(seats, 10) < 1}
                   >
                     Підтвердити
                   </Button>
