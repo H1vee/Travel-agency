@@ -137,7 +137,7 @@ export const Form = () => {
                     isInvalid={!!seatsError}
                     errorMessage={seatsError}
                   />
-                  <p>Вартість:{data.price} </p>
+                  <p>Вартість: {data?.[0]?.price ? `${(data[0].price * parseInt(seats, 10)).toFixed(2)} UAH` : "N/A"}</p>
                 </ModalBody>
                 <ModalFooter>
                   <Button color="danger" variant="flat" onPress={onClose}>
