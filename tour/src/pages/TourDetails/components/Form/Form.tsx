@@ -8,6 +8,8 @@ import {
   Button,
   Input,
 } from "@heroui/react";
+import { addToast,ToastProvider }from "@heroui/react";
+
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from "react-router-dom"; 
 import { useState } from "react";
@@ -107,8 +109,7 @@ export const Form = () => {
 
  
 
-  const handleConfirm = async () => {
-
+  const handleConfirm = async (onClose:()=>void) => {
     const bookingData = {
       tour_date_id: Number(id), 
       customer_name: name.trim(),
@@ -134,13 +135,23 @@ export const Form = () => {
       if (!response.ok) {
         throw new Error("Booking failed");
       }
-  
-      const result = await response.json();
-      alert(result.message || "Booking successful");
+
+        addToast({
+        title:"Бронювання підтверджено",
+        description:"Ваше замовлення було підтверджено",
+        color: "success",
+        variant :"solid",
+      });
+      onClose();
       resetForm();
     } catch (error) {
       console.error("Booking error:", error);
-      alert("Помилка при бронюванні. Спробуйте ще раз.");
+      
+      addToast({
+        title:"Бронювання не вдалося",
+        description:"Виникла проблема з вашим бронюванням. Будь ласка, спробуйте ще раз.",
+        color: "danger",
+      });
     }
   };
   console.log("BookingData being sent:", {
@@ -150,11 +161,17 @@ export const Form = () => {
     customer_phone: phone.trim(),
     seats: parseInt(seats, 10),
     total_price: data?.[0]?.price ? (data[0].price * parseInt(seats, 10)).toFixed(2) : 0,
-  });
+  }
+
+);
   
 
   return (
+    
     <div className="Form">
+      <ToastProvider
+      placement="top-center"
+      />
       <div className="Form-Button">
         <Button color="primary" variant="shadow" onPress={onOpen}>
           Придбати
@@ -208,7 +225,7 @@ export const Form = () => {
                   </Button>
                   <Button 
                     color="primary" 
-                    onPress={handleConfirm} 
+                    onPress={()=>handleConfirm(onClose)} 
                     isDisabled={!name.trim() || !phone.trim() || !seats.trim() || !!nameError || !!phoneError || !!seatsError || parseInt(seats, 10) < 1}
                   >
                     Підтвердити
