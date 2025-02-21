@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Input, Button, Spacer, Card, Select, SelectItem } from "@nextui-org/react";
+import { Input, Button, Spacer, Card, Select, SelectItem } from "@heroui/react";
 import "./SearchBar.scss";
 
 export const countries = [

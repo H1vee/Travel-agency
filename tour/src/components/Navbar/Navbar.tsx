@@ -2,7 +2,7 @@ import './Navbar.scss'
 import {
   Navbar as NextNavbar, NavbarBrand, NavbarContent,
   NavbarItem, Link,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import {Logo} from "../Logo/Logo";
 
 export const Navbar = () => {

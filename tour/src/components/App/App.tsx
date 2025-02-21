@@ -4,7 +4,7 @@ import {
   Routes,
   Route
 } from "react-router-dom";
-import {NextUIProvider} from "@nextui-org/react";
+import {HeroUIProvider} from "@heroui/react";
 import {Main} from '../../pages/Main/Main';
 import {AboutUs} from '../../pages/AboutUs/AboutUs';
 import {Tours} from '../../pages/Tours/Tours';
@@ -19,7 +19,7 @@ const queryClient = new QueryClient()
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <NextUIProvider>
+      <HeroUIProvider>
         <Router>
           <Routes>
             <Route path="/" element={<Main />} />
@@ -28,7 +28,7 @@ function App() {
             <Route path='/TourDetails/:id' element={<TourDetails />}/>
           </Routes>
         </Router>
-      </NextUIProvider>
+      </HeroUIProvider>
     </QueryClientProvider>
   );
 }

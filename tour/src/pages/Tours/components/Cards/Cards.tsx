@@ -1,4 +1,4 @@
-import {Card, CardFooter, CardBody, Image} from "@nextui-org/react";
+import {Card, CardFooter, CardBody, Image} from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from 'react-router-dom';
 import "./Cards.scss";

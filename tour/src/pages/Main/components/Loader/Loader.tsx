@@ -1,4 +1,4 @@
-import {CircularProgress} from '@nextui-org/react';
+import {CircularProgress} from "@heroui/react";
 import './Loader.scss';
 export const Loader = ()=>{
     return (

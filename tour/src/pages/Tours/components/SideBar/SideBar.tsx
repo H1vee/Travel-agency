@@ -1,4 +1,4 @@
-import {CheckboxGroup, Checkbox, Slider, SliderValue, Input, divider} from "@nextui-org/react";
+import {CheckboxGroup, Checkbox, Slider, SliderValue, Input, divider} from "@heroui/react";
 import "./SideBar.scss";
 import React from "react";
 

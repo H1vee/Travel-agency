@@ -6,8 +6,8 @@ import {
   ModalFooter,
   useDisclosure,
   Button,
-  Input
-} from "@nextui-org/react";
+  Input,
+} from "@heroui/react";
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from "react-router-dom"; 
 import { useState } from "react";

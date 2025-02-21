@@ -1,6 +1,6 @@
 import { Pagination, A11y, Autoplay } from 'swiper/modules';
 import { Swiper as SwiperBase, SwiperSlide } from 'swiper/react';
-import { Button } from '@nextui-org/react';
+import { Button } from "@heroui/react";
 import { useQuery } from '@tanstack/react-query';
 import 'swiper/css';
 import 'swiper/css/pagination';

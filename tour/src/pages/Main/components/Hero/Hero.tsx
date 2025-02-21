@@ -1,7 +1,7 @@
 //import violet from './violet.jpeg';
 import ocean from './violet.jpeg'
 import './Hero.scss';
-import { Button } from '@nextui-org/react';
+import { Button } from "@heroui/react";
 import { Link } from 'react-router-dom';
 export const Hero = () =>{
 
