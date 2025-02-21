@@ -12,6 +12,9 @@ import (
 
 func PostBookings(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
+
+		log.Println("PostBookings triggered")
+
 		var req dto.BookingRequest
 
 		if err := c.Bind(&req); err != nil {
@@ -22,6 +25,7 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 		var availableSeats uint
 		err := db.Raw("SELECT available_seats FROM tour_seats WHERE tour_date_id = ?", req.TourDateID).
 			Scan(&availableSeats).Error
+		log.Printf("🔹 Available seats for tour_date_id %d: %d\n", req.TourDateID, availableSeats)
 		if err != nil {
 			log.Printf("Error checking available seats: %v\n", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -38,7 +42,8 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 			Status:        "pending",
 		}
 
-		if err := db.Create(&booking).Error; err != nil {
+		log.Println("Received tour_date_id:", booking.TourDateID)
+		if err := db.Debug().Create(&booking).Error; err != nil {
 			log.Printf("Error creating booking %v\n", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to create booking"})

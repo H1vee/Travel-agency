@@ -10,6 +10,7 @@ import (
 	tourseats "tour-server/tourseats/api"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -39,6 +40,7 @@ func main() {
 
 	e.POST("/tour/bookings", bookings.PostBookings(database.DB))
 
+	e.Use(middleware.CORS())
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 
 }
