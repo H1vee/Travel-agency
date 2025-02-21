@@ -26,6 +26,7 @@ export const Form = () => {
   const [seats, setSeats] = useState("1");
   const [seatsError, setSeatsError] = useState("");
   const { id } = useParams(); 
+  console.log("Tour ID from URL:", id);
   const { isPending, error, data } = useQuery({
     queryKey: ["tourSeats", id], 
     queryFn: async () => {
@@ -103,20 +104,26 @@ export const Form = () => {
     console.log("Resetting form");
   };
 
+
+ 
+
   const handleConfirm = async () => {
+
     const bookingData = {
-      TourDateID: id,
-      CustomerName: name.trim(),
-      CustomerEmail: email.trim(),  
-      CustomerPhone: phone.trim(),
-      Seats: Number.isNaN(parseInt(seats, 10)) ? 1 : parseInt(seats, 10),
-      TotalPrice: data?.[0]?.price ? (data[0].price * parseInt(seats, 10)).toFixed(2) : 0,
+      tour_date_id: Number(id), 
+      customer_name: name.trim(),
+      customer_email: email.trim(),  
+      customer_phone: phone.trim(),
+      seats: parseInt(seats, 10),
+      total_price: Number(data?.[0]?.price ? (data[0].price * parseInt(seats, 10)).toFixed(2) : 0),
     };
+    
     console.log("BookingData being sent:", bookingData);
 
     try {
       console.log("BookingData being sent:", bookingData);
-      const response = await fetch("/tour/bookings", {
+      console.log(JSON.stringify(bookingData))
+      const response = await fetch("http://127.0.0.1:1323/tour/bookings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -136,6 +143,14 @@ export const Form = () => {
       alert("Помилка при бронюванні. Спробуйте ще раз.");
     }
   };
+  console.log("BookingData being sent:", {
+    tour_date_id: id, 
+    customer_name: name.trim(),
+    customer_email: email.trim(),  
+    customer_phone: phone.trim(),
+    seats: parseInt(seats, 10),
+    total_price: data?.[0]?.price ? (data[0].price * parseInt(seats, 10)).toFixed(2) : 0,
+  });
   
 
   return (
