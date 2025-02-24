@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@heroui/date-picker": "^2.3.10",
-    "@mantine/core": "^7.12.2",
+    "@mantine/core": "^7.16.2",
     "@mantine/hooks": "^7.12.2",
     "@heroui/button": "^2.0.37",
     "@heroui/link": "^2.0.34",
