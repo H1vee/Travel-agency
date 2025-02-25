@@ -19,6 +19,7 @@ func main() {
 	if database.DB == nil {
 		log.Fatal("Database connection is nil")
 	}
+
 	e := echo.New()
 	e.Static("/static", "static")
 
@@ -41,6 +42,7 @@ func main() {
 	e.POST("/tour/bookings", bookings.PostBookings(database.DB))
 
 	e.Use(middleware.CORS())
+
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 
 }
