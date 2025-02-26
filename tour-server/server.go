@@ -5,6 +5,7 @@ import (
 	"net/http"
 	bookings "tour-server/bookings/api"
 	"tour-server/database"
+	search "tour-server/search/api"
 	"tour-server/tour/api"
 	tourcard "tour-server/tourcardimage/api"
 	tourseats "tour-server/tourseats/api"
@@ -40,6 +41,8 @@ func main() {
 	e.GET("/tour-seats/:id", tourseats.GetTourSeatsByTourID(database.DB))
 
 	e.POST("/tour/bookings", bookings.PostBookings(database.DB))
+
+	e.GET("/search", search.SearchTours(database.DB))
 
 	e.Use(middleware.CORS())
 

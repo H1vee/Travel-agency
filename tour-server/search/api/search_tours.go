@@ -23,7 +23,7 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			Where("1=1")
 
 		if searchTitle != "" {
-			query = query.Where("tours.title ILIKE ?", "%"+searchTitle+"%")
+			query = query.Where("searchable_words ILIKE ?", "%"+searchTitle+"%")
 		}
 		if searchPrice != "" {
 			query = query.Where("tours.price = ?", searchPrice)
