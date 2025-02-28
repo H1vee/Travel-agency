@@ -11,7 +11,7 @@ import (
 
 func GetToursForCardsByID(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ids := c.Param("id")
+		ids := c.QueryParam("ids")
 		if db == nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database connection is nil"})
 		}
