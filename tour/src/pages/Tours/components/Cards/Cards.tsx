@@ -11,25 +11,19 @@ interface Tour {
 		imageSrc     :string  
 }
 
-export const Cards : React.FC =()=>{
-    const {isPending,error,data} = useQuery({
-      queryKey : ['toursData'],
-      queryFn: async()=>{
-        const fetched = await fetch('/api/cards');
-        const tours:Tour[] = await fetched.json();
-        return tours;
-      },
-    })
-    
-  if(error){
-    return <p>Error</p>
-  }
-  if (isPending) {
-    return <p>Loading...</p>;
-  }
+interface CardsProps {
+  tours: Tour[];
+  loading: boolean;
+}
+
+export const Cards : React.FC<CardsProps> =({ tours, loading })=>{
+   
+  if (loading) return <p>Loading...</p>;
+  if (tours.length === 0) return <p>Нічого не знайдено</p>;
+
   return(
     <div className="Card">
-      {data.map(tour=> (
+      {tours.map(tour=> (
         <Link to={`/TourDetails/${tour.id}`} key={tour.id} className="Card-link">
         <Card shadow="lg" isPressable className="Card-tour" >
             <CardBody className="Card-body">
@@ -40,7 +34,6 @@ export const Cards : React.FC =()=>{
               alt={tour.title}
               src={`http://127.0.0.1:1323${tour.imageSrc}`}
               className="Card-image"
-              //src="./Taiwan.jpg"
             />
             </CardBody>
             <CardFooter className="Card-footer">
