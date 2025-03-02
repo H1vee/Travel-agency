@@ -16,15 +16,14 @@ interface CardsProps {
 }
 
 export const Cards: React.FC<CardsProps> = ({ tours, loading }) => {
-  // Логируем полученные данные для отладки
+
   console.log("Tours data:", tours);
 
   if (loading) return <p>Loading...</p>;
 
-  // Проверяем, что tours - это массив
   if (!Array.isArray(tours)) return <p>Ошибка загрузки данных</p>;
 
-  if (tours.length === 0) return <p>Нічого не знайдено</p>;
+  if (tours.length === 0) return <p style={{ textAlign: 'center', padding: '20px', fontSize: '1.2rem' }}>Нічого не знайдено</p>;
 
   return (
     <div className="Card">

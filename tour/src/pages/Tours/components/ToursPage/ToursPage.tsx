@@ -16,23 +16,23 @@ export const ToursPage: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Tour[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Запрос всех туров (если нет поиска)
+  
   const { isPending, data: allTours = [] } = useQuery({
     queryKey: ["toursData"],
     queryFn: async () => {
       const res = await fetch("/api/cards");
       if (!res.ok) {
-        throw new Error(`Ошибка загрузки туров: ${res.status}`);
+        throw new Error(`Помилка завантаження турів: ${res.status}`);
       }
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Ответ не JSON");
+        throw new Error("Відповідь не JSON");
       }
       return res.json();
     },
   });
 
-  // Функция поиска туров
+  
   const searchTours = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -42,14 +42,14 @@ export const ToursPage: React.FC = () => {
     setIsSearching(true);
     try {
       const res = await fetch(`/search?title=${encodeURIComponent(query)}`);
-      const ids: { id: number }[] = await res.json(); // Убедитесь, что ids - это массив объектов с полем id
-      console.log("Search results IDs:", ids); // Логируем результаты поиска
+      const ids: { id: number }[] = await res.json(); 
+      console.log("Search results IDs:", ids); 
     
       if (Array.isArray(ids) && ids.length > 0) {
-        const idsString = ids.map((item) => item.id).join(","); // Преобразуем массив объектов в строку чисел
+        const idsString = ids.map((item) => item.id).join(","); 
         const detailsRes = await fetch(`/tours-search-by-ids?ids=${idsString}`);
         const tours: Tour[] = await detailsRes.json();
-        console.log("Tours from search:", tours); // Логируем подробности туров
+        console.log("Tours from search:", tours); 
         setSearchResults(tours);
       } else {
         setSearchResults([]);
@@ -59,7 +59,7 @@ export const ToursPage: React.FC = () => {
       setSearchResults([]);
     }
   };
-  // Запускаем поиск при изменении `searchQuery` (debounce можно добавить)
+  
   useEffect(() => {
     const delaySearch = setTimeout(() => {
       searchTours(searchQuery);
@@ -71,7 +71,10 @@ export const ToursPage: React.FC = () => {
   return (
     <div>
       <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-      <Cards tours={isSearching ? searchResults : allTours} loading={isPending} />
+      <div style={{ minHeight: "850px" }}>
+          <Cards tours={isSearching ? searchResults : allTours} loading={isPending} />
+      </div>
+
     </div>
   );
 };
