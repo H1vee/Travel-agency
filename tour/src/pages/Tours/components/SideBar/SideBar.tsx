@@ -1,11 +1,22 @@
-import {CheckboxGroup, Checkbox, Slider, SliderValue, Input, divider} from "@heroui/react";
-import "./SideBar.scss";
+import {CheckboxGroup, Checkbox, Slider, SliderValue, Input, Button} from "@heroui/react";
 import React from "react";
+import { useState } from "react";
 
-export const SideBar =()=>{
+import "./SideBar.scss";
+
+
+
+interface SideBarProps{
+  onApply: (filters:any) => void;
+  onReset : ( )=> void;
+}
+
+export const SideBar:React.FC<SideBarProps> =({onApply,onReset})=>{
     const minValue = 0
     const maxValue = 20000
     const [sliderValue, setSliderValue] = React.useState([minValue, maxValue]);
+    const [duration, setDuration] = useState<string[]>([]);
+    const [rating, setRating] = useState<string[]>([]);
     const handleSliderChange = (newValue:any) => {
         setSliderValue(newValue);
       };
@@ -20,6 +31,23 @@ export const SideBar =()=>{
         const newMax = Math.max(Number(e.target.value), sliderValue[0]);
         setSliderValue([sliderValue[0], newMax]);
       };
+
+      const handleApply = ()=>{
+        onApply({
+          minPrice : sliderValue[0],
+          maxPrice : sliderValue[1],
+          duration,
+          rating
+        });
+      };
+
+      const handleReset = ()=>{
+        setSliderValue([minValue,maxValue]);
+        setDuration([]);
+        setRating([]);
+        onReset();
+      };
+      
     return(
         
         <div className="SideBar">
@@ -71,6 +99,16 @@ export const SideBar =()=>{
           value={sliderValue}
           onChange={handleSliderChange}
         />
+
+        <div className="SideBar-buttons">
+        <Button onClick={handleApply} color="primary">
+          Застосувати
+        </Button>
+        <Button onClick={handleReset} color="danger" variant="flat">
+          Відмінити
+        </Button>
+        </div>
+
       </div>
     </div>
     );
