@@ -23,13 +23,23 @@ export const SideBar =()=>{
     return(
         
         <div className="SideBar">
-        <CheckboxGroup label="Оберіть тур">
-        <Checkbox value="buenos-aires">Buenos Aires</Checkbox>
-        <Checkbox value="sydney">Sydney</Checkbox>
-        <Checkbox value="san-francisco">San Francisco</Checkbox>
-        <Checkbox value="london">London</Checkbox>
-        <Checkbox value="tokyo">Tokyo</Checkbox>
-      </CheckboxGroup>
+          <div className="SideBar-Duration">
+            <CheckboxGroup label="Оберіть тривалість">
+              <Checkbox value="buenos-aires">5 днів</Checkbox>
+              <Checkbox value="sydney">7 днів</Checkbox>
+            </CheckboxGroup>
+          </div>
+
+          <div className="SideBar-Rating">
+            <CheckboxGroup label="Оберіть рейтинг">
+              <Checkbox value="5">5</Checkbox>
+              <Checkbox value="4">4</Checkbox>
+              <Checkbox value="3">3</Checkbox>
+              <Checkbox value="2">2</Checkbox>
+              <Checkbox value="1">1</Checkbox>
+            </CheckboxGroup>
+          </div>
+
       <div className="SideBar-slider">
         <div className="SliderBar-inputs">
             <Input
