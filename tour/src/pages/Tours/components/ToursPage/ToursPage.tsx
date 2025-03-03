@@ -64,7 +64,11 @@ export const ToursPage: React.FC = () => {
         const idsString = ids.map((item) => item.id).join(",");
         const detailsRes = await fetch(`/tours-search-by-ids?ids=${idsString}`);
         const tours: Tour[] = await detailsRes.json();
+  
+        console.log("Отримані тури після пошуку:", tours);
+        
         setSearchResults(tours);
+        setIsSearching(true);
       } else {
         setSearchResults([]);
       }

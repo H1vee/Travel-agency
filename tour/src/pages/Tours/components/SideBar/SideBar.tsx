@@ -101,10 +101,10 @@ export const SideBar:React.FC<SideBarProps> =({onApply,onReset})=>{
         />
 
         <div className="SideBar-buttons">
-        <Button onClick={handleApply} color="primary">
+        <Button onPress={handleApply} color="primary">
           Застосувати
         </Button>
-        <Button onClick={handleReset} color="danger" variant="flat">
+        <Button onPress={handleReset} color="danger" variant="flat">
           Відмінити
         </Button>
         </div>
