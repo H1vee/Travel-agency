@@ -8,4 +8,12 @@
         margin-top: 20px; 
     }
     
+    &-Actions{
+        display: flex;
+        justify-content: space-between;
+        margin-top: 15px;
+    }
+    &-Actions button {
+        width: 48%; 
+    }
 }
