@@ -83,7 +83,7 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
           label="Ціна"
           maxValue={maxValue}
           minValue={minValue}
-          step={1}
+          step={100}
           value={sliderValue}
           onChange={handleSliderChange}
           size="sm"

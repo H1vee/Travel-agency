@@ -18,6 +18,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, setSearchQuer
         onChange={(e) => setSearchQuery(e.target.value)}
         size="lg"
         className="search-input"
+        onClear={()=>setSearchQuery("")}
       />
     </div>
   );

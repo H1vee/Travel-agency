@@ -49,9 +49,12 @@ export const ToursPage: React.FC = () => {
     if (filters.rating?.length) {
       params.append("rating", filters.rating.join(","));
     }
+
+    const searchUrl = `/search?${params.toString()}`;
+    console.log("Запит:", searchUrl);
   
     if (!params.toString()) {
-      setSearchResults(allTours);
+      setSearchResults([]);
       setIsSearching(false);
       return;
     }
@@ -71,6 +74,7 @@ export const ToursPage: React.FC = () => {
         setIsSearching(true);
       } else {
         setSearchResults([]);
+        setIsSearching(true);
       }
     } catch (error) {
       console.error("Помилка під час пошуку:", error);
