@@ -50,7 +50,7 @@ export const ToursPage: React.FC = () => {
     
     if (filters.rating?.length) {
       if (filters.rating.length === 1) {
-        params.append("minRating", String(filters.rating[0]));
+        params.append("maxRating", String(filters.rating[0]));
       } else {
         const minRating = Math.min(...filters.rating);
         const maxRating = Math.max(...filters.rating);
@@ -91,6 +91,18 @@ export const ToursPage: React.FC = () => {
     }
   };
 
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>)=>{
+    if (e.key ==="Enter"){
+      searchTours();
+    }
+  };
+
+  const handleSearchClear = () => {
+    setSearchResults(allTours);
+    setIsSearching(false);
+  };
+
   useEffect(() => {
     const hasFilters = Object.values(filters).some(value => 
       Array.isArray(value) ? value.length > 0 : value
@@ -103,12 +115,12 @@ export const ToursPage: React.FC = () => {
       setSearchResults(allTours);
       setIsSearching(false);
     }
-  }, [searchQuery, filters, allTours]);
+  }, [filters, allTours]);
 
   return (
     <div className="ToursPage">
       <div className="ToursPage-SearchBar">
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onKeyDown={handleKeyDown} onSearchClear={handleSearchClear}/>
       </div>
       <div className="ToursPage-SideBar">
         <SideBar onApply={setFilters} onReset={() => setFilters({})} />

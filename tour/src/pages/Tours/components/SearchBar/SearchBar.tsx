@@ -5,9 +5,16 @@ import "./SearchBar.scss";
 interface SearchBarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  onKeyDown : (e: React.KeyboardEvent<HTMLInputElement>)=>void;
+  onSearchClear : ()=>void;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, setSearchQuery }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, setSearchQuery,onKeyDown,onSearchClear }) => {
+
+  const onClearSearch = () => {
+    setSearchQuery("");
+    onSearchClear();
+  };
   return (
     <div className="search-bar-body">
       <Input
@@ -16,9 +23,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, setSearchQuer
         placeholder="Введіть запит"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={onKeyDown}
         size="lg"
         className="search-input"
-        onClear={()=>setSearchQuery("")}
+        onClear={()=>onClearSearch()}
       />
     </div>
   );
