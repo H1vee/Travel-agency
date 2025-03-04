@@ -7,9 +7,16 @@ export const Tours =()=>{
 
     return (
         <div className="Tours">
-            <Navbar />
-                <ToursPage></ToursPage>
-            <Footer></Footer>
+            <div className="Tours-Navbar">
+               <Navbar /> 
+            </div>
+            <div className="Tours-Page">
+              <ToursPage/>  
+            </div>
+            <div className="Tours-Footer">
+              <Footer/>   
+            </div>
+           
         </div>
     )
 };
