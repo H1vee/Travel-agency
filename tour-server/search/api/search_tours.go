@@ -14,21 +14,19 @@ import (
 func SearchTours(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		searchTitle := c.QueryParam("title")
-		searchRating := c.QueryParam("rating")
 		searchDuration := c.QueryParam("duration")
-
-		// Получаем minPrice и maxPrice, но сначала проверяем их
 		minPriceStr := c.QueryParam("minPrice")
 		maxPriceStr := c.QueryParam("maxPrice")
+		minRatingStr := c.QueryParam("minRating")
+		maxRatingStr := c.QueryParam("maxRating")
 
-		// Конвертация строк в числа
-		var minPrice, maxPrice int
+		var minPrice, maxPrice, minRating, maxRating int
 		var err error
 
 		if minPriceStr != "" {
 			minPrice, err = strconv.Atoi(minPriceStr)
 			if err != nil {
-				log.Println("Ошибка конвертации minPrice:", err)
+				log.Println("Помилка конвертації minPrice:", err)
 				return c.JSON(http.StatusBadRequest, map[string]string{
 					"error": "Invalid minPrice format",
 				})
@@ -38,9 +36,29 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 		if maxPriceStr != "" {
 			maxPrice, err = strconv.Atoi(maxPriceStr)
 			if err != nil {
-				log.Println("Ошибка конвертации maxPrice:", err)
+				log.Println("Помилка конвертації maxPrice:", err)
 				return c.JSON(http.StatusBadRequest, map[string]string{
 					"error": "Invalid maxPrice format",
+				})
+			}
+		}
+
+		if minRatingStr != "" {
+			minRating, err = strconv.Atoi(minRatingStr)
+			if err != nil || minRating < 1 || minRating > 5 {
+				log.Println("Помилка конвертації minRating:", err)
+				return c.JSON(http.StatusBadRequest, map[string]string{
+					"error": "Invalid minRating format",
+				})
+			}
+		}
+
+		if maxRatingStr != "" {
+			maxRating, err = strconv.Atoi(maxRatingStr)
+			if err != nil || maxRating < 1 || maxRating > 5 {
+				log.Println("Помилка конвертації maxRating:", err)
+				return c.JSON(http.StatusBadRequest, map[string]string{
+					"error": "Invalid maxRating format",
 				})
 			}
 		}
@@ -62,8 +80,11 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 		if maxPriceStr != "" {
 			query = query.Where("tours.price <= ?", maxPrice)
 		}
-		if searchRating != "" {
-			query = query.Where("tours.rating = ?", searchRating)
+		if minRatingStr != "" {
+			query = query.Where("tours.rating >= ?", minRating)
+		}
+		if maxRatingStr != "" {
+			query = query.Where("tours.rating <= ?", maxRating)
 		}
 		if searchDuration != "" {
 			query = query.Where("tour_dates.duration = make_interval(days := ?)", searchDuration)
