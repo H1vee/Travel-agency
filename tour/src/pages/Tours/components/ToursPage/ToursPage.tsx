@@ -38,18 +38,27 @@ export const ToursPage: React.FC = () => {
       params.append("title", searchQuery);
     }
     if (filters.minPrice) {
-      params.append("minPrice", filters.minPrice);
+      params.append("minPrice", String(filters.minPrice));
     }
     if (filters.maxPrice) {
-      params.append("maxPrice", filters.maxPrice);
+      params.append("maxPrice", String(filters.maxPrice));
     }
     if (filters.duration?.length) {
       params.append("duration", filters.duration.join(","));
     }
+  
+    
     if (filters.rating?.length) {
-      params.append("rating", filters.rating.join(","));
+      if (filters.rating.length === 1) {
+        params.append("minRating", String(filters.rating[0]));
+      } else {
+        const minRating = Math.min(...filters.rating);
+        const maxRating = Math.max(...filters.rating);
+        params.append("minRating", String(minRating));
+        params.append("maxRating", String(maxRating));
+      }
     }
-
+  
     const searchUrl = `/search?${params.toString()}`;
     console.log("Запит:", searchUrl);
   
@@ -60,7 +69,7 @@ export const ToursPage: React.FC = () => {
     }
   
     try {
-      const res = await fetch(`/search?${params.toString()}`);
+      const res = await fetch(searchUrl);
       const ids: { id: number }[] = await res.json();
   
       if (Array.isArray(ids) && ids.length > 0) {
@@ -69,7 +78,7 @@ export const ToursPage: React.FC = () => {
         const tours: Tour[] = await detailsRes.json();
   
         console.log("Отримані тури після пошуку:", tours);
-        
+  
         setSearchResults(tours);
         setIsSearching(true);
       } else {

@@ -64,7 +64,11 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
         <CheckboxGroup
           label="Оберіть рейтинг"
           value={selectedRatings}
-          onChange={setSelectedRatings}
+          onChange={(newRatings) => {
+            if (newRatings.length <= 2) {
+              setSelectedRatings(newRatings);
+            }
+          }}
         >
           <Checkbox value="5">5</Checkbox>
           <Checkbox value="4">4</Checkbox>
