@@ -1,67 +1,104 @@
-import {CheckboxGroup, Checkbox, Slider, SliderValue, Input, divider} from "@heroui/react";
+import { CheckboxGroup, Checkbox, Slider, Input, Button } from "@heroui/react";
+import React, { useState } from "react";
 import "./SideBar.scss";
-import React from "react";
 
-export const SideBar =()=>{
-    const minValue = 0
-    const maxValue = 20000
-    const [sliderValue, setSliderValue] = React.useState([minValue, maxValue]);
-    const handleSliderChange = (newValue:any) => {
-        setSliderValue(newValue);
-      };
-    
+interface SideBarProps {
+  onApply: (filters: any) => void;
+  onReset: () => void;
+}
 
-      const handleMinInputChange = (e:any) => {
-        const newMin = Math.min(Number(e.target.value), sliderValue[1]);
-        setSliderValue([newMin, sliderValue[1]]);
-      };
-    
-      const handleMaxInputChange = (e:any) => {
-        const newMax = Math.max(Number(e.target.value), sliderValue[0]);
-        setSliderValue([sliderValue[0], newMax]);
-      };
-    return(
-        
-        <div className="SideBar">
-        <CheckboxGroup label="Оберіть тур">
-        <Checkbox value="buenos-aires">Buenos Aires</Checkbox>
-        <Checkbox value="sydney">Sydney</Checkbox>
-        <Checkbox value="san-francisco">San Francisco</Checkbox>
-        <Checkbox value="london">London</Checkbox>
-        <Checkbox value="tokyo">Tokyo</Checkbox>
-      </CheckboxGroup>
+export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
+  const minValue = 0;
+  const maxValue = 20000;
+  const [sliderValue, setSliderValue] = useState([minValue, maxValue]);
+  const [selectedDurations, setSelectedDurations] = useState<string[]>([]);
+  const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
+
+  
+  const handleSliderChange = (newValue: any) => {
+    setSliderValue(newValue);
+  };
+
+  const handleMinInputChange = (e: any) => {
+    const newMin = Math.min(Number(e.target.value), sliderValue[1]);
+    setSliderValue([newMin, sliderValue[1]]);
+  };
+
+  const handleMaxInputChange = (e: any) => {
+    const newMax = Math.max(Number(e.target.value), sliderValue[0]);
+    setSliderValue([sliderValue[0], newMax]);
+  };
+
+  
+  const applyFilters = () => {
+    onApply({
+      minPrice: sliderValue[0] !== minValue ? sliderValue[0] : undefined,
+      maxPrice: sliderValue[1] !== maxValue ? sliderValue[1] : undefined,
+      duration: selectedDurations.length ? selectedDurations : undefined,
+      rating: selectedRatings.length ? selectedRatings : undefined,
+    });
+  };
+
+  
+  const resetFilters = () => {
+    setSliderValue([minValue, maxValue]);
+    setSelectedDurations([]);
+    setSelectedRatings([]);
+    onReset();
+  };
+
+  return (
+    <div className="SideBar">
+      <div className="SideBar-Duration">
+        <CheckboxGroup
+          label="Оберіть тривалість"
+          value={selectedDurations}
+          onChange={setSelectedDurations}
+        >
+          <Checkbox value="5">5 днів</Checkbox>
+          <Checkbox value="7">7 днів</Checkbox>
+        </CheckboxGroup>
+      </div>
+
+      <div className="SideBar-Rating">
+        <CheckboxGroup
+          label="Оберіть рейтинг"
+          value={selectedRatings}
+          onChange={(newRatings) => {
+            if (newRatings.length <= 2) {
+              setSelectedRatings(newRatings);
+            }
+          }}
+        >
+          <Checkbox value="5">5</Checkbox>
+          <Checkbox value="4">4</Checkbox>
+          <Checkbox value="3">3</Checkbox>
+          <Checkbox value="2">2</Checkbox>
+          <Checkbox value="1">1</Checkbox>
+        </CheckboxGroup>
+      </div>
+
       <div className="SideBar-slider">
         <div className="SliderBar-inputs">
-            <Input
-                endContent={
-                    <div className="pointer-events-none flex items-center">
-                        <span className="text-default-400 text-small">₴</span>
-                    </div>
-                    }
-            value={sliderValue[0].toString()}
-            onChange={handleMinInputChange}
-            />
-            <Input
-                endContent={
-                    <div className="pointer-events-none flex items-center">
-                        <span className="text-default-400 text-small">₴</span>
-                    </div>
-                    }
-              value={sliderValue[1].toString()}
-              onChange={handleMaxInputChange}
-            />
+          <Input value={sliderValue[0].toString()} onChange={handleMinInputChange} />
+          <Input value={sliderValue[1].toString()} onChange={handleMaxInputChange} />
         </div>
         <Slider
           label="Ціна"
           maxValue={maxValue}
           minValue={minValue}
-          step={0.01}
-          size="sm"
-          formatOptions={{style: "currency", currency: "UAH"}}
+          step={100}
           value={sliderValue}
           onChange={handleSliderChange}
+          size="sm"
         />
       </div>
+
+
+      <div className="SideBar-Actions">
+        <Button onPress={resetFilters} color="default" variant="light">Відмінити</Button>
+        <Button onPress={applyFilters} color="primary" variant="flat">Застосувати</Button>
+      </div>
     </div>
-    );
-}
+  );
+};

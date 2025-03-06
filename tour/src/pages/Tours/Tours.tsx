@@ -1,21 +1,22 @@
 import {Navbar} from '../../components/Navbar/Navbar';
-import {Cards} from './components/Cards/Cards';
-import {SearchBar} from './components/SearchBar/SearchBar';
-import {SideBar} from './components/SideBar/SideBar';
 import {Footer} from '../Main/components/Footer/Footer'
+import {ToursPage} from './components/ToursPage/ToursPage'
 import './Tours.scss';
 
 export const Tours =()=>{
 
     return (
         <div className="Tours">
-            <Navbar />
-            <SearchBar/>
-            <div className="Tours-content">
-                <SideBar/>
-                <Cards />  
+            <div className="Tours-Navbar">
+               <Navbar /> 
             </div>
-            <Footer></Footer>
+            <div className="Tours-Page">
+              <ToursPage/>  
+            </div>
+            <div className="Tours-Footer">
+              <Footer/>   
+            </div>
+           
         </div>
     )
 };

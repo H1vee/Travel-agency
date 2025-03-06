@@ -3,14 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@heroui/date-picker": "^2.3.10",
-    "@mantine/core": "^7.12.2",
-    "@mantine/hooks": "^7.12.2",
     "@heroui/button": "^2.0.37",
+    "@heroui/date-picker": "^2.3.10",
     "@heroui/link": "^2.0.34",
     "@heroui/navbar": "^2.0.36",
     "@heroui/react": "^2.4.6",
+
     "@tanstack/react-query": "^5.66.0",
+    "@mantine/core": "^7.12.2",
+    "@mantine/hooks": "^7.12.2",
+
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -29,8 +31,9 @@
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
+  "proxy": "http://127.0.0.1:1323",
   "scripts": {
-    "start": "PORT=3006 HOST=127.0.0.1 react-scripts start",
+    "start": "PORT=3006 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

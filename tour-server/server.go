@@ -5,6 +5,7 @@ import (
 	"net/http"
 	bookings "tour-server/bookings/api"
 	"tour-server/database"
+	search "tour-server/search/api"
 	"tour-server/tour/api"
 	tourcard "tour-server/tourcardimage/api"
 	tourseats "tour-server/tourseats/api"
@@ -19,6 +20,7 @@ func main() {
 	if database.DB == nil {
 		log.Fatal("Database connection is nil")
 	}
+
 	e := echo.New()
 	e.Static("/static", "static")
 
@@ -40,7 +42,12 @@ func main() {
 
 	e.POST("/tour/bookings", bookings.PostBookings(database.DB))
 
+	e.GET("/search", search.SearchTours(database.DB))
+
+	e.GET("tours-search-by-ids", api.GetToursForCardsByID(database.DB))
+
 	e.Use(middleware.CORS())
+
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
 
 }

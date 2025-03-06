@@ -1,0 +1,25 @@
+.ToursPage {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 100vh;
+  }
+  
+  .ToursPage-SearchBar {
+    width: 100%;
+  }
+  
+  .ToursPage-SideBar {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  
+  .SideBar {
+    width: 200px; 
+  }
+  
+  .ToursPage-Cards {
+    flex-grow: 1; 
+  }
+  

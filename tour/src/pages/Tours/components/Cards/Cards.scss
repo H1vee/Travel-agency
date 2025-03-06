@@ -5,6 +5,7 @@
     justify-content: center; 
     margin-top: 30px;
     
+
     @media (max-width: 1024px) {
         grid-template-columns: repeat(2, minmax(300px, 1fr));
         gap: 30px;

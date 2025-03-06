@@ -3,7 +3,7 @@ package models
 type Tour struct {
 	ID       uint    `json:"tour_id"`
 	Title    string  `json:"title"`
-	Rating   float64 `json:"rating"`
+	Rating   float32 `json:"rating"`
 	Duration int     `json:"duration"`
-	Price    float64 `json:"price"`
+	Price    float32 `json:"price"`
 }
