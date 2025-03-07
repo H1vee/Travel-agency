@@ -46,6 +46,8 @@ func main() {
 
 	e.GET("tours-search-by-ids", api.GetToursForCardsByID(database.DB))
 
+	e.GET("/tour-carousel/:id", api.GetToursCarouselByID(database.DB))
+
 	e.Use(middleware.CORS())
 
 	e.Logger.Fatal(e.Start("127.0.0.1:1323"))
