@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation'
+import './TourSwiper.scss'
 import { useParams } from 'react-router';
 
 interface Tour {
