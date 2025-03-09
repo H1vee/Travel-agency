@@ -1,7 +1,7 @@
 import {Navbar} from '../../components/Navbar/Navbar';
 import { TourSwiper } from './components/Swiper/TourSwiper';
 import { InfoSide } from './components/InfoSide/InfoSide';
-import { TourDescriber } from './components/TourDescriber/TourDescriber';
+import {Footer} from '../Main/components/Footer/Footer'
 
 import './TourDetails.scss'
 export const TourDetails =()=>{
@@ -15,11 +15,12 @@ export const TourDetails =()=>{
           </div>
           <div className="TourDetails-side">
             <InfoSide />
-
           </div>
         </div>
         <div className="TourDetails-describer">
-          <TourDescriber />
+        </div>
+        <div className="TourDetails-footer">
+          <Footer/>
         </div>
       </div>
     </div>

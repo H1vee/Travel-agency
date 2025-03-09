@@ -2,6 +2,7 @@ import { Card, CardBody, CardHeader, Button } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom"; 
 import { Form } from "../Form/Form";
+import "./InfoSide.scss"
 
 export const InfoSide = () => {
   const { id } = useParams(); 
