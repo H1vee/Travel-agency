@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Cards } from "../Cards/Cards";
 import { SearchBar } from "../SearchBar/SearchBar";
 import { SideBar } from "../SideBar/SideBar";
-
-import "./ToursPage.scss"
+import { Pagination } from "@heroui/react";
+import "./ToursPage.scss";
 
 interface Tour {
   id: number;
@@ -19,13 +19,17 @@ export const ToursPage: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Tour[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [filters, setFilters] = useState<any>({});
+  
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12); 
 
   const { isPending, data: allTours = [] } = useQuery({
     queryKey: ["toursData"],
     queryFn: async () => {
       const res = await fetch("/api/cards");
       if (!res.ok) {
-        throw new Error(`Помилка завантаження турів: ${res.status}`);
+        throw new Error(`Ошибка загрузки туров: ${res.status}`);
       }
       return res.json();
     },
@@ -47,7 +51,6 @@ export const ToursPage: React.FC = () => {
       params.append("duration", filters.duration.join(","));
     }
   
-    
     if (filters.rating?.length) {
       if (filters.rating.length === 1) {
         params.append("maxRating", String(filters.rating[0]));
@@ -60,7 +63,7 @@ export const ToursPage: React.FC = () => {
     }
   
     const searchUrl = `/search?${params.toString()}`;
-    console.log("Запит:", searchUrl);
+    console.log("Запрос:", searchUrl);
   
     if (!params.toString()) {
       setSearchResults([]);
@@ -77,7 +80,7 @@ export const ToursPage: React.FC = () => {
         const detailsRes = await fetch(`/tours-search-by-ids?ids=${idsString}`);
         const tours: Tour[] = await detailsRes.json();
   
-        console.log("Отримані тури після пошуку:", tours);
+        console.log("Полученные туры после поиска:", tours);
   
         setSearchResults(tours);
         setIsSearching(true);
@@ -86,14 +89,13 @@ export const ToursPage: React.FC = () => {
         setIsSearching(true);
       }
     } catch (error) {
-      console.error("Помилка під час пошуку:", error);
+      console.error("Ошибка при поиске:", error);
       setSearchResults([]);
     }
   };
 
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>)=>{
-    if (e.key ==="Enter"){
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
       searchTours();
     }
   };
@@ -104,7 +106,7 @@ export const ToursPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const hasFilters = Object.values(filters).some(value => 
+    const hasFilters = Object.values(filters).some((value) =>
       Array.isArray(value) ? value.length > 0 : value
     );
   
@@ -117,16 +119,34 @@ export const ToursPage: React.FC = () => {
     }
   }, [filters, allTours]);
 
+  
+  const indexOfLastTour = currentPage * itemsPerPage;
+  const indexOfFirstTour = indexOfLastTour - itemsPerPage;
+  const currentTours = (isSearching ? searchResults : allTours).slice(indexOfFirstTour, indexOfLastTour);
+
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="ToursPage">
       <div className="ToursPage-SearchBar">
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onKeyDown={handleKeyDown} onSearchClear={handleSearchClear}/>
+        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onKeyDown={handleKeyDown} onSearchClear={handleSearchClear} />
       </div>
       <div className="ToursPage-SideBar">
         <SideBar onApply={setFilters} onReset={() => setFilters({})} />
         <div className="ToursPage-Cards">
-          <Cards tours={isSearching ? searchResults : allTours} loading={isPending} />
+          <Cards tours={currentTours} loading={isPending} />
         </div>
+      </div>
+      
+      <div className="ToursPage-Pagination">
+        <Pagination
+          initialPage={1}
+          total={Math.ceil((isSearching ? searchResults.length : allTours.length) / itemsPerPage)}
+          onChange={handlePageChange}
+        />
       </div>
     </div>
   );

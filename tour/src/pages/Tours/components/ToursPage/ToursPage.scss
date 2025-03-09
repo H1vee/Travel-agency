@@ -1,25 +1,26 @@
 .ToursPage {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 100vh;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 85vh;
   
-  .ToursPage-SearchBar {
+  &-SearchBar {
     width: 100%;
   }
   
-  .ToursPage-SideBar {
+  &-SideBar {
     display: flex;
     gap: 20px;
     align-items: flex-start;
+    flex-grow: 1;  
   }
   
-  .SideBar {
-    width: 200px; 
-  }
-  
-  .ToursPage-Cards {
+  &-Cards {
     flex-grow: 1; 
   }
-  
+
+  &-Pagination {
+    align-self: center; 
+    margin-top: 20px; 
+  }
+}
