@@ -146,6 +146,10 @@ export const ToursPage: React.FC = () => {
           initialPage={1}
           total={Math.ceil((isSearching ? searchResults.length : allTours.length) / itemsPerPage)}
           onChange={handlePageChange}
+          showControls
+          loop
+          showShadow
+          size="md"
         />
       </div>
     </div>
