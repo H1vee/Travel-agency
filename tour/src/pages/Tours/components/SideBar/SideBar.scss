@@ -1,27 +1,174 @@
-.SideBar{
+.SideBar {
     position: relative;
     top: 30px;
     background: #fff;
     margin-left: 20px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); 
-    padding: 15px;
-    border-radius: 15px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    border-radius: 12px;
     width: 50%;
-    height: 50%;
-    max-width: 250px;
-
-    &-slider{
-        max-width: 200px; 
-        width: 100%; 
-        margin-top: 20px; 
+    max-width: 280px;
+    height: auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      
+      h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+      }
     }
     
-    &-Actions{
-        display: flex;
-        justify-content: space-between;
-        margin-top: 15px;
+    &-reset-link {
+      background: none;
+      border: none;
+      font-size: 13px;
+      color: #2c7be5;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
     }
-    &-Actions button {
-        width: 48%; 
+    
+    &-section {
+      margin-bottom: 20px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
     }
-}
+    
+    &-section-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 12px;
+      color: #333;
+    }
+    
+    &-slider {
+      max-width: 100%;
+      width: 100%;
+      margin-top: 6px;
+      
+      &-control {
+        margin-bottom: 16px;
+      }
+    }
+    
+    &-inputs {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    
+    &-input-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      
+      label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+      }
+    }
+    
+    &-input {
+      width: 100%;
+      font-size: 14px;
+    }
+    
+    &-checkbox-group {
+      width: 100%;
+    }
+    
+    &-checkbox {
+      margin-bottom: 10px;
+      font-size: 14px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+    
+    &-ratings {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    
+    &-rating {
+      display: flex;
+      align-items: center;
+      
+      .stars {
+        color: #ffc107;
+        letter-spacing: -2px;
+      }
+      
+      .empty-stars {
+        color: #e0e0e0;
+        letter-spacing: -2px;
+      }
+    }
+    
+    &-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 28px;
+      gap: 10px;
+    }
+    
+    &-btn-reset, &-btn-apply {
+      flex: 1;
+      min-height: 36px;
+      font-size: 14px;
+      
+      &:focus {
+        box-shadow: none;
+      }
+    }
+    
+    &-btn-apply {
+      background-color: #2c7be5;
+      color: white;
+      
+      &:hover {
+        background-color: #2368c4;
+      }
+    }
+    
+    &-btn-reset {
+      border-color: #d9d9d9;
+      color: #555;
+      
+      &:hover {
+        background-color: #f5f5f5;
+        border-color: #c4c4c4;
+      }
+    }
+  }
+  
+
+  @media (max-width: 768px) {
+    .SideBar {
+      max-width: 100%;
+      width: calc(100% - 40px);
+      margin-left: 0;
+      margin-right: 0;
+      margin-bottom: 20px;
+    }
+  }

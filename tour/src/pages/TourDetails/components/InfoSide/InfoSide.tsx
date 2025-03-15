@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { Form } from "../Form/Form";
 import "./InfoSide.scss";
 
-// Define interface for the tour data
+
 interface TourData {
   id: string;
   title: string;
@@ -16,7 +16,7 @@ interface TourData {
   duration: number;
   availableSeats: number;
   totalSeats: number;
-  detailed_description: string;
+  detailedDescription: string;
   datefrom: string;
   dateto: string;
 }
@@ -43,21 +43,22 @@ export const InfoSide = () => {
   if (error) return <p className="error-state">Error: {error.message}</p>;
   if (!data) return <p className="not-found-state">Tour not found</p>;
 
-  // Calculate seats percentage for progress bar
+  
   const seatsPercentage = Math.round(((data.totalSeats - data.availableSeats) / data.totalSeats) * 100);
   
-  // Determine status class
+  
   const getStatusClass = (status: string): string => {
     switch(status.toLowerCase()) {
       case 'available': return 'available';
       case 'pending': return 'pending';
       case 'completed': return 'completed';
       case 'cancelled': return 'cancelled';
+      case 'active': return 'available'; 
       default: return '';
     }
   };
   
-  // Generate rating stars
+  
   const renderRatingStars = (rating: number): JSX.Element => {
     const stars = [];
     const roundedRating = Math.round(rating);
@@ -75,59 +76,56 @@ export const InfoSide = () => {
 
   return (
     <div className="InfoSide">
-      <Card key={data.id} className="Card">
-        <CardHeader className="CardHeader">
-          <h2>{data.title}</h2>
+      <Card key={data.id} className="InfoSide-Card">
+        <CardHeader className="InfoSide-CardHeader">
+          <h2 className="InfoSide-title">{data.title}</h2>
+          <h3 className="InfoSide-tourCountry">{data.country}</h3>
         </CardHeader>
-        <CardBody className="CardBody">
-          <h3>{data.country}</h3>
-          
-          <div className="info-row">
-            <div className="info-item">
-              <div className="label">Rating</div>
-              <div className="value">
+        <CardBody className="InfoSide-CardBody">
+          <div className="InfoSide-column">
+            <div className="InfoSide-item">
+              <div className="InfoSide-label">Рейтинг</div>
+              <div className="InfoSide-value">
                 {data.rating} {renderRatingStars(data.rating)}
               </div>
             </div>
             
-            <div className="info-item">
-              <div className="label">Status</div>
-              <div className="value">
-                <span className={`status-badge ${getStatusClass(data.status)}`}>
+            <div className="InfoSide-item">
+              <div className="InfoSide-label">Статус</div>
+              <div className="InfoSide-value">
+                <span className={`InfoSide-statusBadge ${getStatusClass(data.status)}`}>
                   {data.status}
                 </span>
               </div>
             </div>
-          </div>
-          
-          <div className="info-row">
-            <div className="info-item">
-              <div className="label">Dates</div>
-              <div className="value">
+            
+            <div className="InfoSide-item">
+              <div className="InfoSide-label">Дати</div>
+              <div className="InfoSide-value">
                 {data.date_from.toLocaleDateString("uk-UA")} - {data.date_to.toLocaleDateString("uk-UA")}
               </div>
             </div>
             
-            <div className="info-item">
-              <div className="label">Duration</div>
-              <div className="value">{data.duration} days</div>
+            <div className="InfoSide-item">
+              <div className="InfoSide-label">Тривалість</div>
+              <div className="InfoSide-value">{data.duration} days</div>
             </div>
-          </div>
-          
-          <div className="info-item">
-            <div className="label">Available Seats</div>
-            <div className="value seats-availability">
-              <span>{data.availableSeats}</span>
-              <div className="progress-bar">
-                <div className="progress" style={{ width: `${seatsPercentage}%` }}></div>
+            
+            <div className="InfoSide-item">
+              <div className="InfoSide-label">Доступні місця</div>
+              <div className="InfoSide-value InfoSide-seatsAvailability">
+                <span>{data.availableSeats}</span>
+                <div className="InfoSide-progressBar">
+                  <div className="InfoSide-progress" style={{ width: `${seatsPercentage}%` }}></div>
+                </div>
+                <span>{data.totalSeats}</span>
               </div>
-              <span>{data.totalSeats}</span>
             </div>
           </div>
           
-          <div className="description">
-            <div className="description-label">Description:</div>
-            <div className="description-content">{data.detailed_description}</div>
+          <div className="InfoSide-description">
+            <div className="InfoSide-descriptionLabel">Опис:</div>
+            <div className="InfoSide-descriptionContent">{data.detailedDescription}</div>
           </div>
           
           <Form />

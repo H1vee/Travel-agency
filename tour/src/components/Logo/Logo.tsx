@@ -1,8 +1,14 @@
 import logo from './plane.png';
 import './Logo.scss';
 
-export const Logo = () => {
+interface LogoProps {
+  className?: string;
+}
+
+export const Logo = ({ className }: LogoProps = {}) => {
   return (
-    <div className={'Logo'} style={{backgroundImage: `url(${logo})`}} />
+    <div className={`Logo ${className || ''}`}>
+      <img src={logo} alt="Plane Logo" />
+    </div>
   );
 };

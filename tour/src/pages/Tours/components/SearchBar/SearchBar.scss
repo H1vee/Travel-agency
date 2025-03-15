@@ -1,35 +1,120 @@
-.search-bar {
-  max-width: 1000px;
+.search-container {
+  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
-  padding: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Добавление тени */
-  border: 1px solid #ddd; /* Эмуляция свойства "bordered" */
-  border-radius: 8px;
+  padding: 12px 0;
 }
 
-.search-bar-body {
-  padding: 20px;
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 4px 8px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  
+  &:hover, &:focus-within {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+  }
 }
 
-.search-title {
-  text-align: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
+.search-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  padding: 0 8px 0 12px;
 }
 
-/* Добавьте фиксированный или адаптивный размер для строки поиска */
 .search-input {
-  width: 500px; /* Установите фиксированную ширину */
-  max-width: 100%; /* Адаптивность на маленьких экранах */
-  margin: 0 auto; /* Центрирование */
+  flex: 1;
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 12px 0;
+  font-size: 16px;
+  color: #333;
+  background-color: transparent;
+  
+  &::placeholder {
+    color: #999;
+    font-size: 15px;
+  }
 }
 
-.search-button {
-  background: linear-gradient(90deg, #007BFF, #0056D2);
-  color: white;
+.search-input-wrapper {
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  
+  &:focus-within {
+    box-shadow: none !important;
+  }
+}
 
+.search-inner-wrapper {
+  padding: 0 !important;
+}
+
+.search-clear-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  margin-right: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #666;
+  transition: background-color 0.2s ease;
+  
   &:hover {
-      background: linear-gradient(90deg, #0056D2, #003E9A);
+    background-color: #f0f0f0;
+    color: #333;
+  }
+}
+
+.search-info {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: #666;
+  
+  strong {
+    color: #333;
+    font-weight: 600;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .search-container {
+    padding: 12px;
+  }
+  
+  .search-bar {
+    border-radius: 8px;
+  }
+  
+  .search-input {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-icon {
+    padding: 0 4px 0 8px;
+  }
+  
+  .search-input {
+    padding: 10px 0;
+    font-size: 14px;
   }
 }

@@ -16,9 +16,27 @@ interface CardsProps {
 }
 
 export const Cards: React.FC<CardsProps> = ({ tours, loading }) => {
-  if (loading) return <p>Loading...</p>;
-  if (!Array.isArray(tours)) return <p>Помилка завантаження даних</p>;
-  if (tours.length === 0) return <p style={{ textAlign: 'center', padding: '20px', fontSize: '1.2rem' }}>Нічого не знайдено</p>;
+  if (loading) return (
+    <div className="loading-container">
+      <div className="loading-spinner"></div>
+      <p>Loading tours...</p>
+    </div>
+  );
+  
+  if (!Array.isArray(tours)) return (
+    <div className="error-message">
+      <p>Помилка завантаження даних</p>
+      <button className="retry-button">Спробувати знову</button>
+    </div>
+  );
+  
+  if (tours.length === 0) return (
+    <div className="empty-state">
+      <div className="empty-icon">🔍</div>
+      <p>Нічого не знайдено</p>
+      <span>Спробуйте змінити параметри пошуку</span>
+    </div>
+  );
   
   return (
     <div className="Card">
@@ -33,10 +51,13 @@ export const Cards: React.FC<CardsProps> = ({ tours, loading }) => {
                 src={`http://127.0.0.1:1323${tour.imageSrc}`}
                 className="Card-image"
               />
+              <div className="Card-overlay">
+                <span className="Card-view">Переглянути</span>
+              </div>
             </div>
             <CardFooter className="Card-footer">
               <div className="Tour-title">{tour.title}</div>
-              <div className="Tour-price">{tour.price}</div>
+              <div className="Tour-price">{tour.price} ₴</div>
             </CardFooter>
           </Card>
         </Link>
