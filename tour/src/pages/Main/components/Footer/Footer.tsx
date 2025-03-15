@@ -5,13 +5,11 @@ import { Logo } from '../../../../components/Logo/Logo';
 export const Footer: React.FC = () => {
   return (
     <footer className="footer">
-      <div className="container">
+      <div className="footer-container">
         <div className="footer-logo">
-          <Logo></Logo>
+          <Logo />
         </div>
-        <div className="footer-copyright">
-          © 2025 OpenWorld, Inc.
-        </div>
+        <div className="footer-copyright">© 2025 OpenWorld, Inc.</div>
         <div className="footer-links">
           <a href="#!" className="footer-link">Terms</a>
           <a href="#!" className="footer-link">Privacy</a>
