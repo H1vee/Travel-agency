@@ -88,7 +88,7 @@
   }
 }
 
-/* Swiper pagination customization */
+
 .swiper-pagination-bullet {
   width: 12px;
   height: 12px;
@@ -101,7 +101,7 @@
   background-color: #fff;
 }
 
-/* Swiper navigation customization */
+
 .swiper-button-prev,
 .swiper-button-next {
   color: #fff;
@@ -122,7 +122,7 @@
   }
 }
 
-/* States for loading and errors */
+
 .swiper-loader-container,
 .swiper-error,
 .swiper-empty {
@@ -144,7 +144,7 @@
   }
 }
 
-/* Responsive styles */
+
 @media (max-width: 992px) {
   .swiper {
     height: 70vh;

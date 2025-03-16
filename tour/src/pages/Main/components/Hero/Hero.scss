@@ -64,7 +64,7 @@
       text-decoration: none;
     }
     
-    // Medium screens
+  
     @media (max-width: 992px) {
       &-title {
         font-size: 2.5rem;
@@ -75,7 +75,7 @@
       }
     }
     
-    // Small screens
+
     @media (max-width: 768px) {
       &-content {
         padding: 0 1.5rem;
@@ -90,7 +90,7 @@
       }
     }
     
-    // Mobile screens
+
     @media (max-width: 480px) {
       height: 100vh;
       margin-top: 60px;

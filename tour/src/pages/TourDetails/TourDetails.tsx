@@ -1,28 +1,26 @@
-import {Navbar} from '../../components/Navbar/Navbar';
+import { Navbar } from '../../components/Navbar/Navbar';
 import { TourSwiper } from './components/Swiper/TourSwiper';
 import { InfoSide } from './components/InfoSide/InfoSide';
-import {Footer} from '../Main/components/Footer/Footer'
+import { Footer } from '../Main/components/Footer/Footer';
+import './TourDetails.scss';
 
-import './TourDetails.scss'
-export const TourDetails =()=>{
-    return(
-      <div className="TourDetails">
+export const TourDetails = () => {
+  return (
+    <div className="tour-details">
       <Navbar />
-      <div className="TourDetails-content">
-        <div className="TourDetails-main">
-          <div className="TourDetails-swiper">
+      
+      <main className="tour-details__content">
+        <section className="tour-details__main">
+          <div className="tour-details__swiper-container">
             <TourSwiper />
           </div>
-          <div className="TourDetails-side">
+          
+          <div className="tour-details__info-container">
             <InfoSide />
           </div>
-        </div>
-        <div className="TourDetails-describer">
-        </div>
-        <div className="TourDetails-footer">
-          <Footer/>
-        </div>
-      </div>
+        </section>
+      </main>
+      <Footer />
     </div>
-    )
-}
+  );
+};

@@ -1,46 +1,219 @@
-.Swiper {
-
-    .swiper-wrapper {
-      display: flex;
-      align-items: center;
-    }
+.tour-swiper {
+  $transition-speed: 0.3s;
+  $overlay-color: rgba(0, 0, 0, 0.2);
+  $primary-color: #0070f3;
+  $error-color: #f31260;
   
-    .Swiper-Slide {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin: 2rem 0;
+  
+  &__container {
+    width: 100%;
+    height: 100%;
+  }
+  
+  &__slide {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    
+    &-image {
       width: 100%;
       height: 100%;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      border-radius: 10px; 
-      overflow: hidden; 
+      transition: transform $transition-speed ease, opacity $transition-speed ease;
+      will-change: transform, opacity;
+      
+      &:hover {
+        transform: scale(1.03);
+      }
     }
-  
-    .swiper-button-prev,
-    .swiper-button-next {
-      color: #fff; 
-      width: 30px;
-      height: 30px; 
+    
+    &-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        to bottom,
+        transparent 60%,
+        rgba(0, 0, 0, 0.5) 100%
+      );
+      pointer-events: none;
+    }
+    
+    &-loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #f0f0f0;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 50%; 
-      transition: background-color 0.3s ease, transform 0.2s ease;
-    }
-  
-    .swiper-button-prev::after,
-    .swiper-button-next::after {
-      font-size: 20px; 
-    }
-  
-    
-    .swiper-button-prev:hover,
-    .swiper-button-next:hover {
-      background-color: rgba(0, 0, 0, 0.3); 
-      transform: scale(1.1); 
-    }
-  
-    .swiper-pagination-bullet {
-      background-color: #fff; 
+      z-index: 1;
+      
+      &::after {
+        content: "";
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-top-color: $primary-color;
+        animation: tour-swiper-spin 1s linear infinite;
+      }
     }
   }
   
+  &__loading,
+  &__error,
+  &__empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    border-radius: 10px;
+    font-size: 1rem;
+    color: #555;
+    
+    &-spinner {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 3px solid rgba(0, 0, 0, 0.1);
+      border-top-color: $primary-color;
+      animation: tour-swiper-spin 1s linear infinite;
+    }
+  }
+  
+  &__error {
+    color: $error-color;
+    flex-direction: column;
+    
+    p {
+      margin: 0.5rem 0;
+    }
+  }
+  
+  &__counter {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+    font-weight: 500;
+  }
+  
+  // Navigation buttons
+  :global(.swiper-button-prev),
+  :global(.swiper-button-next) {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.4);
+    color: #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all $transition-speed ease;
+    opacity: 0;
+    
+    &::after {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.8);
+      transform: scale(1.1);
+    }
+    
+    &:focus-visible {
+      opacity: 1;
+      outline: 2px solid $primary-color;
+      outline-offset: 2px;
+    }
+  }
+  
+  &:hover {
+    :global(.swiper-button-prev),
+    :global(.swiper-button-next) {
+      opacity: 1;
+    }
+  }
+  
+  // Pagination styling
+  :global(.swiper-pagination-bullet) {
+    width: 8px;
+    height: 8px;
+    background-color: white;
+    opacity: 0.6;
+    transition: all $transition-speed ease;
+    
+    &:focus-visible {
+      outline: 2px solid $primary-color;
+      outline-offset: 2px;
+    }
+  }
+  
+  :global(.swiper-pagination-bullet-active) {
+    background-color: white;
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  
+  // Fix animation namespace
+  @keyframes tour-swiper-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  // Responsive design
+  @media (max-width: 768px) {
+    height: 350px;
+    
+    &__counter {
+      bottom: 10px;
+      right: 10px;
+    }
+    
+    :global(.swiper-button-prev),
+    :global(.swiper-button-next) {
+      width: 30px;
+      height: 30px;
+      opacity: 1;
+      
+      &::after {
+        font-size: 14px;
+      }
+    }
+  }
+  
+  @media (max-width: 480px) {
+    height: 250px;
+    border-radius: 8px;
+    
+    :global(.swiper-button-prev),
+    :global(.swiper-button-next) {
+      display: none;
+    }
+  }
+}
