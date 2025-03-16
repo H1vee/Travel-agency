@@ -1,0 +1,23 @@
+.why-us {
+    background-color: #f9f9f9;
+    
+    .benefits-list {
+      max-width: 800px;
+      margin: 0 auto;
+      list-style: none;
+    }
+    
+    .benefit-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+    }
+    
+    .benefit-icon {
+      color: #FF6B6B;
+      margin-right: 15px;
+      font-size: 1.5rem;
+    }
+  }
+  
