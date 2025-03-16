@@ -148,7 +148,7 @@ export const Form = () => {
     });
   };
 
-  // Handle form submission
+
   const handleConfirm = async (onClose: () => void) => {
     const bookingData = {
       tour_date_id: Number(id),

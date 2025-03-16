@@ -1,5 +1,7 @@
-import { Card, CardFooter, CardBody, Image } from "@heroui/react";
+import React from "react";
+import { Card, CardFooter, Image } from "@heroui/react";
 import { Link } from "react-router-dom";
+
 import "./Cards.scss";
 
 interface Tour {
@@ -22,14 +24,14 @@ export const Cards: React.FC<CardsProps> = ({ tours, loading }) => {
       <p>Loading tours...</p>
     </div>
   );
-  
+
   if (!Array.isArray(tours)) return (
     <div className="error-message">
       <p>Помилка завантаження даних</p>
       <button className="retry-button">Спробувати знову</button>
     </div>
   );
-  
+
   if (tours.length === 0) return (
     <div className="empty-state">
       <div className="empty-icon">🔍</div>
@@ -37,19 +39,24 @@ export const Cards: React.FC<CardsProps> = ({ tours, loading }) => {
       <span>Спробуйте змінити параметри пошуку</span>
     </div>
   );
-  
+
   return (
     <div className="Card">
       {tours.map((tour) => (
         <Link to={`/TourDetails/${tour.id}`} key={tour.id} className="Card-link">
-          <Card shadow="lg" isPressable className="Card-tour">
+          <Card isPressable className="Card-tour">
             <div className="Card-image-container">
               <Image
-                shadow="sm"
                 radius="none"
+                width="100%"
+                height="100%"
                 alt={tour.title}
                 src={`http://127.0.0.1:1323${tour.imageSrc}`}
                 className="Card-image"
+                style={{
+                  objectFit: "cover",
+                  objectPosition: "center"
+                }}
               />
               <div className="Card-overlay">
                 <span className="Card-view">Переглянути</span>

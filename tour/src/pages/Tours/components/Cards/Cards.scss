@@ -29,7 +29,7 @@
   
   &-tour {
     width: 100%;
-    height: 240px;
+    height: 190px;
     display: flex;
     flex-direction: column;
     border-radius: 12px;
@@ -59,7 +59,7 @@
   &-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: fill;
     transition: transform 0.5s ease;
     
     &:hover {
@@ -183,7 +183,7 @@
   }
 }
 
-// Error message styles
+
 .error-message {
   display: flex;
   flex-direction: column;
