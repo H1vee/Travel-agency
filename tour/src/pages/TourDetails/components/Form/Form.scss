@@ -1,0 +1,114 @@
+.booking-form {
+    $primary-color: #0070f3;
+    $danger-color: #f31260;
+    $success-color: #17c964;
+    $text-color: #11181c;
+    $border-radius: 8px;
+    $transition-speed: 0.2s;
+    
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+    
+    &__loading,
+    &__error,
+    &__not-found {
+      text-align: center;
+      padding: 1rem;
+      border-radius: $border-radius;
+      background-color: #f5f5f5;
+      margin: 1rem 0;
+    }
+    
+    &__error {
+      color: $danger-color;
+    }
+    
+    &__button-container {
+      display: flex;
+      justify-content: center;
+    }
+    
+    &__purchase-button {
+      min-width: 150px;
+      font-weight: 600;
+      transition: transform $transition-speed ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+      }
+    }
+    
+    &__modal-header {
+      border-bottom: 1px solid #eaeaea;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    
+    &__modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      padding: 1.5rem;
+    }
+    
+    &__input {
+      width: 100%;
+      
+      &:focus-within {
+        border-color: $primary-color;
+      }
+    }
+    
+    &__price-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      padding: 0.75rem;
+      background-color: #f9f9f9;
+      border-radius: $border-radius;
+    }
+    
+    &__price-label {
+      font-weight: 500;
+      color: $text-color;
+    }
+    
+    &__price-value {
+      font-weight: 700;
+      color: $primary-color;
+    }
+    
+    &__modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #eaeaea;
+    }
+    
+    &__cancel-button {
+      min-width: 100px;
+    }
+    
+    &__confirm-button {
+      min-width: 120px;
+    }
+    
+    // Responsive adjustments
+    @media (max-width: 640px) {
+      &__modal-body {
+        padding: 1rem;
+      }
+      
+      &__modal-footer {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+        
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }

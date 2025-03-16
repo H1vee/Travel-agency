@@ -1,31 +1,217 @@
-.Swiper {
-  height: 800px;
+.swiper-container {
+  position: relative;
+  width: 100%;
+  margin: 3rem 0;
+}
 
-  &-Slide {
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.swiper {
+  height: 80vh;
+  max-height: 800px;
+  width: 100%;
+  
+  &-slide {
+    position: relative;
+    overflow: hidden;
+    
+    &-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-position: center;
+      transition: transform 8s ease;
+    }
+    
+    &-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.7) 0%,
+        rgba(0, 0, 0, 0.4) 50%,
+        rgba(0, 0, 0, 0.2) 100%
+      );
+      z-index: 1;
+    }
+    
+    &-wrapper {
+      position: relative;
+      z-index: 2;
+      width: 50%;
+      max-width: 700px;
+      padding: 2.5rem;
+      margin-left: 10%;
+      background-color: rgba(255, 255, 255, 0.85);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(4px);
+      transform: translateY(0);
+      transition: transform 0.3s ease;
+    }
+    
+    &-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    
+    &-description {
+      font-size: 1.125rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+      color: #555;
+    }
+    
+    &-link {
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    &-action {
+      font-weight: 600;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+    
+    &:hover {
+      .swiper-slide-background {
+        transform: scale(1.05);
+      }
+    }
   }
+}
 
-  &-SlideWrapper {
-    width: 600px;
-    max-width: 80%;
-    padding: 16px;
-    box-sizing: border-box;
-    background-color: rgba(255, 255, 255, 0.5);
+/* Swiper pagination customization */
+.swiper-pagination-bullet {
+  width: 12px;
+  height: 12px;
+  background-color: #fff;
+  opacity: 0.6;
+}
+
+.swiper-pagination-bullet-active {
+  opacity: 1;
+  background-color: #fff;
+}
+
+/* Swiper navigation customization */
+.swiper-button-prev,
+.swiper-button-next {
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.3);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  &::after {
+    font-size: 1.5rem;
   }
-
-  &-SlideTitle {
-    font-size: 24px;
-    margin-bottom: 12px;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.5);
   }
+}
 
-  &-SlideDescription {
-    display: block;
-    font-size: 16px;
-    margin-bottom: 8px;
+/* States for loading and errors */
+.swiper-loader-container,
+.swiper-error,
+.swiper-empty {
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 2rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+  .swiper {
+    height: 70vh;
+    
+    &-slide {
+      &-wrapper {
+        width: 70%;
+        margin-left: 5%;
+      }
+      
+      &-title {
+        font-size: 2rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .swiper {
+    height: 60vh;
+    
+    &-slide {
+      &-wrapper {
+        width: 80%;
+        margin: 0 auto;
+        padding: 1.5rem;
+      }
+      
+      &-title {
+        font-size: 1.75rem;
+      }
+      
+      &-description {
+        font-size: 1rem;
+      }
+    }
+  }
+  
+  .swiper-button-prev,
+  .swiper-button-next {
+    width: 40px;
+    height: 40px;
+    
+    &::after {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .swiper {
+    height: 75vh;
+    
+    &-slide {
+      &-wrapper {
+        width: 90%;
+        padding: 1.25rem;
+      }
+      
+      &-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+      
+      &-description {
+        margin-bottom: 1rem;
+      }
+    }
   }
 }

@@ -10,7 +10,6 @@ export const Main = () => {
       <Navbar />
       <Swiper />
       <Hero></Hero>
-      {/* <TextShadows></TextShadows> */}
       <Footer></Footer>
     </div>
   )

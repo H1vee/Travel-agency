@@ -8,122 +8,158 @@ import {
   Button,
   Input,
 } from "@heroui/react";
-import { addToast,ToastProvider }from "@heroui/react";
-
+import { addToast, ToastProvider } from "@heroui/react";
 import { useQuery } from '@tanstack/react-query';
-import { useParams } from "react-router-dom"; 
-import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { useState, ChangeEvent } from "react";
+import "./Form.scss";
+
+
+interface FormDataType {
+  name: string;
+  email: string;
+  phone: string;
+  seats: string;
+}
+
+
+interface FormErrorsType {
+  name: string;
+  phone: string;
+  seats: string;
+}
+
+
+interface TourData {
+  available_seats: number;
+  price: number;
+  [key: string]: any; 
+}
 
 export const Form = () => {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { id } = useParams();
   
-  const [name, setName] = useState("");
-  const [nameError, setNameError] = useState("");
-  const [email, setEmail] = useState("");
-
+  // Form state
+  const [formData, setFormData] = useState<FormDataType>({
+    name: "",
+    email: "",
+    phone: "+380",
+    seats: "1"
+  });
   
-  const [phone, setPhone] = useState("+380");
-  const [phoneError, setPhoneError] = useState("");
 
-  const [seats, setSeats] = useState("1");
-  const [seatsError, setSeatsError] = useState("");
-  const { id } = useParams(); 
-  console.log("Tour ID from URL:", id);
-  const { isPending, error, data } = useQuery({
-    queryKey: ["tourSeats", id], 
-    queryFn: async () => {
-      const fetched = await fetch(`/api/tour-seats/${id}`);
-      if (!fetched.ok) throw new Error("Tour not found");
-      const rawTour: any = await fetched.json();
-      console.log("Raw tour data:", rawTour);
-      return {
-        ...rawTour
-      };
-    },
-    enabled: !!id, 
+  const [formErrors, setFormErrors] = useState<FormErrorsType>({
+    name: "",
+    phone: "",
+    seats: ""
   });
 
-  if (isPending) return <p>Loading...</p>;
-  if (error) return <p>Error: {error.message}</p>;
-  if (!data) return <p>Tour not found</p>;
+  const { isPending, error, data: tourData } = useQuery({
+    queryKey: ["tourSeats", id],
+    queryFn: async () => {
+      const response = await fetch(`/api/tour-seats/${id}`);
+      if (!response.ok) throw new Error("Tour not found");
+      const data = await response.json();
+      return data as TourData[];
+    },
+    enabled: !!id,
+  });
 
-  const handleEmailChange = (e:React.ChangeEvent<HTMLInputElement>)=>{
-    setEmail(e.target.value)
-  }
 
+  const availableSeats = tourData?.[0]?.available_seats ?? 1;
+  const tourPrice = tourData?.[0]?.price ?? 0;
+  
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (!/^[a-zA-Zа-яА-ЯіІєЄґҐїЇ'’ ]*$/.test(value)) {
-      setNameError("Ім'я може містити тільки літери та пробіли");
-    } else {
-      setNameError("");
-    }
-    setName(value);
+  const totalPrice = tourPrice * parseInt(formData.seats || "1", 10);
+
+  const updateFormData = (field: keyof FormDataType, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const hasError = !/^[a-zA-Zа-яА-ЯіІєЄґҐїЇ'' ]*$/.test(value);
+    
+    setFormErrors(prev => ({
+      ...prev,
+      name: hasError ? "Ім'я може містити тільки літери та пробіли" : ""
+    }));
+    
+    updateFormData("name", value);
+  };
+
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+    updateFormData("email", e.target.value);
+  };
+
+  const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     if (!value.startsWith("+380")) {
       value = "+380";
     }
 
-    const digitsOnly = value.replace(/\D/g, "").slice(3); 
-    const formattedPhone = "+380" + digitsOnly.slice(0, 9); 
+    const digitsOnly = value.replace(/\D/g, "").slice(3);
+    const formattedPhone = "+380" + digitsOnly.slice(0, 9);
+    const hasError = digitsOnly.length < 9;
 
-    if (digitsOnly.length < 9) {
-      setPhoneError("Номер повинен містити 9 цифр після +380");
-    } else {
-      setPhoneError("");
-    }
+    setFormErrors(prev => ({
+      ...prev,
+      phone: hasError ? "Номер повинен містити 9 цифр після +380" : ""
+    }));
 
-    setPhone(formattedPhone);
+    updateFormData("phone", formattedPhone);
   };
 
-  const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ""); 
+  const handleSeatsChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "");
     const intSeats = parseInt(value, 10) || 1;
-    const maxSeats = data?.[0]?.available_seats ?? 1;
-    console.log("Max seats:", maxSeats);
+    let seatsError = "";
+
     if (intSeats < 1) {
-      setSeatsError("Мінімальна кількість місць — 1");
-    } else if (intSeats > maxSeats) {
-      setSeatsError(`Максимальна кількість місць — ${maxSeats}`);
-    } else {
-      setSeatsError("");
+      seatsError = "Мінімальна кількість місць — 1";
+    } else if (intSeats > availableSeats) {
+      seatsError = `Максимальна кількість місць — ${availableSeats}`;
     }
-    console.log("Seats input value:", value, "Parsed intSeats:", intSeats);
-    setSeats(intSeats.toString());
+
+    setFormErrors(prev => ({
+      ...prev,
+      seats: seatsError
+    }));
+
+    updateFormData("seats", intSeats.toString());
   };
 
   const resetForm = () => {
-    setName("");
-    setNameError("");
-    setPhone("+380");
-    setPhoneError("");
-    setSeats("1");
-    setSeatsError("");
-    console.log("Resetting form");
+    setFormData({
+      name: "",
+      email: "",
+      phone: "+380",
+      seats: "1"
+    });
+    
+    setFormErrors({
+      name: "",
+      phone: "",
+      seats: ""
+    });
   };
 
-
- 
-
-  const handleConfirm = async (onClose:()=>void) => {
+  // Handle form submission
+  const handleConfirm = async (onClose: () => void) => {
     const bookingData = {
-      tour_date_id: Number(id), 
-      customer_name: name.trim(),
-      customer_email: email.trim(),  
-      customer_phone: phone.trim(),
-      seats: parseInt(seats, 10),
-      total_price: Number(data?.[0]?.price ? (data[0].price * parseInt(seats, 10)).toFixed(2) : 0),
+      tour_date_id: Number(id),
+      customer_name: formData.name.trim(),
+      customer_email: formData.email.trim(),
+      customer_phone: formData.phone.trim(),
+      seats: parseInt(formData.seats, 10),
+      total_price: Number(totalPrice.toFixed(2)),
     };
-    
-    console.log("BookingData being sent:", bookingData);
 
     try {
-      console.log("BookingData being sent:", bookingData);
-      console.log(JSON.stringify(bookingData))
       const response = await fetch("http://127.0.0.1:1323/tour/bookings", {
         method: "POST",
         headers: {
@@ -131,102 +167,132 @@ export const Form = () => {
         },
         body: JSON.stringify(bookingData),
       });
-  
+
       if (!response.ok) {
         throw new Error("Booking failed");
       }
 
-        addToast({
-        title:"Бронювання підтверджено",
-        description:"Ваше замовлення було підтверджено",
+      addToast({
+        title: "Бронювання підтверджено",
+        description: "Ваше замовлення було підтверджено",
         color: "success",
-        variant :"solid",
+        variant: "solid",
       });
+      
       onClose();
       resetForm();
     } catch (error) {
       console.error("Booking error:", error);
       
       addToast({
-        title:"Бронювання не вдалося",
-        description:"Виникла проблема з вашим бронюванням. Будь ласка, спробуйте ще раз.",
+        title: "Бронювання не вдалося",
+        description: "Виникла проблема з вашим бронюванням. Будь ласка, спробуйте ще раз.",
         color: "danger",
       });
     }
   };
-  console.log("BookingData being sent:", {
-    tour_date_id: id, 
-    customer_name: name.trim(),
-    customer_email: email.trim(),  
-    customer_phone: phone.trim(),
-    seats: parseInt(seats, 10),
-    total_price: data?.[0]?.price ? (data[0].price * parseInt(seats, 10)).toFixed(2) : 0,
-  }
 
-);
+  const isFormValid = (): boolean => {
+    const { name, phone, seats } = formData;
+    const hasErrors = Object.values(formErrors).some(error => !!error);
+    const hasRequiredFields = !!(name.trim() && phone.trim() && seats.trim()); 
+    
+    return hasRequiredFields && !hasErrors && parseInt(seats, 10) >= 1;
+  };
   
 
+  if (isPending) return <div className="booking-form__loading">Loading...</div>;
+  if (error) return <div className="booking-form__error">Error: {(error as Error).message}</div>;
+  if (!tourData) return <div className="booking-form__not-found">Tour not found</div>;
+
   return (
-    
-    <div className="Form">
-      <ToastProvider
-      placement="top-center"
-      />
-      <div className="Form-Button">
-        <Button color="primary" variant="shadow" onPress={onOpen}>
+    <div className="booking-form">
+      <ToastProvider placement="top-center" />
+      
+      <div className="booking-form__button-container">
+        <Button color="primary" variant="shadow" onPress={onOpen} className="booking-form__purchase-button">
           Придбати
         </Button>
-        <Modal isOpen={isOpen} placement="top-center" onOpenChange={(open) => {
-          if (!open) resetForm(); 
-          onOpenChange();
-        }}>
+        
+        <Modal 
+          isOpen={isOpen} 
+          placement="top-center" 
+          onOpenChange={(open: boolean) => {
+            if (!open) resetForm();
+            onOpenChange();
+          }}
+        >
           <ModalContent>
-            {(onClose) => (
+            {(onClose: () => void) => (
               <>
-                <ModalHeader className="flex flex-col gap-1">Замовлення</ModalHeader>
-                <ModalBody>
+                <ModalHeader className="booking-form__modal-header">
+                  Замовлення
+                </ModalHeader>
+                
+                <ModalBody className="booking-form__modal-body">
                   <Input 
                     isRequired 
                     placeholder="Ваше ім'я" 
                     label="Ім'я" 
-                    value={name}
+                    value={formData.name}
                     onChange={handleNameChange}
-                    isInvalid={!!nameError}
-                    errorMessage={nameError}
+                    isInvalid={!!formErrors.name}  
+                    errorMessage={formErrors.name}
+                    className="booking-form__input"
                   />
+                  
                   <Input
                     isRequired
                     label="Номер телефону"
-                    value={phone}
+                    value={formData.phone}
                     onChange={handlePhoneChange}
-                    isInvalid={!!phoneError}
-                    errorMessage={phoneError}
+                    isInvalid={!!formErrors.phone}  
+                    errorMessage={formErrors.phone}
+                    className="booking-form__input"
                   />
+                  
                   <Input 
-                  label="Email" 
-                  placeholder="Enter your email" 
-                  variant="bordered" 
-                  value={email}
-                  onChange={handleEmailChange}
+                    label="Email" 
+                    placeholder="Enter your email" 
+                    variant="bordered" 
+                    value={formData.email}
+                    onChange={handleEmailChange}
+                    className="booking-form__input"
                   />
+                  
                   <Input
                     isRequired
                     label="Кількість місць"
-                    value={seats}
+                    value={formData.seats}
                     onChange={handleSeatsChange}
-                    isInvalid={!!seatsError}
-                    errorMessage={seatsError}
+                    isInvalid={!!formErrors.seats}  
+                    errorMessage={formErrors.seats}
+                    className="booking-form__input"
                   />
-                  <p>Вартість: {data?.[0]?.price ? `${(data[0].price * parseInt(seats, 10)).toFixed(2)} UAH` : "N/A"}</p>
+                  
+                  <div className="booking-form__price-summary">
+                    <span className="booking-form__price-label">Вартість:</span>
+                    <span className="booking-form__price-value">
+                      {totalPrice.toFixed(2)} UAH
+                    </span>
+                  </div>
                 </ModalBody>
-                <ModalFooter>
-                  <Button color="danger" variant="flat" onPress={onClose}>
+                
+                <ModalFooter className="booking-form__modal-footer">
+                  <Button 
+                    color="danger" 
+                    variant="flat" 
+                    onPress={onClose}
+                    className="booking-form__cancel-button"
+                  >
                     Відмінити
                   </Button>
+                  
                   <Button 
                     color="primary" 
-                    onPress={()=>handleConfirm(onClose)} 
-                    isDisabled={!name.trim() || !phone.trim() || !seats.trim() || !!nameError || !!phoneError || !!seatsError || parseInt(seats, 10) < 1}
+                    onPress={() => handleConfirm(onClose)}
+                    isDisabled={!isFormValid()}
+                    className="booking-form__confirm-button"
                   >
                     Підтвердити
                   </Button>

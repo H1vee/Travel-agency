@@ -1,63 +1,126 @@
-.Hero{
-    margin-top: 100px;
-    height: 100vh; /* Висота секції на всю висоту екрану */
-    &-Airsection{
+.hero {
+    margin-top: 80px;
+    height: calc(100vh - 80px);
+    width: 100%;
+    overflow: hidden;
+    
+    &-container {
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+      display: flex;
+      align-items: center;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
-        background-size: cover; /* Розтягує зображення на весь блок */
-        position: relative;
+        background: linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%);
+        z-index: 1;
+      }
     }
-    &-Text{
- 
-         line-height: 1.6; 
-         color: #FFF;
-         text-align: left;
-         font-size: 24px;
-         margin: 0;
-         margin-right: 10%;
-         margin-left: -20%;
-         padding: 25%;
-         width: 400;
+    
+    &-content {
+      position: relative;
+      z-index: 2;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 2rem;
     }
-    &-Button{
-        position: absolute; /* Абсолютне позиціонування кнопки */
-        left: 7.5%; /* Відступ від лівого краю контейнера  */
-        top: 65%; /* Відступ від нижнього краю контейнера */
-        transform: translate(-45%,50%);
+    
+    &-text {
+      max-width: 600px;
+      color: #FFF;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    &-Text p{
-        width: 55%;
-
+    
+    &-title {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
     }
-    @media (max-width:1366px) {
-        &-Text p{
-         font-size: 20px;
-        }
-
-        &-Button{
-            transform: translate(-30%,-25%);
-        }
+    
+    &-description {
+      font-size: 1.25rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
     }
-    @media (max-width:425px){
-        &-Text p{
-            font-size: 20px;
+    
+    &-cta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    &-link {
+      text-decoration: none;
+    }
+    
+    // Medium screens
+    @media (max-width: 992px) {
+      &-title {
+        font-size: 2.5rem;
+      }
+      
+      &-description {
+        font-size: 1.125rem;
+      }
+    }
+    
+    // Small screens
+    @media (max-width: 768px) {
+      &-content {
+        padding: 0 1.5rem;
+      }
+      
+      &-text {
+        max-width: 100%;
+      }
+      
+      &-title {
+        font-size: 2rem;
+      }
+    }
+    
+    // Mobile screens
+    @media (max-width: 480px) {
+      height: 100vh;
+      margin-top: 60px;
+      
+      &-container {
+        align-items: flex-start;
+        padding-top: 25%;
+      }
+      
+      &-title {
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+      }
+      
+      &-description {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      &-cta {
+        flex-direction: column;
+        width: 100%;
+        
+        .hero-link {
+          width: 100%;
+          
+          button {
             width: 100%;
-            margin-top: 240px;
-           }
-
-           &-Button{
-               transform: translate(-9%,0%);
-           }
+          }
+        }
+      }
     }
-    @media (max-width:390px){
-        &-Text p{
-            font-size: 20px;
-            width: 100%;
-            margin-top: 170px;
-           }
-
-           &-Button{
-               transform: translate(-9%,0%);
-           }
-    }
-}
+  }
