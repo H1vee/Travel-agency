@@ -29,7 +29,7 @@ export const ToursPage: React.FC = () => {
     queryFn: async () => {
       const res = await fetch("/api/cards");
       if (!res.ok) {
-        throw new Error(`Ошибка загрузки туров: ${res.status}`);
+        throw new Error(`Error loading tours: ${res.status}`);
       }
       return res.json();
     },
@@ -80,7 +80,7 @@ export const ToursPage: React.FC = () => {
         const detailsRes = await fetch(`/tours-search-by-ids?ids=${idsString}`);
         const tours: Tour[] = await detailsRes.json();
   
-        console.log("Полученные туры после поиска:", tours);
+        console.log("Received tours after search:", tours);
   
         setSearchResults(tours);
         setIsSearching(true);
@@ -89,7 +89,7 @@ export const ToursPage: React.FC = () => {
         setIsSearching(true);
       }
     } catch (error) {
-      console.error("Ошибка при поиске:", error);
+      console.error("Search error:", error);
       setSearchResults([]);
     }
   };
