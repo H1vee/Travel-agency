@@ -63,7 +63,7 @@ export const ToursPage: React.FC = () => {
     }
   
     const searchUrl = `/search?${params.toString()}`;
-    console.log("Запрос:", searchUrl);
+    console.log("Query:", searchUrl);
   
     if (!params.toString()) {
       setSearchResults([]);
