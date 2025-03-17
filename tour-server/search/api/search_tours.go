@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-
 	"tour-server/search/dto"
 
 	"github.com/labstack/echo/v4"
@@ -64,7 +63,6 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		var tours []dto.SearchTour
-
 		query := db.Debug().Table("tours").
 			Select("tours.id").
 			Joins("JOIN statuses ON tours.status_id = statuses.id").
@@ -74,18 +72,31 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 		if searchTitle != "" {
 			query = query.Where("searchable_words ILIKE ?", "%"+searchTitle+"%")
 		}
-		if minPriceStr != "" {
+
+		if minPriceStr != "" && maxPriceStr != "" {
+
 			query = query.Where("tours.price >= ?", minPrice)
-		}
-		if maxPriceStr != "" {
 			query = query.Where("tours.price <= ?", maxPrice)
+		} else if minPriceStr != "" {
+
+			query = query.Where("tours.price = ?", minPrice)
+		} else if maxPriceStr != "" {
+
+			query = query.Where("tours.price = ?", maxPrice)
 		}
-		if minRatingStr != "" {
+
+		if minRatingStr != "" && maxRatingStr != "" {
+
 			query = query.Where("tours.rating >= ?", minRating)
-		}
-		if maxRatingStr != "" {
 			query = query.Where("tours.rating <= ?", maxRating)
+		} else if minRatingStr != "" {
+
+			query = query.Where("tours.rating = ?", minRating)
+		} else if maxRatingStr != "" {
+
+			query = query.Where("tours.rating = ?", maxRating)
 		}
+
 		if searchDuration != "" {
 			query = query.Where("tour_dates.duration = make_interval(days := ?)", searchDuration)
 		}
