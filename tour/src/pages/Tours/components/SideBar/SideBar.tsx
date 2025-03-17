@@ -121,7 +121,7 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
           label="Рейтинг туру"
           value={selectedRatings}
           onChange={(newRatings) => {
-            if (newRatings.length <= 3) {
+            if (newRatings.length <= 2) {
               setSelectedRatings(newRatings);
             }
           }}
