@@ -20,7 +20,7 @@ export const Footer: React.FC = () => {
           <div className="footer-links">
             <div className="footer-links-group">
               <h4 className="footer-links-title">Company</h4>
-              <a href="/about" className="footer-link">About</a>
+              <a href="/AboutUs" className="footer-link">About</a>
               <a href="/careers" className="footer-link">Careers</a>
               <a href="/partners" className="footer-link">Partners</a>
             </div>
