@@ -13,6 +13,7 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
   const [sliderValue, setSliderValue] = useState([minValue, maxValue]);
   const [selectedDurations, setSelectedDurations] = useState<string[]>([]);
   const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   
   const handleSliderChange = (newValue: any) => {
     setSliderValue(newValue);
@@ -36,6 +37,7 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
       maxPrice: sliderValue[1] !== maxValue ? sliderValue[1] : undefined,
       duration: selectedDurations.length ? selectedDurations : undefined,
       rating: selectedRatings.length ? selectedRatings : undefined,
+      region: selectedRegions.length ? selectedRegions : undefined,
     });
   };
   
@@ -43,6 +45,7 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
     setSliderValue([minValue, maxValue]);
     setSelectedDurations([]);
     setSelectedRatings([]);
+    setSelectedRegions([]);
     onReset();
   };
   
@@ -51,7 +54,8 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
       sliderValue[0] !== minValue ||
       sliderValue[1] !== maxValue ||
       selectedDurations.length > 0 ||
-      selectedRatings.length > 0
+      selectedRatings.length > 0 ||
+      selectedRegions.length > 0
     );
   };
 
@@ -101,6 +105,21 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="SideBar-section">
+        <CheckboxGroup
+          label="Регіон"
+          value={selectedRegions}
+          onChange={setSelectedRegions}
+          className="SideBar-checkbox-group"
+        >
+          <Checkbox value="1" className="SideBar-checkbox">Європа</Checkbox>
+          <Checkbox value="2" className="SideBar-checkbox">Азія</Checkbox>
+          <Checkbox value="3" className="SideBar-checkbox">Америка</Checkbox>
+          <Checkbox value="4" className="SideBar-checkbox">Африка</Checkbox>
+          <Checkbox value="5" className="SideBar-checkbox">Океанія</Checkbox>
+        </CheckboxGroup>
       </div>
 
       <div className="SideBar-section">

@@ -14,12 +14,15 @@ interface Tour {
   imageSrc: string;
 }
 
+interface SearchTour {
+  id: number;
+}
+
 export const ToursPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Tour[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [filters, setFilters] = useState<any>({});
-  
   
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12); 
@@ -61,9 +64,14 @@ export const ToursPage: React.FC = () => {
         params.append("maxRating", String(maxRating));
       }
     }
+    
+    // Add region parameter to search
+    if (filters.region?.length) {
+      params.append("region", filters.region.join(","));
+    }
   
     const searchUrl = `/search?${params.toString()}`;
-    console.log("Query:", searchUrl);
+    console.log("Search Query:", searchUrl);
   
     if (!params.toString()) {
       setSearchResults([]);
@@ -73,10 +81,10 @@ export const ToursPage: React.FC = () => {
   
     try {
       const res = await fetch(searchUrl);
-      const ids: { id: number }[] = await res.json();
+      const searchTours: SearchTour[] = await res.json();
   
-      if (Array.isArray(ids) && ids.length > 0) {
-        const idsString = ids.map((item) => item.id).join(",");
+      if (Array.isArray(searchTours) && searchTours.length > 0) {
+        const idsString = searchTours.map((item) => item.id).join(",");
         const detailsRes = await fetch(`/tours-search-by-ids?ids=${idsString}`);
         const tours: Tour[] = await detailsRes.json();
   
@@ -117,14 +125,12 @@ export const ToursPage: React.FC = () => {
       setSearchResults(allTours);
       setIsSearching(false);
     }
-  }, [filters, allTours]);
+  }, [filters, searchQuery, allTours]);
 
-  
   const indexOfLastTour = currentPage * itemsPerPage;
   const indexOfFirstTour = indexOfLastTour - itemsPerPage;
   const currentTours = (isSearching ? searchResults : allTours).slice(indexOfFirstTour, indexOfLastTour);
 
-  
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -132,10 +138,18 @@ export const ToursPage: React.FC = () => {
   return (
     <div className="ToursPage">
       <div className="ToursPage-SearchBar">
-        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onKeyDown={handleKeyDown} onSearchClear={handleSearchClear} />
+        <SearchBar 
+          searchQuery={searchQuery} 
+          setSearchQuery={setSearchQuery} 
+          onKeyDown={handleKeyDown} 
+          onSearchClear={handleSearchClear} 
+        />
       </div>
       <div className="ToursPage-SideBar">
-        <SideBar onApply={setFilters} onReset={() => setFilters({})} />
+        <SideBar 
+          onApply={setFilters} 
+          onReset={() => setFilters({})} 
+        />
         <div className="ToursPage-Cards">
           <Cards tours={currentTours} loading={isPending} />
         </div>
