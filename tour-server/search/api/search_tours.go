@@ -18,8 +18,9 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 		maxPriceStr := c.QueryParam("maxPrice")
 		minRatingStr := c.QueryParam("minRating")
 		maxRatingStr := c.QueryParam("maxRating")
+		regionStr := c.QueryParam("region") // New region parameter
 
-		var minPrice, maxPrice, minRating, maxRating int
+		var minPrice, maxPrice, minRating, maxRating, regionID int
 		var err error
 
 		if minPriceStr != "" {
@@ -62,38 +63,50 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			}
 		}
 
+		if regionStr != "" {
+			regionID, err = strconv.Atoi(regionStr)
+			if err != nil {
+				log.Println("Помилка конвертації region:", err)
+				return c.JSON(http.StatusBadRequest, map[string]string{
+					"error": "Invalid region format",
+				})
+			}
+		}
+
 		var tours []dto.SearchTour
 		query := db.Debug().Table("tours").
 			Select("tours.id").
 			Joins("JOIN statuses ON tours.status_id = statuses.id").
 			Joins("JOIN tour_dates ON tour_dates.tour_id = tours.id").
+			Joins("JOIN locations from_loc ON tour_dates.from_location_id = from_loc.id").
+			Joins("JOIN locations to_loc ON tour_dates.to_location_id = to_loc.id").
+			Joins("JOIN regions on (from_loc.region_id = regions.id OR to_loc.region_id = regions.id)").
 			Where("1=1")
 
 		if searchTitle != "" {
 			query = query.Where("searchable_words ILIKE ?", "%"+searchTitle+"%")
 		}
 
-		if minPriceStr != "" && maxPriceStr != "" {
+		if regionStr != "" {
+			// Filter by region
+			query = query.Where("regions.id = ?", regionID)
+		}
 
+		if minPriceStr != "" && maxPriceStr != "" {
 			query = query.Where("tours.price >= ?", minPrice)
 			query = query.Where("tours.price <= ?", maxPrice)
 		} else if minPriceStr != "" {
-
 			query = query.Where("tours.price = ?", minPrice)
 		} else if maxPriceStr != "" {
-
 			query = query.Where("tours.price = ?", maxPrice)
 		}
 
 		if minRatingStr != "" && maxRatingStr != "" {
-
 			query = query.Where("tours.rating >= ?", minRating)
 			query = query.Where("tours.rating <= ?", maxRating)
 		} else if minRatingStr != "" {
-
 			query = query.Where("tours.rating = ?", minRating)
 		} else if maxRatingStr != "" {
-
 			query = query.Where("tours.rating = ?", maxRating)
 		}
 
