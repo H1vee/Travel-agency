@@ -25,7 +25,6 @@ func InitDB() {
 	var connStr = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
 
-	// Ініціалізуємо глобальну змінну DB
 	DB, err = gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Couldn't open database: %v", err)
