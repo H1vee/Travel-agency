@@ -16,7 +16,7 @@
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.105",
-    "@types/react": "^18.3.4",
+    "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.0",
     "http-proxy-middleware": "^3.0.1",
     "lucide-react": "^0.482.0",
