@@ -18,14 +18,15 @@ A REST API backend service for a tour booking system built with Go, Echo framewo
 - **Database**: PostgreSQL
 - **ORM**: GORM
 - **Database Driver**: lib/pq
+
 **Frontend**
--**React 18** - the main framework
--**TypeScript** - typing for reliable code
--**React Router DOM** - routing
--**HeroUI (NextUI)** - UI components
--**TanStack Query** - server state management
--**SCSS** - styling
--**Swiper.js** - image carousel
+- **Framework**: React 18
+- **Language**: TypeScript
+- **Routing**: React Router DOM
+- **UI Components**: HeroUI (NextUI)
+- **State Management**: TanStack Query
+- **Styling**: SCSS
+- **Carousel**: Swiper.js
   
 ## 📁 Project Structure
 
