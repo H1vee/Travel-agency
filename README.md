@@ -109,7 +109,7 @@ const (
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/H1vee/Travel-agency.git
 cd tour-server
 ```
 
