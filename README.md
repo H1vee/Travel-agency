@@ -20,8 +20,8 @@ A REST API backend service for a tour booking system built with Go, Echo framewo
 - **Database Driver**: lib/pq
 
 **Frontend**
-- **Framework**: React 18
 - **Language**: TypeScript
+- **Framework**: React 18
 - **Routing**: React Router DOM
 - **UI Components**: HeroUI (NextUI)
 - **State Management**: TanStack Query
