@@ -31,29 +31,52 @@ A REST API backend service for a tour booking system built with Go, Echo framewo
 ## 📁 Project Structure
 
 ```
-tour-server/
-├── bookings/           # Booking management
-│   ├── api/           # Booking endpoints
-│   ├── dto/           # Data transfer objects
-│   └── models/        # Booking data models
-├── database/          # Database connection and configuration
-├── location/          # Location management
-│   └── models/        # Location models
-├── search/            # Search functionality
-│   ├── api/           # Search endpoints
-│   ├── dto/           # Search DTOs
-│   └── models/        # Search models
-├── status/            # Status management
-│   └── models/        # Status models
-├── tour/              # Core tour functionality
-│   ├── api/           # Tour endpoints
-│   ├── dto/           # Tour DTOs
-│   └── models/        # Tour models
-├── tourcardimage/     # Tour card image management
-├── tourdate/          # Tour date management
-├── tourgalleryimage/  # Tour gallery management
-├── tourseats/         # Seat availability management
-└── server.go          # Main server file
+project-root/
+├── tour-server/                     # Backend service (API)
+│   ├── bookings/                    # Booking management
+│   │   ├── api/                     # Booking endpoints
+│   │   ├── dto/                     # Data transfer objects
+│   │   └── models/                  # Booking data models
+│   ├── database/                    # Database connection and configuration
+│   ├── location/                    # Location management
+│   │   └── models/                  # Location models
+│   ├── search/                      # Search functionality
+│   │   ├── api/                     # Search endpoints
+│   │   ├── dto/                     # Search DTOs
+│   │   └── models/                  # Search models
+│   ├── status/                      # Status management
+│   │   └── models/                  # Status models
+│   ├── tour/                        # Core tour functionality
+│   │   ├── api/                     # Tour endpoints
+│   │   ├── dto/                     # Tour DTOs
+│   │   └── models/                  # Tour models
+│   ├── tourcardimage/              # Tour card image management
+│   ├── tourdate/                   # Tour date management
+│   ├── tourgalleryimage/           # Tour gallery image management
+│   ├── tourseats/                  # Seat availability management
+│   └── server.go                   # Main server entry point
+│
+└── tour/                           # Frontend (React client)
+    ├── src/
+    │   ├── components/             # Reusable components
+    │   │   ├── App/                # Main App component
+    │   │   ├── Navbar/             # Navigation bar
+    │   │   └── Logo/               # Company logo
+    │   │
+    │   ├── pages/                  # Application pages
+    │   │   ├── Main/               # Home page
+    │   │   ├── AboutUs/            # About Us page
+    │   │   │   └── components/     # Components for the About Us page
+    │   │   ├── Tours/              # Tour search page
+    │   │   └── TourDetails/        # Tour details page
+    │   │       └── components/     # Components for the Tour Details page
+    │   │           ├── Form/           # Booking form
+    │   │           ├── InfoSide/       # Information panel
+    │   │           ├── Swiper/         # Image carousel
+    │   │           └── TourDescriber/  # Tour description
+    │   │
+    │   └── assets/                # Static assets (images, styles, etc.)
+
 ```
 
 ## 🔧 Installation & Setup
