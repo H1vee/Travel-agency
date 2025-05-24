@@ -12,13 +12,21 @@ A REST API backend service for a tour booking system built with Go, Echo framewo
 - **Location Management**: Geographic location handling for tours
 
 ## 🛠 Tech Stack
-
+**Backend:** 
 - **Language**: Go 1.19+
 - **Web Framework**: Echo v4
 - **Database**: PostgreSQL
 - **ORM**: GORM
 - **Database Driver**: lib/pq
-
+**Frontend**
+-**React 18** - the main framework
+-**TypeScript** - typing for reliable code
+-**React Router DOM** - routing
+-**HeroUI (NextUI)** - UI components
+-**TanStack Query** - server state management
+-**SCSS** - styling
+-**Swiper.js** - image carousel
+  
 ## 📁 Project Structure
 
 ```
