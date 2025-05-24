@@ -81,6 +81,8 @@ project-root/
 
 ## 🔧 Installation & Setup
 
+### 📦 Backend Setup (`tour-server`)
+
 ### Prerequisites
 
 - Go 1.19 or higher
@@ -135,6 +137,38 @@ go run server.go
 
 The server will start on `http://127.0.0.1:1323`
 
+### 💻 Frontend Setup (tour)
+
+### Prerequisites
+
+- Node.js 16+
+- npm or yarn
+- Running backend API server
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/H1vee/Travel-agency.git
+cd tour
+```
+
+2. Install dependencies:
+```bash
+npm install
+#or
+yarn install
+```
+
+3. Start the development server:
+  ```bash
+npm start
+#or
+yarn start
+```
+
+The application will be available at `http://localhost:3000`
+  
 ## 📋 API Endpoints
 
 ### Tour Management
