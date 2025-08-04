@@ -1,11 +1,300 @@
-This project is a travel agency website created as part of a term paper, designed to enable users to browse and book various travel tours with ease.
+# Tour Server API
 
-## Frontend
+A REST API backend service for a tour booking system built with Go, Echo framework, and PostgreSQL. The system manages tours, bookings, seat availability, and search functionality.
 
-The frontend is built using React, a popular JavaScript library for building user interfaces. The React application is structured for optimal user experience, allowing customers to view available tours, explore detailed information, and make bookings seamlessly. The interface is designed to be responsive and interactive, providing users with smooth navigation and visual feedback on actions.
-## Backend
+## 🚀 Features
 
-The backend of the application is developed using the Echo framework in Go (Golang). Echo is known for its high performance, flexibility, and minimalistic design, making it well-suited for creating RESTful APIs. The backend handles user requests, manages business logic for booking operations, and securely interacts with the database to store and retrieve information on tours, bookings, and user data. This layer also includes validation mechanisms to ensure data integrity and secure transactions.
-## Database
+- **Tour Management**: Full CRUD operations for tours with detailed information
+- **Booking System**: Complete booking workflow with seat management
+- **Search & Filtering**: Advanced search capabilities with multiple filters
+- **Image Management**: Tour card images and gallery management
+- **Seat Availability**: Real-time seat tracking and availability
+- **Location Management**: Geographic location handling for tours
 
-The application uses PostgreSQL as its relational database. PostgreSQL was chosen for its robustness, scalability, and support for advanced querying and transactional integrity, which are essential for handling data related to tour details, user profiles, booking records, and any associated payments or confirmations. Database tables are structured to efficiently manage relationships between tours, users, and booking information, providing a reliable backend for data storage and retrieval.
+## 🛠 Tech Stack
+**Backend:** 
+- **Language**: Go 1.19+
+- **Web Framework**: Echo v4
+- **Database**: PostgreSQL
+- **ORM**: GORM
+- **Database Driver**: lib/pq
+
+**Frontend**
+- **Language**: TypeScript
+- **Framework**: React 18
+- **Routing**: React Router DOM
+- **UI Components**: HeroUI (NextUI)
+- **State Management**: TanStack Query
+- **Styling**: SCSS
+- **Carousel**: Swiper.js
+  
+## 📁 Project Structure
+
+```
+project-root/
+├── tour-server/                     # Backend service (API)
+│   ├── bookings/                    # Booking management
+│   │   ├── api/                     # Booking endpoints
+│   │   ├── dto/                     # Data transfer objects
+│   │   └── models/                  # Booking data models
+│   ├── database/                    # Database connection and configuration
+│   ├── location/                    # Location management
+│   │   └── models/                  # Location models
+│   ├── search/                      # Search functionality
+│   │   ├── api/                     # Search endpoints
+│   │   ├── dto/                     # Search DTOs
+│   │   └── models/                  # Search models
+│   ├── status/                      # Status management
+│   │   └── models/                  # Status models
+│   ├── tour/                        # Core tour functionality
+│   │   ├── api/                     # Tour endpoints
+│   │   ├── dto/                     # Tour DTOs
+│   │   └── models/                  # Tour models
+│   ├── tourcardimage/              # Tour card image management
+│   ├── tourdate/                   # Tour date management
+│   ├── tourgalleryimage/           # Tour gallery image management
+│   ├── tourseats/                  # Seat availability management
+│   └── server.go                   # Main server entry point
+│
+└── tour/                           # Frontend (React client)
+    ├── src/
+    │   ├── components/             # Reusable components
+    │   │   ├── App/                # Main App component
+    │   │   ├── Navbar/             # Navigation bar
+    │   │   └── Logo/               # Company logo
+    │   │
+    │   ├── pages/                  # Application pages
+    │   │   ├── Main/               # Home page
+    │   │   ├── AboutUs/            # About Us page
+    │   │   │   └── components/     # Components for the About Us page
+    │   │   ├── Tours/              # Tour search page
+    │   │   └── TourDetails/        # Tour details page
+    │   │       └── components/     # Components for the Tour Details page
+    │   │           ├── Form/           # Booking form
+    │   │           ├── InfoSide/       # Information panel
+    │   │           ├── Swiper/         # Image carousel
+    │   │           └── TourDescriber/  # Tour description
+    │   │
+    │   └── assets/                # Static assets (images, styles, etc.)
+
+```
+
+## 🔧 Installation & Setup
+
+### 📦 Backend Setup (`tour-server`)
+
+### Prerequisites
+
+- Go 1.19 or higher
+- PostgreSQL 12+
+- Git
+
+### Database Setup
+
+1. Install PostgreSQL and create a database:
+```sql
+CREATE DATABASE tour_booking;
+```
+
+2. Update database credentials in `database/connection.go`:
+```go
+const (
+    host     = "localhost"
+    port     = 5432
+    user     = "your_username"
+    password = "your_password"
+    dbname   = "tour_booking"
+)
+```
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/H1vee/Travel-agency.git
+cd tour-server
+```
+
+2. Initialize Go modules:
+```bash
+go mod init tour-server
+go mod tidy
+```
+
+3. Install dependencies:
+```bash
+go get github.com/labstack/echo/v4
+go get github.com/labstack/echo/v4/middleware
+go get gorm.io/gorm
+go get gorm.io/driver/postgres
+go get github.com/lib/pq
+```
+
+4. Run the server:
+```bash
+go run server.go
+```
+
+The server will start on `http://127.0.0.1:1323`
+
+### 💻 Frontend Setup (tour)
+
+### Prerequisites
+
+- Node.js 16+
+- npm or yarn
+- Running backend API server
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/H1vee/Travel-agency.git
+cd tour
+```
+
+2. Install dependencies:
+```bash
+npm install
+#or
+yarn install
+```
+
+3. Start the development server:
+  ```bash
+npm start
+#or
+yarn start
+```
+
+The application will be available at `http://localhost:3000`
+  
+## 📋 API Endpoints
+
+### Tour Management
+- `GET /` - Health check
+- `GET /tours` - Get all tours
+- `GET /tours/:id` - Get tour by ID
+- `GET /cards` - Get tours for card display
+- `GET /tourswiper` - Get tours for swiper/carousel
+- `GET /tours-search-by-ids?ids=1,2,3` - Get specific tours by IDs
+- `GET /tour-carousel/:id` - Get tour gallery images
+
+### Booking System
+- `POST /tour/bookings` - Create a new booking
+
+**Booking Request Body:**
+```json
+{
+  "tour_date_id": 1,
+  "customer_name": "John Doe",
+  "customer_email": "john@example.com",
+  "customer_phone": "+1234567890",
+  "seats": 2,
+  "total_price": 299.99
+}
+```
+
+### Search & Filtering
+- `GET /search` - Search tours with filters
+
+**Search Parameters:**
+- `title` - Search by tour title (case insensitive)
+- `duration` - Filter by duration in days
+- `minPrice` & `maxPrice` - Price range filter
+- `minRating` & `maxRating` - Rating range filter (0-5)
+- `region` - Filter by region IDs (comma-separated)
+
+**Example:**
+```
+GET /search?title=paris&minPrice=100&maxPrice=500&minRating=4.0
+```
+
+### Seat Management
+- `GET /tour-seats/:id` - Get seat availability for a tour
+
+### Image Management
+- `GET /tourimage` - Get all tour card images
+- `GET /static/*` - Static file serving
+
+## 🗄️ Database Schema
+
+The system uses the following main tables:
+
+- **tours** - Core tour information
+- **tour_dates** - Tour scheduling and dates
+- **tour_seats** - Seat availability tracking
+- **bookings** - Customer bookings
+- **locations** - Geographic locations
+- **statuses** - Tour status management
+- **tour_card_images** - Tour card images
+- **tour_gallery_images** - Tour gallery images
+
+## 🔍 Key Features Explained
+
+### Booking System
+The booking system handles seat reservation with real-time availability checking. When a booking is created, the system:
+1. Validates the request data
+2. Checks available seats for the tour date
+3. Creates the booking with "pending" status
+4. Returns confirmation
+
+### Search Functionality
+Advanced search with multiple filters:
+- Text search in tour titles (case insensitive)
+- Price range filtering
+- Rating range filtering (0-5 scale)
+- Duration filtering
+- Region-based filtering for departure/arrival locations
+
+### Seat Management
+Real-time seat tracking system that:
+- Tracks available seats per tour date
+- Prevents overbooking
+- Provides seat availability information
+
+## 🛡️ Error Handling
+
+The API includes comprehensive error handling:
+- Database connection validation
+- Input data validation
+- Proper HTTP status codes
+- Detailed error messages for debugging
+
+## 🚦 CORS Support
+
+CORS middleware is enabled to allow cross-origin requests from frontend applications.
+
+## 📝 Logging
+
+The application includes detailed logging for:
+- API requests and responses
+- Database queries (debug mode)
+- Error tracking
+- Search parameters and results
+
+## 🔄 Development
+
+### Running in Debug Mode
+The application runs GORM in debug mode, which logs all SQL queries for development purposes.
+
+### Static Files
+Static files are served from the `/static` directory and accessible via `/static/*` endpoints.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+If you encounter any issues or have questions, please open an issue in the repository.
+
+
