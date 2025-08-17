@@ -7,7 +7,7 @@ type TourReviews struct {
 	TourID    uint `gorm:"not null"`
 	UserID    uint `gorm:"not null"`
 	BookingID *uint
-	Raiting   float64 `gorm:"not null;check:rating >= 1 AND rating <= 5"`
+	Rating    int `gorm:"not null;check:rating >= 1 AND rating <= 5"`
 	Comment   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
