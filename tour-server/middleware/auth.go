@@ -30,7 +30,7 @@ func JWTMiddleware() echo.MiddlewareFunc {
 			}
 
 			tokenParts := strings.Split(authHeader, " ")
-			if len(tokenParts) != 2 || tokenParts[0] != " Bearer" {
+			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
 				return c.JSON(http.StatusUnauthorized, map[string]string{
 					"error": "Invalid authorization header format",
 				})
