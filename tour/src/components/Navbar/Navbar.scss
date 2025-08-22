@@ -133,6 +133,201 @@
     }
   }
   
+  // Пользовательская секция
+  .navbar-user-section {
+    display: flex;
+    align-items: center;
+  }
+  
+  .navbar-user-trigger {
+    cursor: pointer;
+    border-radius: 12px;
+    transition: background-color 0.2s ease;
+    padding: 0.25rem;
+    
+    &:hover {
+      background-color: #f8f9fa;
+    }
+  }
+  
+  .navbar-user-info {
+    background: transparent !important;
+    
+    .user-info {
+      max-width: 200px;
+      
+      @media (max-width: 1200px) {
+        max-width: 150px;
+      }
+      
+      @media (max-width: 1024px) {
+        max-width: 120px;
+      }
+    }
+    
+    .user-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .user-description {
+      font-size: 0.8rem;
+      color: #666;
+    }
+    
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+
+  .navbar-auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+  
+  .navbar-auth-btn {
+    font-size: 0.9rem;
+    font-weight: 600;
+    height: 36px;
+    min-width: 80px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    
+    &.navbar-login-btn {
+      color: #555;
+      
+      &:hover {
+        color: #2c7be5;
+        background-color: #f5f8ff;
+      }
+    }
+    
+    &.navbar-register-btn {
+      background: linear-gradient(135deg, #2c7be5 0%, #1e5bb8 100%);
+      box-shadow: 0 2px 8px rgba(44, 123, 229, 0.2);
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(44, 123, 229, 0.3);
+      }
+    }
+  }
+  .navbar-dropdown-item {
+    padding: 0.75rem 1rem;
+    min-height: auto;
+    
+    &:hover {
+      background-color: #f5f8ff;
+    }
+    
+    &.navbar-logout {
+      border-top: 1px solid #f0f0f0;
+      margin-top: 0.5rem;
+      
+      &:hover {
+        background-color: #fef2f2;
+      }
+    }
+  }
+  
+  .navbar-dropdown-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    
+    span {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+  }
+  .navbar-mobile-divider {
+    height: 1px;
+    background-color: #e5e7eb;
+    margin: 1rem 0;
+    padding: 0 !important;
+    border: none;
+  }
+  
+  .navbar-mobile-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .navbar-mobile-avatar {
+    flex-shrink: 0;
+  }
+  
+  .navbar-mobile-user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  
+  .navbar-mobile-user-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .navbar-mobile-user-email {
+    font-size: 0.85rem;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .navbar-mobile-auth-btn {
+    font-size: 1rem;
+    font-weight: 600;
+    height: 48px;
+    margin: 0.25rem 0;
+    border-radius: 10px;
+  }
+  
+  .navbar-mobile-logout-btn {
+    margin-top: 1rem;
+    height: 44px;
+    border-radius: 10px;
+    font-weight: 600;
+    
+    &:hover {
+      background-color: #fef2f2;
+    }
+  }
+  
+  .navbar-demo-btn {
+    font-size: 0.8rem;
+    height: 32px;
+    min-width: auto;
+    padding: 0 0.75rem;
+    opacity: 0.7;
+    
+    &:hover {
+      opacity: 1;
+    }
+    
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+  
   @media (min-width: 769px) {
     .sm\:hidden {
       display: none;

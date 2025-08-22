@@ -158,7 +158,7 @@ export const Form = () => {
       seats: parseInt(formData.seats, 10),
       total_price: Number(totalPrice.toFixed(2)),
     };
-
+    console.log(JSON.stringify(bookingData, null, 2));
     try {
       const response = await fetch("http://127.0.0.1:1323/tour/bookings", {
         method: "POST",
@@ -167,6 +167,7 @@ export const Form = () => {
         },
         body: JSON.stringify(bookingData),
       });
+      console.log(response);
 
       if (!response.ok) {
         throw new Error("Booking failed");
