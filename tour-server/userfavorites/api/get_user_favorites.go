@@ -15,7 +15,7 @@ func GetUserFavorites(db *gorm.DB) echo.HandlerFunc {
 		userID := c.Get("user_id").(uint)
 
 		var favorites []dto.UserFavoriteResponse
-		err := db.Table("user_favorites").
+		err := db.Table("tour_user_favorites").
 			Select("user_favorites.tour_id, tours.title").
 			Joins("JOIN tours ON user_favorites.tour_id = tours.id").
 			Where("user_favorites.user_id = ?", userID).

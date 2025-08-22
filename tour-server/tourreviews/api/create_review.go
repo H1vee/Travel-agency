@@ -43,7 +43,7 @@ func CreateTourReview(db *gorm.DB) echo.HandlerFunc {
 
 		response := dto.TourReviewResponse{
 			ID:        review.ID,
-			UserID:    review.ID,
+			UserID:    review.UserID,
 			Rating:    review.Rating,
 			Comment:   review.Comment,
 			CreatedAt: review.CreatedAt,

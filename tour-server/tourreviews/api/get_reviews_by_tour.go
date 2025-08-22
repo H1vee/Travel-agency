@@ -17,7 +17,7 @@ func GetReviewsByTourID(db *gorm.DB) echo.HandlerFunc {
 		var reviews []dto.TourReviewResponse
 
 		err := db.Table("tour_reviews").
-			Select("id,user_id,rating,cooment,created_at").
+			Select("id,user_id,rating,comment,created_at").
 			Where("tour_id = ?", tourID).
 			Scan(&reviews).Error
 

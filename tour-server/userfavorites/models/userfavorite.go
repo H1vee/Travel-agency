@@ -8,3 +8,7 @@ type UserFavorite struct {
 	TourID    uint      `gorm:"not null"`
 	CreatedAt time.Time `gorm:"default:NOW()"`
 }
+
+func (UserFavorite) TableName() string {
+	return "tour_user_favorites"
+}

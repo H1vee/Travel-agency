@@ -1,0 +1,21 @@
+app:
+  name: "Tour Server API"
+  version: "1.0.0"
+  environment: "development"
+  debug: true
+
+server:
+  host: "127.0.0.1"
+  port: "1323"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: ""
+  dbname: "postgres"
+  sslmode: "disable"
+
+jwt:
+  secret: ""
+  expiry_hour: 24

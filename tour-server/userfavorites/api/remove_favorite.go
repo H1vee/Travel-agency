@@ -18,7 +18,7 @@ func RemoveFavorite(db *gorm.DB) echo.HandlerFunc {
 			Delete(&models.UserFavorite{})
 
 		if result.Error != nil {
-			log.Printf("Faile to remove favorite: %v\n", result.Error)
+			log.Printf("Failed to remove favorite: %v\n", result.Error)
 			return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to remove favorite",
 			})
