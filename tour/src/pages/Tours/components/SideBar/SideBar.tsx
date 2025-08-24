@@ -1,19 +1,45 @@
-import { CheckboxGroup, Checkbox, Slider, Input, Button } from "@heroui/react";
-import React, { useState } from "react";
+import { CheckboxGroup, Checkbox, Slider, Input, Button, Badge, Divider, Chip } from "@heroui/react";
+import React, { useState, useEffect } from "react";
+import { Filter, X, RotateCcw, Sparkles } from "lucide-react";
 import "./SideBar.scss";
 
 interface SideBarProps {
   onApply: (filters: any) => void;
   onReset: () => void;
+  isLoading?: boolean;
 }
 
-export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
+export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset, isLoading = false }) => {
   const minValue = 0;
   const maxValue = 20000;
   const [sliderValue, setSliderValue] = useState([minValue, maxValue]);
   const [selectedDurations, setSelectedDurations] = useState<string[]>([]);
   const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  const regions = [
+    { id: "1", name: "Європа", count: 45 },
+    { id: "2", name: "Азія", count: 32 },
+    { id: "3", name: "Америка", count: 28 },
+    { id: "4", name: "Африка", count: 15 },
+    { id: "5", name: "Океанія", count: 8 }
+  ];
+
+  const durations = [
+    { id: "1-3", name: "1-3 дні", count: 25 },
+    { id: "4-7", name: "4-7 днів", count: 48 },
+    { id: "8-14", name: "8-14 днів", count: 32 },
+    { id: "15+", name: "15+ днів", count: 12 }
+  ];
+
+  const ratings = [
+    { id: "5", stars: 5, label: "5 зірок" },
+    { id: "4", stars: 4, label: "4+ зірки" },
+    { id: "3", stars: 3, label: "3+ зірки" },
+    { id: "2", stars: 2, label: "2+ зірки" },
+    { id: "1", stars: 1, label: "1+ зірка" }
+  ];
   
   const handleSliderChange = (newValue: any) => {
     setSliderValue(newValue);
@@ -59,141 +85,319 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset }) => {
     );
   };
 
-  return (
-    <div className="SideBar">
-      <div className="SideBar-header">
-        <h3>Фільтри</h3>
-        {hasActiveFilters() && (
-          <button className="SideBar-reset-link" onClick={resetFilters}>
-            Очистити все
-          </button>
-        )}
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (sliderValue[0] !== minValue || sliderValue[1] !== maxValue) count++;
+    if (selectedDurations.length > 0) count++;
+    if (selectedRatings.length > 0) count++;
+    if (selectedRegions.length > 0) count++;
+    return count;
+  };
+
+  const removeFilter = (type: string, value?: string) => {
+    switch (type) {
+      case 'price':
+        setSliderValue([minValue, maxValue]);
+        break;
+      case 'duration':
+        if (value) {
+          setSelectedDurations(prev => prev.filter(d => d !== value));
+        }
+        break;
+      case 'rating':
+        if (value) {
+          setSelectedRatings(prev => prev.filter(r => r !== value));
+        }
+        break;
+      case 'region':
+        if (value) {
+          setSelectedRegions(prev => prev.filter(r => r !== value));
+        }
+        break;
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="stars-container">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span
+            key={star}
+            className={`star ${star <= rating ? 'filled' : 'empty'}`}
+          >
+            ★
+          </span>
+        ))}
       </div>
-      
-      <div className="SideBar-section">
-        <h4 className="SideBar-section-title">Ціна (₴)</h4>
-        <div className="SideBar-slider">
-          <Slider
-            maxValue={maxValue}
-            minValue={minValue}
-            step={100}
-            value={sliderValue}
-            onChange={handleSliderChange}
+    );
+  };
+
+  // Auto-apply filters with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (hasActiveFilters()) {
+        applyFilters();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [sliderValue, selectedDurations, selectedRatings, selectedRegions]);
+
+  return (
+    <div className={`sidebar ${isCollapsed ? 'sidebar--collapsed' : ''}`}>
+      <div className="sidebar__header">
+        <div className="sidebar__title">
+          <Filter size={20} />
+          <h3>Фільтри</h3>
+          {hasActiveFilters() && (
+            <Badge 
+              color="primary" 
+              size="sm"
+              className="sidebar__badge"
+            >
+              {getActiveFiltersCount()}
+            </Badge>
+          )}
+        </div>
+        
+        <div className="sidebar__controls">
+          {hasActiveFilters() && (
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              onClick={resetFilters}
+              className="sidebar__reset-btn"
+              aria-label="Очистити всі фільтри"
+            >
+              <RotateCcw size={16} />
+            </Button>
+          )}
+          
+          <Button
+            isIconOnly
             size="sm"
-            className="SideBar-slider-control"
-          />
-          <div className="SideBar-inputs">
-            <div className="SideBar-input-group">
-              <label>Від</label>
-              <Input 
-                value={sliderValue[0].toString()} 
-                onChange={handleMinInputChange}
-                size="sm"
-                className="SideBar-input"
-                aria-label="Мінімальна ціна"
-              />
-            </div>
-            <div className="SideBar-input-group">
-              <label>До</label>
-              <Input 
-                value={sliderValue[1].toString()} 
-                onChange={handleMaxInputChange}
-                size="sm"
-                className="SideBar-input"
-                aria-label="Максимальна ціна"
-              />
-            </div>
-          </div>
+            variant="light"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="sidebar__collapse-btn"
+            aria-label={isCollapsed ? "Розгорнути" : "Згорнути"}
+          >
+            <X size={16} className={isCollapsed ? 'rotated' : ''} />
+          </Button>
         </div>
       </div>
 
-      <div className="SideBar-section">
-        <CheckboxGroup
-          label="Регіон"
-          value={selectedRegions}
-          onChange={setSelectedRegions}
-          className="SideBar-checkbox-group"
-        >
-          <Checkbox value="1" className="SideBar-checkbox">Європа</Checkbox>
-          <Checkbox value="2" className="SideBar-checkbox">Азія</Checkbox>
-          <Checkbox value="3" className="SideBar-checkbox">Америка</Checkbox>
-          <Checkbox value="4" className="SideBar-checkbox">Африка</Checkbox>
-          <Checkbox value="5" className="SideBar-checkbox">Океанія</Checkbox>
-        </CheckboxGroup>
-      </div>
+      {!isCollapsed && (
+        <>
+          {/* Active Filters */}
+          {hasActiveFilters() && (
+            <div className="sidebar__active-filters">
+              <div className="active-filters__header">
+                <Sparkles size={14} />
+                <span>Активні фільтри</span>
+              </div>
+              <div className="active-filters__list">
+                {(sliderValue[0] !== minValue || sliderValue[1] !== maxValue) && (
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    onClose={() => removeFilter('price')}
+                  >
+                    ₴{sliderValue[0]} - ₴{sliderValue[1]}
+                  </Chip>
+                )}
+                {selectedRegions.map(regionId => {
+                  const region = regions.find(r => r.id === regionId);
+                  return region ? (
+                    <Chip
+                      key={regionId}
+                      size="sm"
+                      variant="flat"
+                      color="secondary"
+                      onClose={() => removeFilter('region', regionId)}
+                    >
+                      {region.name}
+                    </Chip>
+                  ) : null;
+                })}
+                {selectedDurations.map(duration => (
+                  <Chip
+                    key={duration}
+                    size="sm"
+                    variant="flat"
+                    color="success"
+                    onClose={() => removeFilter('duration', duration)}
+                  >
+                    {durations.find(d => d.id === duration)?.name}
+                  </Chip>
+                ))}
+                {selectedRatings.map(rating => (
+                  <Chip
+                    key={rating}
+                    size="sm"
+                    variant="flat"
+                    color="warning"
+                    onClose={() => removeFilter('rating', rating)}
+                  >
+                    {rating}+ ★
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          )}
 
-      <div className="SideBar-section">
-        <CheckboxGroup
-          label="Тривалість туру"
-          value={selectedDurations}
-          onChange={setSelectedDurations}
-          className="SideBar-checkbox-group"
-        >
-          <Checkbox value="5" className="SideBar-checkbox">5 днів</Checkbox>
-          <Checkbox value="7" className="SideBar-checkbox">7 днів</Checkbox>
-          <Checkbox value="10" className="SideBar-checkbox">10 днів</Checkbox>
-        </CheckboxGroup>
-      </div>
-
-      <div className="SideBar-section">
-        <CheckboxGroup
-          label="Рейтинг туру"
-          value={selectedRatings}
-          onChange={(newRatings) => {
-            if (newRatings.length <= 2) {
-              setSelectedRatings(newRatings);
-            }
-          }}
-          className="SideBar-checkbox-group"
-        >
-          <div className="SideBar-ratings">
-            <Checkbox value="5" className="SideBar-checkbox">
-              <div className="SideBar-rating">
-                <span className="stars">★★★★★</span>
+          <Divider className="sidebar__divider" />
+          
+          {/* Price Range */}
+          <div className="sidebar__section">
+            <h4 className="sidebar__section-title">
+              <span>Ціна за тур</span>
+              <span className="price-range">₴{sliderValue[0]} - ₴{sliderValue[1]}</span>
+            </h4>
+            <div className="sidebar__slider">
+              <Slider
+                maxValue={maxValue}
+                minValue={minValue}
+                step={100}
+                value={sliderValue}
+                onChange={handleSliderChange}
+                size="sm"
+                className="sidebar__slider-control"
+                color="primary"
+                showTooltip={true}
+                formatOptions={{
+                  style: "currency",
+                  currency: "UAH",
+                  minimumFractionDigits: 0
+                }}
+              />
+              <div className="sidebar__inputs">
+                <Input
+                  value={sliderValue[0].toString()}
+                  onChange={handleMinInputChange}
+                  size="sm"
+                  variant="bordered"
+                  startContent={<span className="currency">₴</span>}
+                  label="Мінімум"
+                  className="sidebar__input"
+                />
+                <Input
+                  value={sliderValue[1].toString()}
+                  onChange={handleMaxInputChange}
+                  size="sm"
+                  variant="bordered"
+                  startContent={<span className="currency">₴</span>}
+                  label="Максимум"
+                  className="sidebar__input"
+                />
               </div>
-            </Checkbox>
-            <Checkbox value="4" className="SideBar-checkbox">
-              <div className="SideBar-rating">
-                <span className="stars">★★★★</span><span className="empty-stars">★</span>
-              </div>
-            </Checkbox>
-            <Checkbox value="3" className="SideBar-checkbox">
-              <div className="SideBar-rating">
-                <span className="stars">★★★</span><span className="empty-stars">★★</span>
-              </div>
-            </Checkbox>
-            <Checkbox value="2" className="SideBar-checkbox">
-              <div className="SideBar-rating">
-                <span className="stars">★★</span><span className="empty-stars">★★★</span>
-              </div>
-            </Checkbox>
-            <Checkbox value="1" className="SideBar-checkbox">
-              <div className="SideBar-rating">
-                <span className="stars">★</span><span className="empty-stars">★★★★</span>
-              </div>
-            </Checkbox>
+            </div>
           </div>
-        </CheckboxGroup>
-      </div>
 
-      <div className="SideBar-actions">
-        <Button 
-          onPress={resetFilters} 
-          color="default" 
-          variant="bordered"
-          className="SideBar-btn-reset"
-        >
-          Відмінити
-        </Button>
-        <Button 
-          onPress={applyFilters} 
-          color="primary" 
-          variant="solid"
-          className="SideBar-btn-apply"
-        >
-          Застосувати
-        </Button>
-      </div>
+          <Divider className="sidebar__divider" />
+
+          {/* Regions */}
+          <div className="sidebar__section">
+            <CheckboxGroup
+              label="Регіони"
+              value={selectedRegions}
+              onChange={setSelectedRegions}
+              className="sidebar__checkbox-group"
+            >
+              {regions.map(region => (
+                <Checkbox 
+                  key={region.id}
+                  value={region.id} 
+                  className="sidebar__checkbox"
+                >
+                  <div className="checkbox-content">
+                    <span className="checkbox-label">{region.name}</span>
+                    <Badge size="sm" variant="flat" color="default">
+                      {region.count}
+                    </Badge>
+                  </div>
+                </Checkbox>
+              ))}
+            </CheckboxGroup>
+          </div>
+
+          <Divider className="sidebar__divider" />
+
+          {/* Duration */}
+          <div className="sidebar__section">
+            <CheckboxGroup
+              label="Тривалість туру"
+              value={selectedDurations}
+              onChange={setSelectedDurations}
+              className="sidebar__checkbox-group"
+            >
+              {durations.map(duration => (
+                <Checkbox 
+                  key={duration.id}
+                  value={duration.id} 
+                  className="sidebar__checkbox"
+                >
+                  <div className="checkbox-content">
+                    <span className="checkbox-label">{duration.name}</span>
+                    <Badge size="sm" variant="flat" color="default">
+                      {duration.count}
+                    </Badge>
+                  </div>
+                </Checkbox>
+              ))}
+            </CheckboxGroup>
+          </div>
+
+          <Divider className="sidebar__divider" />
+
+          {/* Ratings */}
+          <div className="sidebar__section">
+            <CheckboxGroup
+              label="Рейтинг туру"
+              value={selectedRatings}
+              onChange={setSelectedRatings}
+              className="sidebar__checkbox-group"
+            >
+              {ratings.map(rating => (
+                <Checkbox 
+                  key={rating.id}
+                  value={rating.id} 
+                  className="sidebar__checkbox sidebar__checkbox--rating"
+                >
+                  <div className="rating-content">
+                    {renderStars(rating.stars)}
+                    <span className="rating-label">{rating.label}</span>
+                  </div>
+                </Checkbox>
+              ))}
+            </CheckboxGroup>
+          </div>
+
+          {/* Actions */}
+          <div className="sidebar__actions">
+            <Button 
+              onClick={resetFilters}
+              variant="bordered"
+              className="sidebar__btn sidebar__btn--reset"
+              startContent={<RotateCcw size={16} />}
+              isDisabled={!hasActiveFilters()}
+            >
+              Скинути
+            </Button>
+            <Button 
+              onClick={applyFilters}
+              color="primary"
+              variant="solid"
+              className="sidebar__btn sidebar__btn--apply"
+              startContent={<Filter size={16} />}
+              isLoading={isLoading}
+            >
+              Застосувати
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

@@ -15,65 +15,77 @@ import {
   DropdownItem,
   Avatar,
   User,
+  Badge,
+  Tooltip,
 } from "@heroui/react";
 import { Logo } from "../Logo/Logo";
-import { useState } from "react";
-
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-}
+import { AuthModals } from "../Auth/AuthModals";
+import { useAuth } from "../../context/AuthContext";
+import { useState, useEffect } from "react";
+import { 
+  HeartIcon, 
+  UserIcon, 
+  Cog6ToothIcon, 
+  ArrowRightOnRectangleIcon,
+  CalendarDaysIcon 
+} from '@heroicons/react/24/outline';
 
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeLink, setActiveLink] = useState("/");
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   
-  const [user, setUser] = useState<UserData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const currentPath = window.location.pathname;
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
 
   const handleLogin = () => {
-    console.log("Открыть модальное окно входа");
+    setIsLoginOpen(true);
   };
 
   const handleRegister = () => {
-    console.log("Открыть модальное окно регистрации");
+    setIsRegisterOpen(true);
   };
 
-  const handleLogout = async () => {
-    setIsLoading(true);
-    try {
-      console.log("Выход из системы");
-      setUser(null);
-    } catch (error) {
-      console.error("Ошибка при выходе:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
   };
 
-  const handleProfileClick = () => {
-    console.log("Переход в профиль");
+  const switchToRegister = () => {
+    setIsLoginOpen(false);
+    setIsRegisterOpen(true);
   };
 
-  const toggleUserState = () => {
-    if (user) {
-      setUser(null);
-    } else {
-      setUser({
-        id: "1",
-        name: "Іван Петренко",
-        email: "ivan@example.com",
-        avatar: "https://i.pravatar.cc/150?u=ivan@example.com"
-      });
-    }
+  const switchToLogin = () => {
+    setIsRegisterOpen(false);
+    setIsLoginOpen(true);
+  };
+
+  const getAvatarUrl = (user: any) => {
+    if (user?.avatar_url) return user.avatar_url;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || '')}&background=2c7be5&color=fff&size=128`;
   };
 
   const renderUserSection = () => {
-    if (user) {
+    if (isLoading) {
+      return (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+          <div className="hidden md:block w-20 h-4 bg-gray-200 animate-pulse rounded" />
+        </div>
+      );
+    }
+
+    if (isAuthenticated && user) {
       return (
         <Dropdown placement="bottom-end">
           <DropdownTrigger>
@@ -82,59 +94,67 @@ export const Navbar = () => {
                 as="button"
                 avatarProps={{
                   isBordered: true,
-                  src: user.avatar,
+                  src: getAvatarUrl(user),
                   size: "sm",
-                  color: "primary"
+                  color: "primary",
+                  showFallback: true,
                 }}
-                className="navbar-user-info"
-                description={user.email}
+                className="navbar-user-info transition-transform hover:scale-105"
+                description={
+                  <div className="flex items-center gap-1">
+                    <span>{user.email}</span>
+                    {user.is_verified && (
+                      <Badge color="success" variant="flat" size="sm">
+                        ✓
+                      </Badge>
+                    )}
+                  </div>
+                }
                 name={user.name}
               />
             </div>
           </DropdownTrigger>
-          <DropdownMenu aria-label="User Actions" variant="flat">
+          <DropdownMenu aria-label="User Actions" variant="flat" className="w-56">
             <DropdownItem
               key="profile"
               className="navbar-dropdown-item"
-              onClick={handleProfileClick}
+              startContent={<UserIcon className="w-4 h-4" />}
+              description="Переглянути та редагувати профіль"
             >
-              <div className="navbar-dropdown-content">
-                <span>Мій профіль</span>
-              </div>
+              <span className="font-medium">Мій профіль</span>
             </DropdownItem>
             <DropdownItem
               key="bookings"
               className="navbar-dropdown-item"
+              startContent={<CalendarDaysIcon className="w-4 h-4" />}
+              description="Переглянути мої бронювання"
             >
-              <div className="navbar-dropdown-content">
-                <span>Мої бронювання</span>
-              </div>
+              <span className="font-medium">Мої бронювання</span>
             </DropdownItem>
             <DropdownItem
               key="favorites"
               className="navbar-dropdown-item"
+              startContent={<HeartIcon className="w-4 h-4" />}
+              description="Обрані тури та місця"
             >
-              <div className="navbar-dropdown-content">
-                <span>Обране</span>
-              </div>
+              <span className="font-medium">Обране</span>
             </DropdownItem>
             <DropdownItem
               key="settings"
               className="navbar-dropdown-item"
+              startContent={<Cog6ToothIcon className="w-4 h-4" />}
+              description="Налаштування акаунту"
             >
-              <div className="navbar-dropdown-content">
-                <span>Налаштування</span>
-              </div>
+              <span className="font-medium">Налаштування</span>
             </DropdownItem>
             <DropdownItem
               key="logout"
               className="navbar-dropdown-item navbar-logout"
               color="danger"
+              startContent={<ArrowRightOnRectangleIcon className="w-4 h-4" />}
               onClick={handleLogout}
             >
-              <div className="navbar-dropdown-content">
-                <span>{isLoading ? "Вихід..." : "Вийти"}</span>
-              </div>
+              <span className="font-medium">Вийти</span>
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>
@@ -144,7 +164,7 @@ export const Navbar = () => {
     return (
       <div className="navbar-auth-buttons">
         <Button
-          variant="light"
+          variant="ghost"
           className="navbar-auth-btn navbar-login-btn"
           onClick={handleLogin}
           size="sm"
@@ -156,6 +176,7 @@ export const Navbar = () => {
           className="navbar-auth-btn navbar-register-btn"
           onClick={handleRegister}
           size="sm"
+          variant="shadow"
         >
           Реєстрація
         </Button>
@@ -164,39 +185,51 @@ export const Navbar = () => {
   };
 
   const renderMobileUserSection = () => {
-    if (user) {
+    if (isAuthenticated && user) {
       return (
         <>
           <NavbarMenuItem>
             <div className="navbar-mobile-user-info">
               <Avatar
-                src={user.avatar}
-                size="sm"
+                src={getAvatarUrl(user)}
+                size="md"
                 className="navbar-mobile-avatar"
+                showFallback
               />
               <div className="navbar-mobile-user-details">
-                <span className="navbar-mobile-user-name">{user.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="navbar-mobile-user-name">{user.name}</span>
+                  {user.is_verified && (
+                    <Badge color="success" variant="flat" size="sm">
+                      ✓
+                    </Badge>
+                  )}
+                </div>
                 <span className="navbar-mobile-user-email">{user.email}</span>
               </div>
             </div>
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Link className="navbar-mobile-link" href="/profile" size="lg">
+            <Link className="navbar-mobile-link flex items-center gap-2" href="/profile" size="lg">
+              <UserIcon className="w-5 h-5" />
               Мій профіль
             </Link>
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Link className="navbar-mobile-link" href="/bookings" size="lg">
+            <Link className="navbar-mobile-link flex items-center gap-2" href="/bookings" size="lg">
+              <CalendarDaysIcon className="w-5 h-5" />
               Мої бронювання
             </Link>
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Link className="navbar-mobile-link" href="/favorites" size="lg">
+            <Link className="navbar-mobile-link flex items-center gap-2" href="/favorites" size="lg">
+              <HeartIcon className="w-5 h-5" />
               Обране
             </Link>
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Link className="navbar-mobile-link" href="/settings" size="lg">
+            <Link className="navbar-mobile-link flex items-center gap-2" href="/settings" size="lg">
+              <Cog6ToothIcon className="w-5 h-5" />
               Налаштування
             </Link>
           </NavbarMenuItem>
@@ -206,10 +239,10 @@ export const Navbar = () => {
               color="danger"
               className="navbar-mobile-logout-btn"
               onClick={handleLogout}
-              isLoading={isLoading}
+              startContent={<ArrowRightOnRectangleIcon className="w-5 h-5" />}
               fullWidth
             >
-              {isLoading ? "Вихід..." : "Вийти"}
+              Вийти
             </Button>
           </NavbarMenuItem>
         </>
@@ -220,7 +253,7 @@ export const Navbar = () => {
       <>
         <NavbarMenuItem>
           <Button
-            variant="light"
+            variant="ghost"
             className="navbar-mobile-auth-btn"
             onClick={handleLogin}
             fullWidth
@@ -233,6 +266,7 @@ export const Navbar = () => {
             color="primary"
             className="navbar-mobile-auth-btn"
             onClick={handleRegister}
+            variant="shadow"
             fullWidth
           >
             Реєстрація
@@ -243,89 +277,94 @@ export const Navbar = () => {
   };
 
   return (
-    <NextNavbar
-      onMenuOpenChange={setIsMenuOpen}
-      isMenuOpen={isMenuOpen}
-      className="navbar-container"
-      maxWidth="xl"
-      isBordered
-    >
-      <NavbarContent>
-        <NavbarMenuToggle
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-          className="navbar-menu-toggle sm:hidden"
-        />
-        <NavbarBrand className="navbar-brand">
-          <div className="navbar-logo">
-            <Logo />
-          </div>
-          <span className="navbar-brand-text">OpenWorld</span>
-        </NavbarBrand>
-      </NavbarContent>
+    <>
+      <NextNavbar
+        onMenuOpenChange={setIsMenuOpen}
+        isMenuOpen={isMenuOpen}
+        className="navbar-container backdrop-blur-md bg-white/95"
+        maxWidth="xl"
+        isBordered={false}
+      >
+        <NavbarContent>
+          <NavbarMenuToggle
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            className="navbar-menu-toggle sm:hidden"
+          />
+          <NavbarBrand className="navbar-brand">
+            <Tooltip content="OpenWorld - Ваш гід у світі подорожей" placement="bottom">
+              <div className="navbar-logo">
+                <Logo />
+              </div>
+            </Tooltip>
+            <span className="navbar-brand-text bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              OpenWorld
+            </span>
+          </NavbarBrand>
+        </NavbarContent>
 
-      <NavbarContent className="navbar-links-container" justify="center">
-        <NavbarItem isActive={currentPath === "/"}>
-          <Link
-            className={`navbar-link ${currentPath === "/" ? "active" : ""}`}
-            href="/"
-            aria-current={currentPath === "/" ? "page" : undefined}
-            size="lg"
-          >
-            ГОЛОВНА
-          </Link>
-        </NavbarItem>
-        <NavbarItem isActive={currentPath === "/Tours"}>
-          <Link
-            className={`navbar-link ${currentPath === "/Tours" ? "active" : ""}`}
-            href="/Tours"
-            aria-current={currentPath === "/Tours" ? "page" : undefined}
-            size="lg"
-          >
-            ПОШУК ТУРІВ
-          </Link>
-        </NavbarItem>
-      </NavbarContent>
+        <NavbarContent className="navbar-links-container" justify="center">
+          <NavbarItem isActive={currentPath === "/"}>
+            <Link
+              className={`navbar-link ${currentPath === "/" ? "active" : ""}`}
+              href="/"
+              aria-current={currentPath === "/" ? "page" : undefined}
+              size="lg"
+            >
+              ГОЛОВНА
+            </Link>
+          </NavbarItem>
+          <NavbarItem isActive={currentPath === "/Tours"}>
+            <Link
+              className={`navbar-link ${currentPath === "/Tours" ? "active" : ""}`}
+              href="/Tours"
+              aria-current={currentPath === "/Tours" ? "page" : undefined}
+              size="lg"
+            >
+              ПОШУК ТУРІВ
+            </Link>
+          </NavbarItem>
+        </NavbarContent>
 
-      <NavbarContent justify="end">
-        <NavbarItem className="navbar-user-section">
-          {renderUserSection()}
-        </NavbarItem>
-        <NavbarItem>
-          <Button
-            size="sm"
-            variant="bordered"
-            onClick={toggleUserState}
-            className="navbar-demo-btn"
-          >
-            {user ? "Демо: Выйти" : "Демо: Войти"}
-          </Button>
-        </NavbarItem>
-      </NavbarContent>
+        <NavbarContent justify="end">
+          <NavbarItem className="navbar-user-section">
+            {renderUserSection()}
+          </NavbarItem>
+        </NavbarContent>
 
-      <NavbarMenu className="navbar-mobile-menu">
-        <NavbarMenuItem>
-          <Link
-            className={`navbar-mobile-link ${currentPath === "/" ? "active" : ""}`}
-            href="/"
-            size="lg"
-          >
-            ГОЛОВНА
-          </Link>
-        </NavbarMenuItem>
-        <NavbarMenuItem>
-          <Link
-            className={`navbar-mobile-link ${currentPath === "/Tours" ? "active" : ""}`}
-            href="/Tours"
-            size="lg"
-          >
-            ПОШУК ТУРІВ
-          </Link>
-        </NavbarMenuItem>
-        
-        <NavbarMenuItem className="navbar-mobile-divider" />
-        
-        {renderMobileUserSection()}
-      </NavbarMenu>
-    </NextNavbar>
+        <NavbarMenu className="navbar-mobile-menu backdrop-blur-md bg-white/95">
+          <NavbarMenuItem>
+            <Link
+              className={`navbar-mobile-link ${currentPath === "/" ? "active" : ""}`}
+              href="/"
+              size="lg"
+            >
+              ГОЛОВНА
+            </Link>
+          </NavbarMenuItem>
+          <NavbarMenuItem>
+            <Link
+              className={`navbar-mobile-link ${currentPath === "/Tours" ? "active" : ""}`}
+              href="/Tours"
+              size="lg"
+            >
+              ПОШУК ТУРІВ
+            </Link>
+          </NavbarMenuItem>
+          
+          <NavbarMenuItem className="navbar-mobile-divider" />
+          
+          {renderMobileUserSection()}
+        </NavbarMenu>
+      </NextNavbar>
+
+      <AuthModals
+        isLoginOpen={isLoginOpen}
+        isRegisterOpen={isRegisterOpen}
+        onLoginClose={() => setIsLoginOpen(false)}
+        onRegisterClose={() => setIsRegisterOpen(false)}
+        onSwitchToRegister={switchToRegister}
+        onSwitchToLogin={switchToLogin}
+      />
+    </>
   );
 };

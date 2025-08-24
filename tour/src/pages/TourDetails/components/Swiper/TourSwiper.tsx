@@ -1,7 +1,7 @@
 // TourSwiper.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, A11y, Navigation, Virtual } from 'swiper/modules';
+import { Pagination, A11y, Navigation, Virtual, Autoplay, EffectFade, Keyboard } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
@@ -10,6 +10,7 @@ import { useParams } from 'react-router';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
+import 'swiper/css/effect-fade';
 import './TourSwiper.scss';
 
 // Types
@@ -17,86 +18,219 @@ interface Tour {
   tourID: number;
   image_src: string;
   title?: string;
+  description?: string;
 }
 
 interface TourSwiperProps {
   maxSlides?: number;
   height?: string;
   autoplay?: boolean;
+  autoplayDelay?: number;
+  effect?: 'slide' | 'fade';
+  showCounter?: boolean;
+  showThumbnails?: boolean;
+  enableKeyboard?: boolean;
+  pauseOnHover?: boolean;
 }
 
 export const TourSwiper: React.FC<TourSwiperProps> = ({
   maxSlides = 4,  
   height = '500px',
-  autoplay = false
+  autoplay = false,
+  autoplayDelay = 5000,
+  effect = 'slide',
+  showCounter = true,
+  showThumbnails = false,
+  enableKeyboard = true,
+  pauseOnHover = true
 }) => {
   const { id } = useParams<{ id: string }>();
   const [activeIndex, setActiveIndex] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState<Record<number, boolean>>({});
+  const [isAutoplayPaused, setIsAutoplayPaused] = useState(false);
+  const [swiper, setSwiper] = useState<SwiperType | null>(null);
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
   
-  // Fetch tour data
+  // Fetch tour data with enhanced error handling
   const { 
     isPending, 
     error, 
-    data: tours = []
+    data: tours = [],
+    refetch
   } = useQuery({
     queryKey: ['toursData', id],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/tour-carousel/${id}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        
+        const response = await fetch(`/api/tour-carousel/${id}`, {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'max-age=300' // 5 minutes cache
+          }
+        });
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch tours: ${response.status}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data: Tour[] = await response.json();
-        return data;
+        
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid response format: expected array');
+        }
+        
+        return data.filter(tour => tour.image_src && tour.tourID);
       } catch (err) {
         console.error('Error fetching tour data:', err);
         throw err;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
   
   // Prepare display data
   const displayTours = tours.slice(0, maxSlides);
   
+  // Enhanced image loading with caching
+  const preloadImage = useCallback((src: string, index: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const fullSrc = `${process.env.REACT_APP_API_BASE_URL || ''}${src}`;
+      
+      // Check cache first
+      if (imageCache.current.has(fullSrc)) {
+        setImagesLoaded(prev => ({ ...prev, [index]: true }));
+        resolve();
+        return;
+      }
+      
+      const img = new Image();
+      img.onload = () => {
+        imageCache.current.set(fullSrc, img);
+        setImagesLoaded(prev => ({ ...prev, [index]: true }));
+        resolve();
+      };
+      img.onerror = () => {
+        console.warn(`Failed to load image: ${fullSrc}`);
+        reject(new Error(`Failed to load image: ${fullSrc}`));
+      };
+      img.src = fullSrc;
+    });
+  }, []);
+  
   // Handle image load events
-  const handleImageLoaded = (index: number) => {
+  const handleImageLoaded = useCallback((index: number) => {
     setImagesLoaded(prev => ({ ...prev, [index]: true }));
-  };
+  }, []);
   
   // Reset loaded state when tours change
   useEffect(() => {
     setImagesLoaded({});
+    setActiveIndex(0);
   }, [tours]);
 
-  // Preload images
+  // Preload images with error handling
   useEffect(() => {
     if (displayTours.length) {
-      displayTours.forEach((tour, index) => {
-        const img = new Image();
-        img.onload = () => handleImageLoaded(index);
-        img.src = `${process.env.REACT_APP_API_BASE_URL || ''}${tour.image_src}`;
-      });
+      const preloadPromises = displayTours.map((tour, index) =>
+        preloadImage(tour.image_src, index).catch(() => {
+          // Silently handle individual image failures
+          console.warn(`Image ${index} failed to preload`);
+        })
+      );
+      
+      Promise.allSettled(preloadPromises);
     }
-  }, [displayTours]);
+  }, [displayTours, preloadImage]);
 
-  // Loading state
+  // Handle autoplay pause/resume
+  useEffect(() => {
+    if (!swiper || !autoplay) return;
+    
+    if (isAutoplayPaused) {
+      swiper.autoplay?.stop();
+    } else {
+      swiper.autoplay?.start();
+    }
+  }, [swiper, isAutoplayPaused, autoplay]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!enableKeyboard || !swiper) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        swiper.slidePrev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        swiper.slideNext();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        if (autoplay) {
+          setIsAutoplayPaused(prev => !prev);
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [enableKeyboard, swiper, autoplay]);
+
+  // Mouse enter/leave handlers for autoplay pause
+  const handleMouseEnter = useCallback(() => {
+    if (pauseOnHover && autoplay) {
+      setIsAutoplayPaused(true);
+    }
+  }, [pauseOnHover, autoplay]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (pauseOnHover && autoplay) {
+      setIsAutoplayPaused(false);
+    }
+  }, [pauseOnHover, autoplay]);
+
+  // Swiper event handlers
+  const handleSlideChange = useCallback((swiperInstance: SwiperType) => {
+    setActiveIndex(swiperInstance.activeIndex);
+  }, []);
+
+  const handleSwiperInit = useCallback((swiperInstance: SwiperType) => {
+    setSwiper(swiperInstance);
+  }, []);
+
+  // Loading state with skeleton
   if (isPending) {
     return (
-      <div className="tour-swiper__loading">
-        <div className="tour-swiper__loading-spinner" aria-label="Loading tours" />
+      <div className="tour-swiper" style={{ height }}>
+        <div className="tour-swiper__loading" role="status" aria-label="Loading tour images">
+          <div className="tour-swiper__loading-spinner" />
+          <span className="sr-only">Loading tour images...</span>
+        </div>
       </div>
     );
   }
 
-  // Error state
+  // Error state with retry option
   if (error) {
     return (
-      <div className="tour-swiper__error" role="alert">
-        <p>Unable to load tour images. Please try again later.</p>
+      <div className="tour-swiper" style={{ height }}>
+        <div className="tour-swiper__error" role="alert">
+          <p>Unable to load tour images</p>
+          <button 
+            onClick={() => refetch()}
+            className="tour-swiper__retry-button"
+            type="button"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -104,27 +238,61 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
   // Empty state
   if (!displayTours.length) {
     return (
-      <div className="tour-swiper__empty">
-        <p>No tour images available</p>
+      <div className="tour-swiper" style={{ height }}>
+        <div className="tour-swiper__empty" role="status">
+          <p>No tour images available</p>
+        </div>
       </div>
     );
   }
 
+  const swiperModules = [Pagination, A11y, Navigation, Virtual];
+  if (autoplay) swiperModules.push(Autoplay);
+  if (effect === 'fade') swiperModules.push(EffectFade);
+  if (enableKeyboard) swiperModules.push(Keyboard);
+
   return (
-    <div className="tour-swiper" style={{ height }}>
+    <div 
+      className="tour-swiper" 
+      style={{ height }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      role="region"
+      aria-label="Tour image gallery"
+    >
       <Swiper
-        modules={[Pagination, A11y, Navigation, Virtual]}
+        modules={swiperModules}
         slidesPerView={1}
         spaceBetween={0}
         navigation={true}
         pagination={{ 
           clickable: true,
-          dynamicBullets: displayTours.length > 5
+          dynamicBullets: displayTours.length > 5,
+          renderBullet: (index: number, className: string) => 
+            `<span class="${className}" role="button" aria-label="Go to slide ${index + 1}"></span>`
         }}
-        virtual={true}
-        onSlideChange={(swiper: SwiperType) => setActiveIndex(swiper.activeIndex)}
-        autoplay={autoplay ? { delay: 5000, disableOnInteraction: false } : false}
+        virtual={displayTours.length > 10}
+        effect={effect}
+        fadeEffect={{
+          crossFade: true
+        }}
+        autoplay={autoplay ? {
+          delay: autoplayDelay,
+          disableOnInteraction: false,
+          pauseOnMouseEnter: pauseOnHover
+        } : false}
+        keyboard={{
+          enabled: enableKeyboard,
+          onlyInViewport: true
+        }}
+        onSlideChange={handleSlideChange}
+        onSwiper={handleSwiperInit}
         className="tour-swiper__container"
+        a11y={{
+          prevSlideMessage: 'Previous tour image',
+          nextSlideMessage: 'Next tour image',
+          slideLabelMessage: 'Tour image {{index}} of {{slidesLength}}'
+        }}
       >
         {displayTours.map((tour, index) => (
           <SwiperSlide 
@@ -133,7 +301,7 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
             className="tour-swiper__slide"
           >
             {!imagesLoaded[index] && (
-              <div className="tour-swiper__slide-loading" />
+              <div className="tour-swiper__slide-loading" aria-hidden="true" />
             )}
             <div 
               className="tour-swiper__slide-image"
@@ -141,16 +309,63 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
                 backgroundImage: `url(${process.env.REACT_APP_API_BASE_URL || ''}${tour.image_src})`,
                 opacity: imagesLoaded[index] ? 1 : 0
               }}
+              role="img"
+              aria-label={tour.title || `Tour image ${index + 1}`}
             />
-            <div className="tour-swiper__slide-overlay" />
+            <div className="tour-swiper__slide-overlay" aria-hidden="true" />
+            {tour.title && (
+              <div className="tour-swiper__slide-title">
+                <h3>{tour.title}</h3>
+                {tour.description && <p>{tour.description}</p>}
+              </div>
+            )}
           </SwiperSlide>
         ))}
       </Swiper>
       
-      {displayTours.length > 1 && (
-        <div className="tour-swiper__counter" aria-live="polite">
+      {showCounter && displayTours.length > 1 && (
+        <div 
+          className="tour-swiper__counter" 
+          aria-live="polite"
+          aria-label={`Image ${activeIndex + 1} of ${displayTours.length}`}
+        >
           {activeIndex + 1} / {displayTours.length}
         </div>
+      )}
+      
+      {showThumbnails && displayTours.length > 1 && (
+        <div className="tour-swiper__thumbnails" role="tablist">
+          {displayTours.map((tour, index) => (
+            <button
+              key={`thumb-${tour.tourID}-${index}`}
+              className={`tour-swiper__thumbnail ${activeIndex === index ? 'active' : ''}`}
+              onClick={() => swiper?.slideTo(index)}
+              role="tab"
+              aria-selected={activeIndex === index}
+              aria-label={`Show image ${index + 1}`}
+              type="button"
+            >
+              <img
+                src={`${process.env.REACT_APP_API_BASE_URL || ''}${tour.image_src}`}
+                alt={tour.title || `Tour thumbnail ${index + 1}`}
+                loading="lazy"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+      
+      {autoplay && (
+        <button
+          className={`tour-swiper__play-pause ${isAutoplayPaused ? 'paused' : 'playing'}`}
+          onClick={() => setIsAutoplayPaused(prev => !prev)}
+          aria-label={isAutoplayPaused ? 'Resume slideshow' : 'Pause slideshow'}
+          type="button"
+        >
+          <span aria-hidden="true">
+            {isAutoplayPaused ? '▶️' : '⏸️'}
+          </span>
+        </button>
       )}
     </div>
   );
