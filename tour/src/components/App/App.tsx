@@ -13,6 +13,7 @@ import { Tours } from '../../pages/Tours/Tours';
 import { TourDetails } from '../../pages/TourDetails/TourDetails';
 import { UserProfile } from '../../pages/Profile/UserProfile';
 import { UserBookings } from '../../pages/Bookings/UserBookings';
+import { UserFavorites } from '../../pages/Favorites/UserFavorites';
 import {
   QueryClient,
   QueryClientProvider,
@@ -26,60 +27,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <HeroUIProvider>
-        <AuthProvider>
-          <Router>
-            <div className="App">
-              <main className="main-content">
-                <Routes>
-                  <Route path="/" element={<Main />} />
-                  <Route path="/AboutUs" element={<AboutUs />} />
-                  <Route path="/Tours" element={<Tours />} />
-                  <Route path="/TourDetails/:id" element={<TourDetails />} />
-                  
-                  <Route path="/profile" element={<UserProfile />} />
-                  <Route path="/bookings" element={<UserBookings />} />
-                  <Route path="/favorites" element={<UserFavorites />} />
-                  <Route path="/settings" element={<UserSettings />} />
-                  
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </Router>
-        </AuthProvider>
-      </HeroUIProvider>
-    </QueryClientProvider>
-  );
-}
-
-const UserBookings = () => {
-  return (
-    <>
-      <Navbar />
-      <div className="container mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">Мої бронювання</h1>
-        <p>Тут будуть бронювання користувача</p>
-      </div>
-    </>
-  );
-};
-
-const UserFavorites = () => {
-  return (
-    <>
-      <Navbar />
-      <div className="container mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">Обране</h1>
-        <p>Тут будуть обрані тури</p>
-      </div>
-    </>
-  );
-};
 
 const UserSettings = () => {
   return (
@@ -107,5 +54,33 @@ const NotFound = () => {
     </>
   );
 };
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <HeroUIProvider>
+        <AuthProvider>
+          <Router>
+            <div className="App">
+              <main className="main-content">
+                <Routes>
+                  <Route path="/" element={<Main />} />
+                  <Route path="/AboutUs" element={<AboutUs />} />
+                  <Route path="/Tours" element={<Tours />} />
+                  <Route path="/TourDetails/:id" element={<TourDetails />} />
+                  <Route path="/profile" element={<UserProfile />} />
+                  <Route path="/bookings" element={<UserBookings />} />
+                  <Route path="/favorites" element={<UserFavorites />} />
+                  <Route path="/settings" element={<UserSettings />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+          </Router>
+        </AuthProvider>
+      </HeroUIProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

@@ -1,0 +1,114 @@
+.favorite-button {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+  }
+
+  &--active {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    
+    &:hover {
+      background: rgba(239, 68, 68, 0.15) !important;
+      border-color: rgba(239, 68, 68, 0.4) !important;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &:hover {
+      transform: none;
+      background: rgba(255, 255, 255, 0.9) !important;
+      border-color: rgba(226, 232, 240, 0.8) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+.favorite-icon {
+  color: #64748b;
+  transition: all 0.3s ease;
+  
+  .favorite-button:hover & {
+    color: #ef4444;
+  }
+  
+  .favorite-button--active & {
+    color: #ef4444;
+  }
+
+  &--filled {
+    fill: currentColor;
+    color: #ef4444;
+  }
+}
+
+.favorite-text {
+  font-weight: 500;
+  color: #374151;
+  transition: color 0.3s ease;
+  
+  .favorite-button:hover & {
+    color: #ef4444;
+  }
+  
+  .favorite-button--active & {
+    color: #ef4444;
+  }
+}
+
+.favorite-button {
+  &[data-size="sm"] {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+  
+  &[data-size="lg"] {
+    min-width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+}
+
+.tour-card .favorite-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  min-width: 40px;
+  height: 40px;
+  
+  @media (max-width: 768px) {
+    top: 8px;
+    right: 8px;
+    min-width: 36px;
+    height: 36px;
+  }
+}
+
+.favorite-button[data-loading="true"] {
+  .favorite-icon {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
