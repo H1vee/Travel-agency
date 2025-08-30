@@ -196,7 +196,6 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     }
   }, [pauseOnHover, autoplay]);
 
-  // Swiper event handlers
   const handleSlideChange = useCallback((swiperInstance: SwiperType) => {
     setActiveIndex(swiperInstance.activeIndex);
   }, []);
@@ -205,7 +204,6 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     setSwiper(swiperInstance);
   }, []);
 
-  // Loading state with skeleton
   if (isPending) {
     return (
       <div className="tour-swiper" style={{ height }}>
@@ -217,7 +215,6 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     );
   }
 
-  // Error state with retry option
   if (error) {
     return (
       <div className="tour-swiper" style={{ height }}>
@@ -235,7 +232,6 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     );
   }
 
-  // Empty state
   if (!displayTours.length) {
     return (
       <div className="tour-swiper" style={{ height }}>

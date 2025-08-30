@@ -193,13 +193,11 @@ export const InfoSide = () => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      // You can add a toast notification here
     }
   };
 
   const handleFavoriteToggle = () => {
     setIsFavorite(!isFavorite);
-    // Add API call to save/remove favorite
   };
 
   return (
@@ -241,7 +239,6 @@ export const InfoSide = () => {
         </CardHeader>
 
         <CardBody className="info-side__body">
-          {/* Rating */}
           <div className="info-item">
             <div className="info-item__icon">
               <Star size={20} />
@@ -257,7 +254,6 @@ export const InfoSide = () => {
 
           <Divider className="info-divider" />
 
-          {/* Status */}
           <div className="info-item">
             <div className="info-item__icon">
               <statusConfig.icon size={20} />
@@ -279,7 +275,6 @@ export const InfoSide = () => {
 
           <Divider className="info-divider" />
 
-          {/* Dates */}
           <div className="info-item">
             <div className="info-item__icon">
               <Calendar size={20} />
@@ -294,7 +289,6 @@ export const InfoSide = () => {
 
           <Divider className="info-divider" />
 
-          {/* Duration */}
           <div className="info-item">
             <div className="info-item__icon">
               <Clock size={20} />
@@ -309,7 +303,6 @@ export const InfoSide = () => {
 
           <Divider className="info-divider" />
 
-          {/* Available Seats */}
           <div className="info-item">
             <div className="info-item__icon">
               <Users size={20} />
@@ -346,7 +339,6 @@ export const InfoSide = () => {
 
           <Divider className="info-divider" />
 
-          {/* Price */}
           {data.price && (
             <>
               <div className="info-item">
@@ -361,7 +353,6 @@ export const InfoSide = () => {
             </>
           )}
 
-          {/* Description */}
           <div className="description-section">
             <div className="description-header">
               <h4>Опис туру</h4>
@@ -380,14 +371,12 @@ export const InfoSide = () => {
             </div>
           </div>
 
-          {/* Form */}
           <div className="form-section">
             <Form />
           </div>
         </CardBody>
       </Card>
 
-      {/* Detail Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">

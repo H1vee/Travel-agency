@@ -75,6 +75,11 @@ export const Navbar = () => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || '')}&background=2c7be5&color=fff&size=128`;
   };
 
+  const handleNavigation = (path: string) => {
+    window.location.href = path;
+    setIsMenuOpen(false);
+  };
+
   const renderUserSection = () => {
     if (isLoading) {
       return (
@@ -114,7 +119,18 @@ export const Navbar = () => {
               />
             </div>
           </DropdownTrigger>
-          <DropdownMenu aria-label="User Actions" variant="flat" className="w-56">
+          <DropdownMenu 
+            aria-label="User Actions" 
+            variant="flat" 
+            className="w-56"
+            onAction={(key) => {
+              if (key === 'profile') handleNavigation('/profile');
+              else if (key === 'bookings') handleNavigation('/bookings');
+              else if (key === 'favorites') handleNavigation('/favorites');
+              else if (key === 'settings') handleNavigation('/settings');
+              else if (key === 'logout') handleLogout();
+            }}
+          >
             <DropdownItem
               key="profile"
               className="navbar-dropdown-item"
@@ -152,7 +168,6 @@ export const Navbar = () => {
               className="navbar-dropdown-item navbar-logout"
               color="danger"
               startContent={<ArrowRightOnRectangleIcon className="w-4 h-4" />}
-              onClick={handleLogout}
             >
               <span className="font-medium">Вийти</span>
             </DropdownItem>
@@ -210,28 +225,40 @@ export const Navbar = () => {
             </div>
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Link className="navbar-mobile-link flex items-center gap-2" href="/profile" size="lg">
+            <div 
+              className="navbar-mobile-link flex items-center gap-2 cursor-pointer" 
+              onClick={() => handleNavigation('/profile')}
+            >
               <UserIcon className="w-5 h-5" />
               Мій профіль
-            </Link>
+            </div>
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Link className="navbar-mobile-link flex items-center gap-2" href="/bookings" size="lg">
+            <div 
+              className="navbar-mobile-link flex items-center gap-2 cursor-pointer"
+              onClick={() => handleNavigation('/bookings')}
+            >
               <CalendarDaysIcon className="w-5 h-5" />
               Мої бронювання
-            </Link>
+            </div>
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Link className="navbar-mobile-link flex items-center gap-2" href="/favorites" size="lg">
+            <div 
+              className="navbar-mobile-link flex items-center gap-2 cursor-pointer"
+              onClick={() => handleNavigation('/favorites')}
+            >
               <HeartIcon className="w-5 h-5" />
               Обране
-            </Link>
+            </div>
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Link className="navbar-mobile-link flex items-center gap-2" href="/settings" size="lg">
+            <div 
+              className="navbar-mobile-link flex items-center gap-2 cursor-pointer"
+              onClick={() => handleNavigation('/settings')}
+            >
               <Cog6ToothIcon className="w-5 h-5" />
               Налаштування
-            </Link>
+            </div>
           </NavbarMenuItem>
           <NavbarMenuItem>
             <Button

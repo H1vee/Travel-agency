@@ -20,6 +20,12 @@ export interface RegisterRequest {
   phone?: string;
 }
 
+export interface UpdateProfileRequest {
+  name: string;
+  phone?: string;
+  avatar_url?: string;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;
@@ -130,6 +136,31 @@ class AuthService {
     }
   }
 
+  async updateProfile(data: UpdateProfileRequest): Promise<User> {
+    try {
+      const response = await fetch(`${this.baseURL}/profile`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          this.logout();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update profile');
+      }
+
+      const user: User = await response.json();
+      localStorage.setItem(this.userKey, JSON.stringify(user));
+      return user;
+    } catch (error) {
+      console.error('Profile update error:', error);
+      throw error;
+    }
+  }
 
   logout() {
     this.clearAuthData();

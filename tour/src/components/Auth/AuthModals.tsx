@@ -1,4 +1,3 @@
-// tour/src/components/Auth/AuthModals.tsx
 import React, { useState } from 'react';
 import {
   Modal,
