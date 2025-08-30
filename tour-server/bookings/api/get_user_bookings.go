@@ -12,12 +12,13 @@ import (
 func GetUserBookings(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userID := c.Get("user_id").(uint)
-
 		var bookings []models.Bookings
 
-		if err := db.Preload("TourDate.Tour").Preload("TourDate.FromLocation").Preload("TourDate.ToLocation").
+		if err := db.Preload("TourDate.Tour").
+			Preload("TourDate.FromLocation").
+			Preload("TourDate.ToLocation").
 			Where("user_id = ?", userID).
-			Order("created_at DESC").
+			Order("booked_at DESC").
 			Find(&bookings).Error; err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to fetch bookings",
@@ -32,21 +33,20 @@ func GetUserBookings(db *gorm.DB) echo.HandlerFunc {
 				CustomerName:  booking.CustomerName,
 				CustomerEmail: booking.CustomerEmail,
 				CustomerPhone: booking.CustomerPhone,
-				Seats:         booking.Seats,
+				Seats:         int(booking.Seats),
 				TotalPrice:    booking.TotalPrice,
 				Status:        booking.Status,
 				BookedAt:      booking.BookedAt,
+				DateFrom:      booking.TourDate.DateFrom,
+				DateTo:        booking.TourDate.DateTo,
 			}
 
-			if booking.TourDate.FromLocation != nil {
+			if booking.TourDate.FromLocation.ID != 0 {
 				bookingDTO.FromLocation = booking.TourDate.FromLocation.Name
 			}
-			if booking.TourDate.ToLocation != nil {
+			if booking.TourDate.ToLocation.ID != 0 {
 				bookingDTO.ToLocation = booking.TourDate.ToLocation.Name
 			}
-
-			bookingDTO.DateFrom = booking.TourDate.DateFrom
-			bookingDTO.DateTo = booking.TourDate.DateTo
 
 			response = append(response, bookingDTO)
 		}

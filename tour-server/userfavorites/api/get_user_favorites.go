@@ -18,7 +18,7 @@ func GetUserFavorites(db *gorm.DB) echo.HandlerFunc {
 		err := db.Table("tour_user_favorites").
 			Select("tour_user_favorites.tour_id, tours.title").
 			Joins("JOIN tours ON tour_user_favorites.tour_id = tours.id").
-			Where("user_favorites.user_id = ?", userID).
+			Where("tour_user_favorites.user_id = ?", userID).
 			Scan(&favorites).Error
 
 		if err != nil {
