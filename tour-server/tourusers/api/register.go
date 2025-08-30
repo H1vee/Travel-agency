@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"tour-server/tourusers/dto"
@@ -22,20 +23,29 @@ func RegisterUser(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		if err := c.Validate(&req); err != nil {
+			log.Printf("Validation error: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "Validation failed",
+				"error": "Validation failed: " + err.Error(),
 			})
 		}
 
 		var existingUser models.TourUser
-		if err := db.Where("email = ?", req.Email).First(&existingUser).Error; err != nil {
+		err := db.Where("email = ?", req.Email).First(&existingUser).Error
+
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("Database error while checking user: %v\n", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Database error",
+			})
+		}
+
+		if err == nil {
 			return c.JSON(http.StatusConflict, map[string]string{
-				"error": "User with this email already exist",
+				"error": "User with this email already exists",
 			})
 		}
 
 		hashPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-
 		if err != nil {
 			log.Printf("Failed to hash password: %v\n", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{

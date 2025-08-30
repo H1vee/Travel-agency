@@ -3,10 +3,11 @@ package main
 import (
 	"log"
 	"net/http"
-	bookings "tour-server/bookings/api"
 	"tour-server/config"
 	"tour-server/database"
 	"tour-server/middleware"
+
+	bookings "tour-server/bookings/api"
 	search "tour-server/search/api"
 	"tour-server/tour/api"
 	tourcard "tour-server/tourcardimage/api"
@@ -15,9 +16,21 @@ import (
 	tourusers "tour-server/tourusers/api"
 	userfavorites "tour-server/userfavorites/api"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
+
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	if err := cv.validator.Struct(i); err != nil {
+		return err
+	}
+	return nil
+}
 
 func main() {
 	if err := config.LoadConfig("config/config.yaml"); err != nil {
@@ -32,6 +45,9 @@ func main() {
 	cfg := config.GetConfig()
 
 	e := echo.New()
+
+	e.Validator = &CustomValidator{validator: validator.New()}
+
 	e.Static("/static", "static")
 
 	e.Use(echomiddleware.CORS())
@@ -68,6 +84,7 @@ func main() {
 	protected.Use(middleware.JWTMiddleware())
 
 	protected.GET("/profile", tourusers.GetProfile(database.DB))
+	protected.PUT("/profile", tourusers.UpdateProfile(database.DB))
 
 	protected.POST("/tour/bookings", bookings.PostBookings(database.DB))
 
