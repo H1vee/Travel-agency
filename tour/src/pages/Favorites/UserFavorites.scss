@@ -500,8 +500,6 @@
     }
   }
 }
-
-// Анимации
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -526,7 +524,6 @@
   animation-delay: 0.2s;
 }
 
-// Адаптивность для мобильных устройств
 @media (max-width: 768px) {
   .user-favorites {
     &__header {
