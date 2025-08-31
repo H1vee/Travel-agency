@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { 
   Card, 
   CardBody, 
@@ -31,6 +31,8 @@ import {
   XCircle,
   Timer
 } from "lucide-react";
+import { useAuth } from '../../../../context/AuthContext';
+import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
 import { Form } from "../Form/Form";
 import "./InfoSide.scss";
 
@@ -56,8 +58,13 @@ interface TourData {
 
 export const InfoSide = () => {
   const { id } = useParams();
-  const [isFavorite, setIsFavorite] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isAuthenticated } = useAuth();
+
+  // Використовуємо хуки для роботи з обраним
+  const tourId = id ? parseInt(id) : 0;
+  const isFavorite = useIsFavorite(tourId);
+  const { toggleFavorite, isLoading: isFavoriteLoading } = useToggleFavorite();
 
   const { isPending, error, data, refetch } = useQuery({
     queryKey: ["tourData", id],
@@ -80,6 +87,17 @@ export const InfoSide = () => {
     enabled: !!id,
     retry: 3,
   });
+
+  const handleFavoriteToggle = () => {
+    if (!isAuthenticated) {
+      alert('Увійдіть у свій акаунт, щоб додавати тури в обране');
+      return;
+    }
+
+    if (tourId > 0) {
+      toggleFavorite(tourId);
+    }
+  };
 
   if (isPending) {
     return (
@@ -196,10 +214,6 @@ export const InfoSide = () => {
     }
   };
 
-  const handleFavoriteToggle = () => {
-    setIsFavorite(!isFavorite);
-  };
-
   return (
     <div className="info-side">
       <Card className="info-side__card">
@@ -220,6 +234,8 @@ export const InfoSide = () => {
                   size="sm"
                   className={`favorite-btn ${isFavorite ? 'favorite-btn--active' : ''}`}
                   onClick={handleFavoriteToggle}
+                  isLoading={isFavoriteLoading}
+                  isDisabled={!isAuthenticated}
                 >
                   <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
                 </Button>

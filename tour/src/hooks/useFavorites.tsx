@@ -63,7 +63,7 @@ export const useAddToFavorites = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (tourId: number) => favoritesService.addToFavorites(tourId),
+    mutationFn: favoritesService.addToFavorites,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FAVORITES_KEYS.user });
       queryClient.invalidateQueries({ queryKey: FAVORITES_KEYS.details });
@@ -78,7 +78,7 @@ export const useRemoveFromFavorites = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (tourId: number) => favoritesService.removeFromFavorites(tourId),
+    mutationFn: favoritesService.removeFromFavorites,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FAVORITES_KEYS.user });
       queryClient.invalidateQueries({ queryKey: FAVORITES_KEYS.details });

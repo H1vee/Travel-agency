@@ -13,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useFavoritesWithDetails } from '../../hooks/useFavorites';
 import { Navbar } from '../../components/Navbar/Navbar';
 import { FavoriteButton } from '../../components/FavoriteButton/FavoriteButton';
+import {Footer} from '../Main/components/Footer/Footer';
 import { 
   Heart,
   AlertCircle,
@@ -242,6 +243,7 @@ export const UserFavorites: React.FC = () => {
           </div>
         </div>
       </div>
+      <Footer/>
     </>
   );
 };

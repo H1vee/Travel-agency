@@ -17,8 +17,6 @@ import {
   List, 
   Filter,
   ArrowUpDown,
-  MapPin,
-  Calendar,
   Users
 } from "lucide-react";
 import "./ToursPage.scss";
@@ -51,7 +49,6 @@ export const ToursPage: React.FC = () => {
   const [filters, setFilters] = useState<any>({});
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [favorites, setFavorites] = useState<number[]>([]);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -66,7 +63,7 @@ export const ToursPage: React.FC = () => {
       return res.json();
     },
     retry: 3,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, 
   });
 
   const searchTours = useCallback(async () => {
@@ -145,14 +142,6 @@ export const ToursPage: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handleFavoriteToggle = (tourId: number) => {
-    setFavorites(prev => 
-      prev.includes(tourId) 
-        ? prev.filter(id => id !== tourId)
-        : [...prev, tourId]
-    );
-  };
-
   const sortTours = useCallback((tours: Tour[], sortOption: SortOption): Tour[] => {
     const sorted = [...tours];
     
@@ -190,7 +179,6 @@ export const ToursPage: React.FC = () => {
     }
   }, [filters, searchQuery, searchTours]);
 
-  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, searchQuery, sortBy]);
@@ -225,15 +213,12 @@ export const ToursPage: React.FC = () => {
 
   return (
     <div className="tours-page">
-      {/* Breadcrumbs */}
       <div className="tours-page__breadcrumbs">
         <Breadcrumbs>
           <BreadcrumbItem href="/">Головна</BreadcrumbItem>
           <BreadcrumbItem>Тури</BreadcrumbItem>
         </Breadcrumbs>
       </div>
-
-      {/* Header */}
       <div className="tours-page__header">
         <div className="page-title-section">
           <h1 className="page-title">
@@ -247,8 +232,6 @@ export const ToursPage: React.FC = () => {
           </p>
         </div>
       </div>
-
-      {/* Search Bar */}
       <div className="tours-page__search">
         <SearchBar 
           searchQuery={searchQuery} 
@@ -259,10 +242,7 @@ export const ToursPage: React.FC = () => {
           popularSearches={popularSearches}
         />
       </div>
-
-      {/* Main Content */}
       <div className="tours-page__content">
-        {/* Sidebar */}
         <div className="tours-page__sidebar">
           <SideBar 
             onApply={setFilters} 
@@ -270,10 +250,7 @@ export const ToursPage: React.FC = () => {
             isLoading={isPending}
           />
         </div>
-
-        {/* Tours Content */}
         <div className="tours-page__main">
-          {/* Results Header */}
           <div className="results-header">
             <div className="results-info">
               <div className="results-count">
@@ -282,8 +259,6 @@ export const ToursPage: React.FC = () => {
                   {isSearching ? 'результатів знайдено' : 'турів доступно'}
                 </span>
               </div>
-              
-              {/* Active Filters */}
               {(getActiveFiltersCount() > 0 || searchQuery) && (
                 <div className="active-filters">
                   <div className="filters-header">
@@ -320,7 +295,6 @@ export const ToursPage: React.FC = () => {
             </div>
 
             <div className="results-controls">
-              {/* Sort Select */}
               <Select
                 size="sm"
                 label="Сортування"
@@ -346,8 +320,6 @@ export const ToursPage: React.FC = () => {
                   Нові
                 </SelectItem>
               </Select>
-
-              {/* Items Per Page */}
               <Select
                 size="sm"
                 label="На сторінці"
@@ -363,8 +335,6 @@ export const ToursPage: React.FC = () => {
                 <SelectItem key="24">24</SelectItem>
                 <SelectItem key="48">48</SelectItem>
               </Select>
-
-              {/* View Mode Toggle */}
               <div className="view-mode-toggle">
                 <Button
                   size="sm"
@@ -389,19 +359,13 @@ export const ToursPage: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Tours Cards */}
           <div className={`tours-content tours-content--${viewMode}`}>
             <Cards 
               tours={displayedTours} 
               loading={isPending}
               onRetry={refetch}
-              onFavoriteToggle={handleFavoriteToggle}
-              favorites={favorites}
             />
           </div>
-
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="tours-page__pagination">
               <div className="pagination-info">

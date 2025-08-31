@@ -5,12 +5,13 @@ import {
   Heart, 
   MapPin, 
   Star, 
-  Clock, 
-  Users, 
   RefreshCw,
   Eye,
-  Calendar
+  Calendar,
+  Users
 } from "lucide-react";
+import { useAuth } from '../../../../context/AuthContext';
+import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
 import "./Cards.scss";
 
 interface Tour {
@@ -31,17 +32,14 @@ interface CardsProps {
   tours: Tour[];
   loading: boolean;
   onRetry?: () => void;
-  onFavoriteToggle?: (tourId: number) => void;
-  favorites?: number[];
 }
 
 export const Cards: React.FC<CardsProps> = ({ 
   tours, 
   loading, 
-  onRetry,
-  onFavoriteToggle,
-  favorites = []
+  onRetry
 }) => {
+  const { isAuthenticated } = useAuth();
   const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
 
@@ -62,12 +60,6 @@ export const Cards: React.FC<CardsProps> = ({
     });
   };
 
-  const handleFavoriteClick = (e: React.MouseEvent, tourId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onFavoriteToggle?.(tourId);
-  };
-
   const formatPrice = (price: number, discount?: number) => {
     if (discount) {
       const discountedPrice = price - (price * discount / 100);
@@ -78,6 +70,38 @@ export const Cards: React.FC<CardsProps> = ({
       };
     }
     return { final: price };
+  };
+
+  // Компонент для кнопки обраного
+  const FavoriteButton: React.FC<{ tourId: number }> = ({ tourId }) => {
+    const isFavorite = useIsFavorite(tourId);
+    const { toggleFavorite, isLoading } = useToggleFavorite();
+
+    const handleFavoriteClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (!isAuthenticated) {
+        alert('Увійдіть у свій акаунт, щоб додавати тури в обране');
+        return;
+      }
+
+      toggleFavorite(tourId);
+    };
+
+    return (
+      <button
+        className={`card-favorite ${isFavorite ? 'card-favorite--active' : ''}`}
+        onClick={handleFavoriteClick}
+        disabled={isLoading}
+        aria-label={isFavorite ? "Видалити з улюблених" : "Додати в улюблені"}
+      >
+        <Heart 
+          size={18} 
+          fill={isFavorite ? "currentColor" : "none"}
+        />
+      </button>
+    );
   };
 
   if (loading) {
@@ -156,15 +180,12 @@ export const Cards: React.FC<CardsProps> = ({
       <div className="cards-grid">
         {tours.map((tour) => {
           const priceInfo = formatPrice(tour.price, tour.discount);
-          const isFavorite = favorites.includes(tour.id);
-          const isImageLoading = loadingImages.has(tour.id);
           const isImageFailed = failedImages.has(tour.id);
 
           return (
             <div key={tour.id} className="card-wrapper">
               <Link to={`/TourDetails/${tour.id}`} className="card-link">
                 <Card isPressable className="tour-card">
-                  {/* Image Container */}
                   <div className="card-image-container">
                     {tour.isPopular && (
                       <Chip 
@@ -189,16 +210,8 @@ export const Cards: React.FC<CardsProps> = ({
                       </Chip>
                     )}
 
-                    <button
-                      className={`card-favorite ${isFavorite ? 'card-favorite--active' : ''}`}
-                      onClick={(e) => handleFavoriteClick(e, tour.id)}
-                      aria-label={isFavorite ? "Видалити з улюблених" : "Додати в улюблені"}
-                    >
-                      <Heart 
-                        size={18} 
-                        fill={isFavorite ? "currentColor" : "none"}
-                      />
-                    </button>
+                    {/* Використовуємо локальний компонент кнопки обраного */}
+                    <FavoriteButton tourId={tour.id} />
 
                     {isImageFailed ? (
                       <div className="card-image-placeholder">
@@ -233,6 +246,7 @@ export const Cards: React.FC<CardsProps> = ({
 
                     <div className="card-gradient"></div>
                   </div>
+                  
                   <CardFooter className="card-footer">
                     <div className="card-content">
                       <div className="card-header">

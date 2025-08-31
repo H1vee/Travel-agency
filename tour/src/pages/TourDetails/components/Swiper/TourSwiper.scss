@@ -379,28 +379,6 @@
     }
   }
   
-  @media (prefers-color-scheme: dark) {
-    background: linear-gradient(145deg, #1e293b, #334155);
-    box-shadow: 
-      0 10px 40px rgba(0, 0, 0, 0.3),
-      0 4px 15px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    
-    &__loading,
-    &__empty {
-      background: linear-gradient(145deg, #1e293b, #334155);
-      color: #e2e8f0;
-    }
-    
-    &__error {
-      background: linear-gradient(145deg, #450a0a, #7f1d1d);
-    }
-    
-    &__slide-loading {
-      background: linear-gradient(45deg, #1e293b, #334155, #1e293b);
-    }
-  }
-  
   @media (prefers-reduced-motion: reduce) {
     * {
       animation-duration: 0.01s !important;

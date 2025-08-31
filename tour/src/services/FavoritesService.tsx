@@ -14,22 +14,22 @@ export interface AddFavoriteRequest {
   tour_id: number;
 }
 
+const BASE_URL = 'http://127.0.0.1:1323';
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem('tour_auth_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+};
+
 class FavoritesService {
-  private baseURL = 'http://127.0.0.1:1323';
-
-  private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('tour_auth_token');
-    return {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
-  }
-
-  async getUserFavorites(): Promise<FavoriteItem[]> {
+  getUserFavorites = async (): Promise<FavoriteItem[]> => {
     try {
-      const response = await fetch(`${this.baseURL}/user-favorites`, {
+      const response = await fetch(`${BASE_URL}/user-favorites`, {
         method: 'GET',
-        headers: this.getAuthHeaders(),
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -45,14 +45,14 @@ class FavoritesService {
       console.error('Fetch favorites error:', error);
       throw error;
     }
-  }
+  };
 
-  async getFavoriteToursDetails(favoriteIds: number[]): Promise<TourCard[]> {
+  getFavoriteToursDetails = async (favoriteIds: number[]): Promise<TourCard[]> => {
     if (favoriteIds.length === 0) return [];
 
     try {
       const idsParam = favoriteIds.join(',');
-      const response = await fetch(`${this.baseURL}/tours-search-by-ids?ids=${idsParam}`, {
+      const response = await fetch(`${BASE_URL}/tours-search-by-ids?ids=${idsParam}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -67,13 +67,13 @@ class FavoritesService {
       console.error('Fetch tour details error:', error);
       throw error;
     }
-  }
+  };
 
-  async addToFavorites(tourId: number): Promise<void> {
+  addToFavorites = async (tourId: number): Promise<void> => {
     try {
-      const response = await fetch(`${this.baseURL}/user-favorites`, {
+      const response = await fetch(`${BASE_URL}/user-favorites`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: getAuthHeaders(),
         body: JSON.stringify({ tour_id: tourId }),
       });
 
@@ -88,13 +88,13 @@ class FavoritesService {
       console.error('Add to favorites error:', error);
       throw error;
     }
-  }
+  };
 
-  async removeFromFavorites(tourId: number): Promise<void> {
+  removeFromFavorites = async (tourId: number): Promise<void> => {
     try {
-      const response = await fetch(`${this.baseURL}/user-favorites/${tourId}`, {
+      const response = await fetch(`${BASE_URL}/user-favorites/${tourId}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders(),
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -108,7 +108,7 @@ class FavoritesService {
       console.error('Remove from favorites error:', error);
       throw error;
     }
-  }
+  };
 }
 
 export const favoritesService = new FavoritesService();

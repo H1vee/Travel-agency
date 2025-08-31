@@ -18,6 +18,7 @@ import {
 } from "@heroui/react";
 import { useAuth } from '../../context/AuthContext';
 import { Navbar } from '../../components/Navbar/Navbar';
+import {Footer} from '../Main/components/Footer/Footer';
 import { 
   CalendarDays,
   MapPin,
@@ -581,6 +582,7 @@ export const UserBookings: React.FC = () => {
           </ModalContent>
         </Modal>
       )}
+      <Footer/>
     </>
   );
 };

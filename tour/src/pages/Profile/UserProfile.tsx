@@ -18,6 +18,7 @@ import {
 } from "@heroui/react";
 import { useAuth } from '../../context/AuthContext';
 import { Navbar } from '../../components/Navbar/Navbar';
+import {Footer} from '../Main/components/Footer/Footer';
 import { 
   User, 
   Mail, 
@@ -104,14 +105,12 @@ export const UserProfile: React.FC = () => {
       <Navbar />
       <div className="user-profile">
         <div className="user-profile__container">
-          {/* Header */}
           <div className="user-profile__header">
             <h1>Мій профіль</h1>
             <p>Керуйте своїми особистими даними та налаштуваннями</p>
           </div>
 
           <div className="user-profile__content">
-            {/* Profile Card */}
             <div>
               <Card className="user-profile__profile-card">
                 <CardBody className="card-body">
@@ -164,8 +163,6 @@ export const UserProfile: React.FC = () => {
                 </CardBody>
               </Card>
             </div>
-
-            {/* Profile Information */}
             <div>
               <Card className="user-profile__info-card">
                 <CardHeader className="card-header flex justify-between items-center">
@@ -189,7 +186,6 @@ export const UserProfile: React.FC = () => {
                   )}
 
                   <div>
-                    {/* Name */}
                     <div className="user-profile__info-card-field">
                       <User className="user-profile__info-card-field-icon" size={20} />
                       <div className="user-profile__info-card-field-content">
@@ -208,8 +204,6 @@ export const UserProfile: React.FC = () => {
                         )}
                       </div>
                     </div>
-
-                    {/* Email */}
                     <div className="user-profile__info-card-field">
                       <Mail className="user-profile__info-card-field-icon" size={20} />
                       <div className="user-profile__info-card-field-content">
@@ -222,8 +216,6 @@ export const UserProfile: React.FC = () => {
                         </p>
                       </div>
                     </div>
-
-                    {/* Phone */}
                     <div className="user-profile__info-card-field">
                       <Phone className="user-profile__info-card-field-icon" size={20} />
                       <div className="user-profile__info-card-field-content">
@@ -242,8 +234,6 @@ export const UserProfile: React.FC = () => {
                         )}
                       </div>
                     </div>
-
-                    {/* Registration Date */}
                     <div className="user-profile__info-card-field">
                       <Calendar className="user-profile__info-card-field-icon" size={20} />
                       <div className="user-profile__info-card-field-content">
@@ -279,8 +269,6 @@ export const UserProfile: React.FC = () => {
                   </div>
                 </CardBody>
               </Card>
-
-              {/* Quick Actions */}
               <Card className="user-profile__actions-card">
                 <CardHeader className="card-header">
                   <h3>Швидкі дії</h3>
@@ -334,8 +322,6 @@ export const UserProfile: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Avatar Upload Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="sm" className="user-profile__modal">
         <ModalContent className="modal-content">
           <ModalHeader className="modal-header">
@@ -382,6 +368,7 @@ export const UserProfile: React.FC = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+            <Footer/>
     </>
   );
 };
