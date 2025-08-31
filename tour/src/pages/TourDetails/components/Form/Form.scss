@@ -1,114 +1,574 @@
 .booking-form {
-    $primary-color: #0070f3;
-    $danger-color: #f31260;
-    $success-color: #17c964;
-    $text-color: #11181c;
-    $border-radius: 8px;
-    $transition-speed: 0.2s;
-    
-    display: flex;
-    justify-content: center;
-    margin: 2rem 0;
-    
-    &__loading,
-    &__error,
-    &__not-found {
-      text-align: center;
-      padding: 1rem;
-      border-radius: $border-radius;
-      background-color: #f5f5f5;
-      margin: 1rem 0;
-    }
-    
-    &__error {
-      color: $danger-color;
-    }
-    
-    &__button-container {
-      display: flex;
-      justify-content: center;
-    }
-    
-    &__purchase-button {
-      min-width: 150px;
-      font-weight: 600;
-      transition: transform $transition-speed ease;
-      
-      &:hover {
-        transform: translateY(-2px);
-      }
-    }
-    
-    &__modal-header {
-      border-bottom: 1px solid #eaeaea;
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-    
-    &__modal-body {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-      padding: 1.5rem;
-    }
-    
-    &__input {
-      width: 100%;
-      
-      &:focus-within {
-        border-color: $primary-color;
-      }
-    }
-    
-    &__price-summary {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 0.5rem;
-      padding: 0.75rem;
-      background-color: #f9f9f9;
-      border-radius: $border-radius;
-    }
-    
-    &__price-label {
-      font-weight: 500;
-      color: $text-color;
-    }
-    
-    &__price-value {
-      font-weight: 700;
-      color: $primary-color;
-    }
-    
-    &__modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-      padding: 1rem 1.5rem;
-      border-top: 1px solid #eaeaea;
-    }
-    
-    &__cancel-button {
-      min-width: 100px;
-    }
-    
-    &__confirm-button {
-      min-width: 120px;
-    }
-    
+  $primary-gradient: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  $success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  $danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  $warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   
-    @media (max-width: 640px) {
-      &__modal-body {
-        padding: 1rem;
-      }
-      
-      &__modal-footer {
-        flex-direction: column-reverse;
-        gap: 0.5rem;
-        
-        button {
-          width: 100%;
-        }
-      }
+  $glass-bg: rgba(255, 255, 255, 0.95);
+  $glass-border: rgba(226, 232, 240, 0.8);
+  
+  $shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.08);
+  $shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+  $shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
+  
+  $border-radius: 16px;
+  $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+  &__loading,
+  &__error,
+  &__not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    text-align: center;
+    padding: 3rem 2rem;
+    border-radius: $border-radius;
+    background: $glass-bg;
+    backdrop-filter: blur(12px);
+    border: 1px solid $glass-border;
+    box-shadow: $shadow-md;
+    margin: 2rem 0;
+    min-height: 200px;
+
+    svg {
+      color: #64748b;
+    }
+
+    p {
+      color: #64748b;
+      font-weight: 500;
+      font-size: 1.1rem;
     }
   }
+
+  &__error {
+    svg, p {
+      color: #ef4444;
+    }
+  }
+
+  &__button-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  &__purchase-button {
+    min-width: 200px;
+    height: 56px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-radius: $border-radius;
+    background: $primary-gradient !important;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+    transition: $transition;
+    color: white !important;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(37, 99, 235, 0.4);
+    }
+
+    &:active {
+      transform: translateY(-1px);
+    }
+  }
+
+  &__modal-header {
+    padding: 2rem 2rem 1rem;
+    border: none;
+  }
+
+  &__header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  &__header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    
+    @media (max-width: 640px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  &__title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+    background: $primary-gradient;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  &__auth-status,
+  &__guest-notice {
+    flex-shrink: 0;
+  }
+
+  &__user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  &__user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  &__user-name {
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+  }
+
+  &__user-email {
+    font-size: 0.875rem !important;
+    color: #64748b !important;
+    font-weight: 500 !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
+  }
+
+  &__guest-description {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+    margin: 0;
+    padding: 1rem;
+    background: rgba(245, 158, 11, 0.05);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 12px;
+  }
+
+  &__modal-body {
+    padding: 1rem 2rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  &__summary-card {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.03), rgba(124, 58, 237, 0.03));
+    border: 1px solid rgba(37, 99, 235, 0.1);
+    border-radius: $border-radius;
+
+    .card-body {
+      padding: 1.5rem;
+    }
+  }
+
+  &__summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    @media (max-width: 640px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+    }
+  }
+
+  &__summary-stats {
+    display: flex;
+    gap: 2rem;
+    
+    @media (max-width: 640px) {
+      gap: 1rem;
+    }
+  }
+
+  &__stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4b5563;
+
+    svg {
+      color: #2563eb;
+    }
+  }
+
+  &__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  &__field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #374151;
+    margin: 0 0 0.5rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+
+    svg {
+      color: #2563eb;
+    }
+  }
+
+  &__section-divider {
+    background: linear-gradient(90deg, transparent, #e2e8f0 50%, transparent);
+  }
+
+  &__input {
+    width: 100%;
+    .nextui-input-wrapper {
+      border-radius: 12px !important;
+      border: 2px solid #e2e8f0 !important;
+      background: $glass-bg !important;
+      backdrop-filter: blur(8px);
+      transition: $transition;
+
+      &:hover {
+        border-color: #c7d2fe !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+      }
+
+      &[data-focus="true"] {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      &[data-invalid="true"] {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+      }
+    }
+
+    .nextui-input {
+      font-weight: 500;
+    }
+
+    .nextui-input-label {
+      font-weight: 600;
+    }
+  }
+
+  &__price-card {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.03), rgba(5, 150, 105, 0.03));
+    border: 2px solid rgba(16, 185, 129, 0.2);
+    border-radius: $border-radius;
+
+    .card-body {
+      padding: 1.5rem;
+    }
+  }
+
+  &__price-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #374151;
+
+    &:last-child span:last-child {
+      font-weight: 700;
+    }
+  }
+
+  &__price-total {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #065f46;
+    padding-top: 0.5rem;
+  }
+
+  &__total-amount {
+    font-size: 1.4rem;
+    background: $success-gradient;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  &__modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1rem 2rem 2rem;
+    border: none;
+    
+    @media (max-width: 640px) {
+      flex-direction: column-reverse;
+      gap: 0.75rem;
+    }
+  }
+
+  &__cancel-button {
+    min-width: 120px;
+    height: 48px;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: $transition;
+    
+    @media (max-width: 640px) {
+      width: 100%;
+    }
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: #dc2626 !important;
+      transform: translateY(-2px);
+    }
+  }
+
+  &__confirm-button {
+    min-width: 180px;
+    height: 48px;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 12px;
+    background: $primary-gradient !important;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+    transition: $transition;
+    color: white !important;
+    
+    @media (max-width: 640px) {
+      width: 100%;
+    }
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2) !important;
+    }
+
+    * {
+      color: white !important;
+    }
+  }
+
+  .booking-modal-wrapper {
+    backdrop-filter: blur(8px);
+  }
+
+  .booking-modal-backdrop {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .booking-modal-base {
+    border-radius: 24px !important;
+    border: none !important;
+    box-shadow: $shadow-lg;
+    background: $glass-bg;
+    backdrop-filter: blur(20px);
+    max-height: 90vh;
+    overflow: hidden;
+  }
+
+
+  @media (max-width: 768px) {
+    &__modal-body {
+      padding: 1rem 1.5rem 1.5rem;
+    }
+
+    &__header-content {
+      gap: 1rem;
+    }
+
+    &__title {
+      font-size: 1.5rem;
+    }
+
+    &__user-info {
+      padding: 0.75rem 1rem;
+    }
+
+    &__summary-stats {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    &__fields {
+      gap: 1.5rem;
+    }
+
+    &__field-group {
+      gap: 1rem;
+    }
+
+    &__section-title {
+      font-size: 1rem;
+    }
+
+    &__price-breakdown {
+      gap: 0.5rem;
+    }
+
+    &__price-row {
+      font-size: 0.9rem;
+    }
+
+    &__price-total {
+      font-size: 1.1rem;
+    }
+
+    &__total-amount {
+      font-size: 1.2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    &__purchase-button {
+      width: 100%;
+      min-width: unset;
+    }
+
+    &__title {
+      font-size: 1.3rem;
+    }
+
+    &__modal-body {
+      padding: 1rem;
+    }
+
+    &__summary-card .card-body,
+    &__price-card .card-body {
+      padding: 1rem;
+    }
+  }
+
+  .booking-form__input {
+    .nextui-input-wrapper {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  .nextui-toast {
+    border-radius: $border-radius !important;
+    backdrop-filter: blur(12px);
+    
+    &[data-color="success"] {
+      background: rgba(16, 185, 129, 0.95) !important;
+      border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    }
+    
+    &[data-color="danger"] {
+      background: rgba(239, 68, 68, 0.95) !important;
+      border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    }
+    
+    &[data-color="warning"] {
+      background: rgba(245, 158, 11, 0.95) !important;
+      border: 1px solid rgba(245, 158, 11, 0.3) !important;
+    }
+  }
+
+  .nextui-chip {
+    &[data-color="success"] {
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #065f46 !important;
+      border: 1px solid rgba(16, 185, 129, 0.3) !important;
+      font-weight: 600;
+    }
+    
+    &[data-color="warning"] {
+      background: rgba(245, 158, 11, 0.15) !important;
+      color: #92400e !important;
+      border: 1px solid rgba(245, 158, 11, 0.3) !important;
+      font-weight: 600;
+    }
+  }
+
+  .nextui-spinner {
+    &[data-size="lg"] {
+      --spinner-size: 48px;
+      --spinner-thickness: 4px;
+      --spinner-color: #2563eb;
+    }
+  }
+
+  button:focus-visible,
+  .nextui-input-wrapper:focus-within {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+
+  .booking-form__user-info {
+    .booking-form__user-name {
+      color: #1e293b !important;
+      font-weight: 700 !important;
+      font-size: 1rem !important;
+      line-height: 1.4 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      text-shadow: none !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      display: block !important;
+    }
+
+    .booking-form__user-email {
+      color: #64748b !important;
+      font-weight: 500 !important;
+      font-size: 0.875rem !important;
+      line-height: 1.3 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      text-shadow: none !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      display: block !important;
+    }
+  }
+}

@@ -29,7 +29,8 @@ import {
   Eye,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  User
 } from 'lucide-react';
 
 interface Booking {
@@ -161,6 +162,11 @@ export const UserBookings: React.FC = () => {
     }).format(price);
   };
 
+  const calculateDuration = (dateFrom: string, dateTo: string) => {
+    const days = Math.ceil((new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (1000 * 60 * 60 * 24));
+    return days;
+  };
+
   const handleViewDetails = (booking: Booking) => {
     setSelectedBooking(booking);
     onOpen();
@@ -184,7 +190,6 @@ export const UserBookings: React.FC = () => {
       <Navbar />
       <div className="user-bookings">
         <div className="user-bookings__container">
-          {/* Header */}
           <div className="user-bookings__header">
             <div className="user-bookings__header-content">
               <h1>Мої бронювання</h1>
@@ -198,8 +203,6 @@ export const UserBookings: React.FC = () => {
               />
             </div>
           </div>
-
-          {/* Stats */}
           <div className="user-bookings__stats">
             <Card className="stats-card">
               <CardBody>
@@ -248,7 +251,6 @@ export const UserBookings: React.FC = () => {
             </Card>
           </div>
 
-          {/* Content */}
           <div className="user-bookings__content">
             {loading ? (
               <div className="user-bookings__loading">
@@ -354,120 +356,227 @@ export const UserBookings: React.FC = () => {
           </div>
         </div>
       </div>
-
       {selectedBooking && (
-        <Modal isOpen={isOpen} onClose={onClose} size="2xl" className="booking-modal">
+        <Modal 
+          isOpen={isOpen} 
+          onClose={onClose} 
+          size="3xl" 
+          className="booking-modal"
+          scrollBehavior="inside"
+        >
           <ModalContent>
-            <ModalHeader className="modal-header">
-              <div className="modal-title">
-                <h3>Деталі бронювання</h3>
-                <Chip
-                  color={getStatusInfo(selectedBooking.status).color}
-                  variant="flat"
-                  startContent={getStatusInfo(selectedBooking.status).icon}
-                >
-                  {getStatusInfo(selectedBooking.status).text}
-                </Chip>
+            <ModalHeader className="booking-modal__header">
+              <div className="booking-modal__header-content">
+                <div className="booking-modal__header-main">
+                  <div className="booking-modal__title-section">
+                    <h2 className="booking-modal__title">{selectedBooking.tour_title}</h2>
+                    <p className="booking-modal__subtitle">Деталі бронювання #{selectedBooking.id}</p>
+                  </div>
+                  <div className="booking-modal__status-section">
+                    <Chip
+                      color={getStatusInfo(selectedBooking.status).color}
+                      variant="solid"
+                      size="lg"
+                      startContent={getStatusInfo(selectedBooking.status).icon}
+                      className="booking-modal__status-chip"
+                    >
+                      {getStatusInfo(selectedBooking.status).text}
+                    </Chip>
+                  </div>
+                </div>
+                
+                <div className="booking-modal__quick-info">
+                  <div className="booking-modal__quick-item">
+                    <CalendarDays size={18} />
+                    <span>{formatDate(selectedBooking.date_from)} - {formatDate(selectedBooking.date_to)}</span>
+                  </div>
+                  <div className="booking-modal__quick-item">
+                    <Users size={18} />
+                    <span>{selectedBooking.seats} {selectedBooking.seats === 1 ? 'місце' : 'місць'}</span>
+                  </div>
+                  <div className="booking-modal__quick-item booking-modal__price-highlight">
+                    <CreditCard size={18} />
+                    <span>{formatPrice(selectedBooking.total_price)}</span>
+                  </div>
+                </div>
               </div>
             </ModalHeader>
             
-            <ModalBody className="modal-body">
-              <div className="booking-details">
-                <div className="detail-section">
-                  <h4>Інформація про тур</h4>
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Назва туру:</span>
-                      <span className="detail-value">{selectedBooking.tour_title}</span>
+            <ModalBody className="booking-modal__body">
+              <div className="booking-modal__content">
+                <Card className="booking-modal__info-card">
+                  <CardHeader className="booking-modal__card-header">
+                    <div className="booking-modal__card-icon">
+                      <MapPin size={20} />
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Дата початку:</span>
-                      <span className="detail-value">{formatDate(selectedBooking.date_from)}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Дата завершення:</span>
-                      <span className="detail-value">{formatDate(selectedBooking.date_to)}</span>
-                    </div>
-                    {selectedBooking.from_location && (
-                      <div className="detail-item">
-                        <span className="detail-label">Місце відправлення:</span>
-                        <span className="detail-value">{selectedBooking.from_location}</span>
+                    <h3>Інформація про тур</h3>
+                  </CardHeader>
+                  <CardBody className="booking-modal__card-body">
+                    <div className="booking-modal__grid">
+                      <div className="booking-modal__field">
+                        <span className="booking-modal__label">Назва туру</span>
+                        <span className="booking-modal__value">{selectedBooking.tour_title}</span>
                       </div>
-                    )}
-                    {selectedBooking.to_location && (
-                      <div className="detail-item">
-                        <span className="detail-label">Пункт призначення:</span>
-                        <span className="detail-value">{selectedBooking.to_location}</span>
+                      <div className="booking-modal__field">
+                        <span className="booking-modal__label">Дата початку</span>
+                        <span className="booking-modal__value">{formatDate(selectedBooking.date_from)}</span>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <Divider className="section-divider" />
-
-                <div className="detail-section">
-                  <h4>Контактна інформація</h4>
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Ім'я:</span>
-                      <span className="detail-value">{selectedBooking.customer_name}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Телефон:</span>
-                      <span className="detail-value">
-                        <Phone size={16} className="inline mr-2" />
-                        {selectedBooking.customer_phone}
-                      </span>
-                    </div>
-                    {selectedBooking.customer_email && (
-                      <div className="detail-item">
-                        <span className="detail-label">Email:</span>
-                        <span className="detail-value">
-                          <Mail size={16} className="inline mr-2" />
-                          {selectedBooking.customer_email}
+                      <div className="booking-modal__field">
+                        <span className="booking-modal__label">Дата завершення</span>
+                        <span className="booking-modal__value">{formatDate(selectedBooking.date_to)}</span>
+                      </div>
+                      <div className="booking-modal__field">
+                        <span className="booking-modal__label">Тривалість</span>
+                        <span className="booking-modal__value">
+                          {calculateDuration(selectedBooking.date_from, selectedBooking.date_to)} днів
                         </span>
                       </div>
-                    )}
-                  </div>
-                </div>
+                      {selectedBooking.from_location && (
+                        <div className="booking-modal__field">
+                          <span className="booking-modal__label">Місце відправлення</span>
+                          <span className="booking-modal__value">{selectedBooking.from_location}</span>
+                        </div>
+                      )}
+                      {selectedBooking.to_location && (
+                        <div className="booking-modal__field">
+                          <span className="booking-modal__label">Пункт призначення</span>
+                          <span className="booking-modal__value">{selectedBooking.to_location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardBody>
+                </Card>
+                <Card className="booking-modal__info-card">
+                  <CardHeader className="booking-modal__card-header">
+                    <div className="booking-modal__card-icon">
+                      <User size={20} />
+                    </div>
+                    <h3>Контактна інформація</h3>
+                  </CardHeader>
+                  <CardBody className="booking-modal__card-body">
+                    <div className="booking-modal__grid">
+                      <div className="booking-modal__field">
+                        <span className="booking-modal__label">Повне ім'я</span>
+                        <span className="booking-modal__value">{selectedBooking.customer_name}</span>
+                      </div>
+                      <div className="booking-modal__field">
+                        <span className="booking-modal__label">Номер телефону</span>
+                        <span className="booking-modal__value booking-modal__contact">
+                          <Phone size={16} />
+                          <a href={`tel:${selectedBooking.customer_phone}`}>
+                            {selectedBooking.customer_phone}
+                          </a>
+                        </span>
+                      </div>
+                      {selectedBooking.customer_email && (
+                        <div className="booking-modal__field">
+                          <span className="booking-modal__label">Email адреса</span>
+                          <span className="booking-modal__value booking-modal__contact">
+                            <Mail size={16} />
+                            <a href={`mailto:${selectedBooking.customer_email}`}>
+                              {selectedBooking.customer_email}
+                            </a>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardBody>
+                </Card>
+                <Card className="booking-modal__summary-card">
+                  <CardHeader className="booking-modal__card-header">
+                    <div className="booking-modal__card-icon">
+                      <CreditCard size={20} />
+                    </div>
+                    <h3>Підсумок бронювання</h3>
+                  </CardHeader>
+                  <CardBody className="booking-modal__card-body">
+                    <div className="booking-modal__summary">
+                      <div className="booking-modal__summary-row">
+                        <span className="booking-modal__summary-label">Кількість місць</span>
+                        <span className="booking-modal__summary-value">{selectedBooking.seats}</span>
+                      </div>
+                      <div className="booking-modal__summary-row">
+                        <span className="booking-modal__summary-label">Ціна за місце</span>
+                        <span className="booking-modal__summary-value">
+                          {formatPrice(selectedBooking.total_price / selectedBooking.seats)}
+                        </span>
+                      </div>
+                      <Divider className="booking-modal__divider" />
+                      <div className="booking-modal__summary-row booking-modal__summary-total">
+                        <span className="booking-modal__summary-label">Загальна сума</span>
+                        <span className="booking-modal__summary-value booking-modal__total-price">
+                          {formatPrice(selectedBooking.total_price)}
+                        </span>
+                      </div>
+                      
+                      <div className="booking-modal__meta-info">
+                        <div className="booking-modal__meta-item">
+                          <Clock size={16} />
+                          <span>Заброньовано: {formatDateTime(selectedBooking.booked_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
 
-                <Divider className="section-divider" />
+                {selectedBooking.status === 'pending' && (
+                  <Card className="booking-modal__actions-card">
+                    <CardBody className="booking-modal__actions-body">
+                      <div className="booking-modal__actions-content">
+                        <div className="booking-modal__actions-info">
+                          <AlertCircle size={20} className="booking-modal__actions-icon" />
+                          <div>
+                            <h4>Очікує підтвердження</h4>
+                            <p>Ваше бронювання очікує підтвердження менеджером. Ви можете скасувати його до підтвердження.</p>
+                          </div>
+                        </div>
+                        <Button
+                          color="danger"
+                          variant="light"
+                          startContent={<XCircle size={16} />}
+                          className="booking-modal__cancel-btn"
+                        >
+                          Скасувати бронювання
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+                )}
 
-                <div className="detail-section">
-                  <h4>Деталі бронювання</h4>
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Кількість місць:</span>
-                      <span className="detail-value">{selectedBooking.seats}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Загальна сума:</span>
-                      <span className="detail-value price-highlight">
-                        {formatPrice(selectedBooking.total_price)}
-                      </span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Дата бронювання:</span>
-                      <span className="detail-value">{formatDateTime(selectedBooking.booked_at)}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Номер бронювання:</span>
-                      <span className="detail-value">#{selectedBooking.id}</span>
-                    </div>
-                  </div>
-                </div>
+                {selectedBooking.status === 'confirmed' && (
+                  <Card className="booking-modal__success-card">
+                    <CardBody className="booking-modal__success-body">
+                      <div className="booking-modal__success-content">
+                        <CheckCircle size={24} className="booking-modal__success-icon" />
+                        <div>
+                          <h4>Бронювання підтверджено</h4>
+                          <p>Ваше бронювання успішно підтверджено. Менеджер зв'яжеться з вами найближчим часом для уточнення деталей.</p>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+                )}
               </div>
             </ModalBody>
             
-            <ModalFooter className="modal-footer">
-              <Button color="default" variant="light" onPress={onClose}>
+            <ModalFooter className="booking-modal__footer">
+              <Button 
+                color="default" 
+                variant="light" 
+                onPress={onClose}
+                className="booking-modal__close-btn"
+              >
                 Закрити
               </Button>
-              {selectedBooking.status === 'pending' && (
-                <Button color="danger" variant="light">
-                  Скасувати бронювання
-                </Button>
-              )}
+              <Button
+                color="primary"
+                variant="shadow"
+                startContent={<MapPin size={16} />}
+                className="booking-modal__view-tour-btn"
+                onPress={() => window.location.href = `/TourDetails/${selectedBooking.id}`}
+              >
+                Переглянути тур
+              </Button>
             </ModalFooter>
           </ModalContent>
         </Modal>

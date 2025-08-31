@@ -80,7 +80,6 @@ export const Cards: React.FC<CardsProps> = ({
     return { final: price };
   };
 
-  // Loading State
   if (loading) {
     return (
       <div className="cards-container">
@@ -107,7 +106,6 @@ export const Cards: React.FC<CardsProps> = ({
     );
   }
 
-  // Error State
   if (!Array.isArray(tours)) {
     return (
       <div className="error-state">
@@ -131,7 +129,6 @@ export const Cards: React.FC<CardsProps> = ({
     );
   }
 
-  // Empty State
   if (tours.length === 0) {
     return (
       <div className="empty-state">
@@ -236,8 +233,6 @@ export const Cards: React.FC<CardsProps> = ({
 
                     <div className="card-gradient"></div>
                   </div>
-
-                  {/* Card Footer */}
                   <CardFooter className="card-footer">
                     <div className="card-content">
                       <div className="card-header">
