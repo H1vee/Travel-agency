@@ -80,13 +80,17 @@ func main() {
 
 	e.GET("/tour-reviews/:id", tourreviews.GetReviewsByTourID(database.DB))
 
+	bookingRoute := e.Group("")
+	bookingRoute.Use(middleware.OptionalJWTMiddleware())
+	bookingRoute.POST("/tour/bookings", bookings.PostBookings(database.DB))
+
 	protected := e.Group("")
 	protected.Use(middleware.JWTMiddleware())
 
 	protected.GET("/profile", tourusers.GetProfile(database.DB))
 	protected.PUT("/profile", tourusers.UpdateProfile(database.DB))
 
-	protected.POST("/tour/bookings", bookings.PostBookings(database.DB))
+	protected.GET("/user-bookings", bookings.GetUserBookings(database.DB))
 
 	protected.POST("/tour-reviews", tourreviews.CreateTourReview(database.DB))
 

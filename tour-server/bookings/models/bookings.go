@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 	tourDateModels "tour-server/tourdate/models"
+	userModels "tour-server/tourusers/models"
 )
 
 type Bookings struct {
@@ -19,6 +20,7 @@ type Bookings struct {
 	IsGuestBooking bool      `json:"is_guest_booking" gorm:"default:true"`
 
 	TourDate tourDateModels.TourDate `json:"tour_date" gorm:"foreignKey:TourDateID;references:ID"`
+	User     *userModels.TourUser    `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID"`
 }
 
 func (Bookings) TableName() string {
