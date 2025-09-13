@@ -51,7 +51,6 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
   const [swiper, setSwiper] = useState<SwiperType | null>(null);
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
   
-  // Fetch tour data with enhanced error handling
   const { 
     isPending, 
     error, 
@@ -62,13 +61,13 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     queryFn: async () => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
         
         const response = await fetch(`/api/tour-carousel/${id}`, {
           signal: controller.signal,
           headers: {
             'Accept': 'application/json',
-            'Cache-Control': 'max-age=300' // 5 minutes cache
+            'Cache-Control': 'max-age=300'
           }
         });
         
@@ -90,20 +89,18 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
         throw err;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 5 * 60 * 1000, 
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
   
-  // Prepare display data
+
   const displayTours = tours.slice(0, maxSlides);
   
-  // Enhanced image loading with caching
   const preloadImage = useCallback((src: string, index: number): Promise<void> => {
     return new Promise((resolve, reject) => {
       const fullSrc = `${process.env.REACT_APP_API_BASE_URL || ''}${src}`;
       
-      // Check cache first
       if (imageCache.current.has(fullSrc)) {
         setImagesLoaded(prev => ({ ...prev, [index]: true }));
         resolve();
@@ -124,23 +121,22 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     });
   }, []);
   
-  // Handle image load events
+
   const handleImageLoaded = useCallback((index: number) => {
     setImagesLoaded(prev => ({ ...prev, [index]: true }));
   }, []);
   
-  // Reset loaded state when tours change
+
   useEffect(() => {
     setImagesLoaded({});
     setActiveIndex(0);
   }, [tours]);
 
-  // Preload images with error handling
+
   useEffect(() => {
     if (displayTours.length) {
       const preloadPromises = displayTours.map((tour, index) =>
         preloadImage(tour.image_src, index).catch(() => {
-          // Silently handle individual image failures
           console.warn(`Image ${index} failed to preload`);
         })
       );
@@ -149,7 +145,6 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     }
   }, [displayTours, preloadImage]);
 
-  // Handle autoplay pause/resume
   useEffect(() => {
     if (!swiper || !autoplay) return;
     
@@ -160,7 +155,6 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     }
   }, [swiper, isAutoplayPaused, autoplay]);
 
-  // Keyboard navigation
   useEffect(() => {
     if (!enableKeyboard || !swiper) return;
     
@@ -183,7 +177,6 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [enableKeyboard, swiper, autoplay]);
 
-  // Mouse enter/leave handlers for autoplay pause
   const handleMouseEnter = useCallback(() => {
     if (pauseOnHover && autoplay) {
       setIsAutoplayPaused(true);

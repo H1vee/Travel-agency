@@ -1,11 +1,9 @@
 .sidebar {
   position: sticky;
-  top: 90px; 
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  top: 90px;
+  background: white;
   border: 1px solid #e2e8f0;
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   padding: 24px;
   border-radius: 16px;
   width: 100%;
@@ -13,8 +11,7 @@
   height: fit-content;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -70,10 +67,6 @@
       font-weight: 700;
       color: #1e293b;
       margin: 0;
-      background: linear-gradient(135deg, #1e293b 0%, #6366f1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
     }
   }
 
@@ -112,13 +105,13 @@
 
   &__divider {
     margin: 20px 0;
-    background: linear-gradient(90deg, transparent, #e2e8f0 50%, transparent);
+    background: #e2e8f0;
   }
 
   &__active-filters {
     margin-bottom: 16px;
     padding: 16px;
-    background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%);
+    background: #f0f7ff;
     border: 1px solid #bae6fd;
     border-radius: 12px;
 
@@ -175,24 +168,6 @@
 
     &-control {
       margin-bottom: 20px;
-      
-      .nextui-slider-track {
-        background: #e2e8f0;
-      }
-
-      .nextui-slider-filler {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      }
-
-      .nextui-slider-thumb {
-        background: #ffffff;
-        border: 3px solid #6366f1;
-        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-
-        &:hover {
-          transform: scale(1.1);
-        }
-      }
     }
   }
 
@@ -213,13 +188,6 @@
 
   &__checkbox-group {
     width: 100%;
-
-    .nextui-checkbox-group-label {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 12px;
-    }
   }
 
   &__checkbox {
@@ -237,10 +205,6 @@
       .rating-content {
         color: #1e293b;
       }
-    }
-
-    .nextui-checkbox-wrapper {
-      margin-right: 12px;
     }
 
     .checkbox-content,
@@ -321,7 +285,7 @@
     }
 
     &--apply {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: #6366f1;
       box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
 
       &:hover:not(:disabled) {
@@ -334,34 +298,13 @@
       }
     }
   }
-}
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.sidebar__section,
-.sidebar__active-filters {
-  animation: fadeIn 0.3s ease-out;
-}
-
-// Responsive Design
-@media (max-width: 1200px) {
-  .sidebar {
+  @media (max-width: 1200px) {
     max-width: 280px;
     padding: 20px;
   }
-}
 
-@media (max-width: 768px) {
-  .sidebar {
+  @media (max-width: 768px) {
     position: relative;
     top: 0;
     max-width: 100%;
@@ -379,60 +322,8 @@
       }
     }
 
-    &__header {
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-    }
-
-    &__title h3 {
-      font-size: 16px;
-    }
-
-    &__section {
-      margin-bottom: 20px;
-    }
-
-    &__section-title {
-      font-size: 15px;
-      margin-bottom: 12px;
-
-      .price-range {
-        font-size: 12px;
-      }
-    }
-
-    &__inputs {
-      gap: 8px;
-    }
-
-    &__actions {
-      margin-top: 24px;
-      padding-top: 16px;
-    }
-
-    &__btn {
-      min-height: 40px;
-      font-size: 13px;
-    }
-
     &__collapse-btn {
       display: none;
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .sidebar {
-    padding: 16px;
-    border-radius: 12px;
-
-    &__actions {
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    &__btn {
-      min-height: 44px;
     }
   }
 }

@@ -63,7 +63,7 @@ export const ToursPage: React.FC = () => {
       return res.json();
     },
     retry: 3,
-    staleTime: 5 * 60 * 1000, 
+    staleTime: 5 * 60 * 1000,
   });
 
   const searchTours = useCallback(async () => {
@@ -98,7 +98,6 @@ export const ToursPage: React.FC = () => {
     }
   
     const searchUrl = `http://127.0.0.1:1323/search?${params.toString()}`;
-    console.log("Search Query:", searchUrl);
   
     if (!params.toString()) {
       setSearchResults([]);
@@ -114,8 +113,6 @@ export const ToursPage: React.FC = () => {
         const idsString = searchTours.map((item) => item.id).join(",");
         const detailsRes = await fetch(`http://127.0.0.1:1323/tours-search-by-ids?ids=${idsString}`);
         const tours: Tour[] = await detailsRes.json();
-  
-        console.log("Received tours after search:", tours);
   
         setSearchResults(tours);
         setIsSearching(true);
@@ -213,182 +210,206 @@ export const ToursPage: React.FC = () => {
 
   return (
     <div className="tours-page">
-      <div className="tours-page__breadcrumbs">
-        <Breadcrumbs>
-          <BreadcrumbItem href="/">Головна</BreadcrumbItem>
-          <BreadcrumbItem>Тури</BreadcrumbItem>
-        </Breadcrumbs>
-      </div>
-      <div className="tours-page__header">
-        <div className="page-title-section">
-          <h1 className="page-title">
-            Знайдіть свій ідеальний тур
-            {isSearching && searchQuery && (
-              <span className="search-highlight"> для "{searchQuery}"</span>
-            )}
-          </h1>
-          <p className="page-subtitle">
-            Відкрийте світ незабутніх подорожей разом з нами
-          </p>
+      <div className="tours-page__wrapper">
+        {/* Breadcrumbs */}
+        <div className="tours-page__breadcrumbs">
+          <Breadcrumbs>
+            <BreadcrumbItem href="/">Головна</BreadcrumbItem>
+            <BreadcrumbItem>Тури</BreadcrumbItem>
+          </Breadcrumbs>
         </div>
-      </div>
-      <div className="tours-page__search">
-        <SearchBar 
-          searchQuery={searchQuery} 
-          setSearchQuery={setSearchQuery} 
-          onKeyDown={handleKeyDown} 
-          onSearchClear={handleSearchClear}
-          isLoading={isPending}
-          popularSearches={popularSearches}
-        />
-      </div>
-      <div className="tours-page__content">
-        <div className="tours-page__sidebar">
-          <SideBar 
-            onApply={setFilters} 
-            onReset={() => setFilters({})}
+
+        {/* Header */}
+        <div className="tours-page__header">
+          <div className="page-title-section">
+            <h1 className="page-title">
+              Знайдіть свій ідеальний тур
+              {isSearching && searchQuery && (
+                <span className="search-highlight"> для "{searchQuery}"</span>
+              )}
+            </h1>
+            <p className="page-subtitle">
+              Відкрийте світ незабутніх подорожей разом з нами
+            </p>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="tours-page__search">
+          <SearchBar 
+            searchQuery={searchQuery} 
+            setSearchQuery={setSearchQuery} 
+            onKeyDown={handleKeyDown} 
+            onSearchClear={handleSearchClear}
             isLoading={isPending}
+            popularSearches={popularSearches}
           />
         </div>
-        <div className="tours-page__main">
-          <div className="results-header">
-            <div className="results-info">
-              <div className="results-count">
-                <span className="count-number">{sortedTours.length}</span>
-                <span className="count-text">
-                  {isSearching ? 'результатів знайдено' : 'турів доступно'}
-                </span>
-              </div>
-              {(getActiveFiltersCount() > 0 || searchQuery) && (
-                <div className="active-filters">
-                  <div className="filters-header">
-                    <Filter size={14} />
-                    <span>Активні фільтри:</span>
-                  </div>
-                  <div className="filters-chips">
-                    {searchQuery && (
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        color="primary"
-                        onClose={() => {
-                          setSearchQuery("");
-                          handleSearchClear();
-                        }}
-                      >
-                        Пошук: "{searchQuery}"
-                      </Chip>
-                    )}
-                    {getActiveFiltersCount() > 0 && (
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        color="secondary"
-                        onClose={clearAllFilters}
-                      >
-                        {getActiveFiltersCount()} фільтрів
-                      </Chip>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
 
-            <div className="results-controls">
-              <Select
-                size="sm"
-                label="Сортування"
-                selectedKeys={[sortBy]}
-                onSelectionChange={(keys) => setSortBy(Array.from(keys)[0] as SortOption)}
-                className="sort-select"
-                variant="bordered"
-                startContent={<ArrowUpDown size={14} />}
-              >
-                <SelectItem key="popular" startContent={<Users size={14} />}>
-                  Популярні
-                </SelectItem>
-                <SelectItem key="price-asc" startContent="₴↑">
-                  Ціна: за зростанням
-                </SelectItem>
-                <SelectItem key="price-desc" startContent="₴↓">
-                  Ціна: за спаданням
-                </SelectItem>
-                <SelectItem key="rating-desc" startContent="⭐">
-                  Найкращі рейтинги
-                </SelectItem>
-                <SelectItem key="newest" startContent="🆕">
-                  Нові
-                </SelectItem>
-              </Select>
-              <Select
-                size="sm"
-                label="На сторінці"
-                selectedKeys={[itemsPerPage.toString()]}
-                onSelectionChange={(keys) => {
-                  setItemsPerPage(Number(Array.from(keys)[0]));
-                  setCurrentPage(1);
-                }}
-                className="items-select"
-                variant="bordered"
-              >
-                <SelectItem key="12">12</SelectItem>
-                <SelectItem key="24">24</SelectItem>
-                <SelectItem key="48">48</SelectItem>
-              </Select>
-              <div className="view-mode-toggle">
-                <Button
-                  size="sm"
-                  variant={viewMode === 'grid' ? 'solid' : 'bordered'}
-                  color={viewMode === 'grid' ? 'primary' : 'default'}
-                  isIconOnly
-                  onClick={() => setViewMode('grid')}
-                  aria-label="Grid view"
-                >
-                  <Grid size={16} />
-                </Button>
-                <Button
-                  size="sm"
-                  variant={viewMode === 'list' ? 'solid' : 'bordered'}
-                  color={viewMode === 'list' ? 'primary' : 'default'}
-                  isIconOnly
-                  onClick={() => setViewMode('list')}
-                  aria-label="List view"
-                >
-                  <List size={16} />
-                </Button>
-              </div>
-            </div>
-          </div>
-          <div className={`tours-content tours-content--${viewMode}`}>
-            <Cards 
-              tours={displayedTours} 
-              loading={isPending}
-              onRetry={refetch}
+        {/* Main Content */}
+        <div className="tours-page__content">
+          {/* Sidebar */}
+          <div className="tours-page__sidebar">
+            <SideBar 
+              onApply={setFilters} 
+              onReset={() => setFilters({})}
+              isLoading={isPending}
             />
           </div>
-          {totalPages > 1 && (
-            <div className="tours-page__pagination">
-              <div className="pagination-info">
-                <span>
-                  Показано {indexOfFirstTour + 1}-{Math.min(indexOfLastTour, sortedTours.length)} з {sortedTours.length} турів
-                </span>
+
+          {/* Tours Content */}
+          <div className="tours-page__main">
+            {/* Results Header */}
+            <div className="results-header">
+              <div className="results-info">
+                <div className="results-count">
+                  <span className="count-number">{sortedTours.length}</span>
+                  <span className="count-text">
+                    {isSearching ? 'результатів знайдено' : 'турів доступно'}
+                  </span>
+                </div>
+                
+                {/* Active Filters */}
+                {(getActiveFiltersCount() > 0 || searchQuery) && (
+                  <div className="active-filters">
+                    <div className="filters-header">
+                      <Filter size={14} />
+                      <span>Активні фільтри:</span>
+                    </div>
+                    <div className="filters-chips">
+                      {searchQuery && (
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color="primary"
+                          onClose={() => {
+                            setSearchQuery("");
+                            handleSearchClear();
+                          }}
+                        >
+                          Пошук: "{searchQuery}"
+                        </Chip>
+                      )}
+                      {getActiveFiltersCount() > 0 && (
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color="secondary"
+                          onClose={clearAllFilters}
+                        >
+                          {getActiveFiltersCount()} фільтрів
+                        </Chip>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-              <Pagination
-                page={currentPage}
-                total={totalPages}
-                onChange={handlePageChange}
-                showControls
-                showShadow
-                size="lg"
-                className="pagination-component"
-                classNames={{
-                  wrapper: "pagination-wrapper",
-                  item: "pagination-item",
-                  cursor: "pagination-cursor"
-                }}
+
+              <div className="results-controls">
+                {/* Sort Select */}
+                <Select
+                  size="sm"
+                  label="Сортування"
+                  selectedKeys={[sortBy]}
+                  onSelectionChange={(keys) => setSortBy(Array.from(keys)[0] as SortOption)}
+                  className="sort-select"
+                  variant="bordered"
+                  startContent={<ArrowUpDown size={14} />}
+                >
+                  <SelectItem key="popular" startContent={<Users size={14} />}>
+                    Популярні
+                  </SelectItem>
+                  <SelectItem key="price-asc" startContent="₴↑">
+                    Ціна: за зростанням
+                  </SelectItem>
+                  <SelectItem key="price-desc" startContent="₴↓">
+                    Ціна: за спаданням
+                  </SelectItem>
+                  <SelectItem key="rating-desc" startContent="⭐">
+                    Найкращі рейтинги
+                  </SelectItem>
+                  <SelectItem key="newest" startContent="🆕">
+                    Нові
+                  </SelectItem>
+                </Select>
+
+                {/* Items Per Page */}
+                <Select
+                  size="sm"
+                  label="На сторінці"
+                  selectedKeys={[itemsPerPage.toString()]}
+                  onSelectionChange={(keys) => {
+                    setItemsPerPage(Number(Array.from(keys)[0]));
+                    setCurrentPage(1);
+                  }}
+                  className="items-select"
+                  variant="bordered"
+                >
+                  <SelectItem key="12">12</SelectItem>
+                  <SelectItem key="24">24</SelectItem>
+                  <SelectItem key="48">48</SelectItem>
+                </Select>
+
+                {/* View Mode Toggle */}
+                <div className="view-mode-toggle">
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'grid' ? 'solid' : 'bordered'}
+                    color={viewMode === 'grid' ? 'primary' : 'default'}
+                    isIconOnly
+                    onClick={() => setViewMode('grid')}
+                    aria-label="Grid view"
+                  >
+                    <Grid size={16} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'list' ? 'solid' : 'bordered'}
+                    color={viewMode === 'list' ? 'primary' : 'default'}
+                    isIconOnly
+                    onClick={() => setViewMode('list')}
+                    aria-label="List view"
+                  >
+                    <List size={16} />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Tours Cards */}
+            <div className={`tours-content tours-content--${viewMode}`}>
+              <Cards 
+                tours={displayedTours} 
+                loading={isPending}
+                onRetry={refetch}
               />
             </div>
-          )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="tours-page__pagination">
+                <div className="pagination-info">
+                  <span>
+                    Показано {indexOfFirstTour + 1}-{Math.min(indexOfLastTour, sortedTours.length)} з {sortedTours.length} турів
+                  </span>
+                </div>
+                <Pagination
+                  page={currentPage}
+                  total={totalPages}
+                  onChange={handlePageChange}
+                  showControls
+                  showShadow
+                  size="lg"
+                  className="pagination-component"
+                  classNames={{
+                    wrapper: "pagination-wrapper",
+                    item: "pagination-item",
+                    cursor: "pagination-cursor"
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

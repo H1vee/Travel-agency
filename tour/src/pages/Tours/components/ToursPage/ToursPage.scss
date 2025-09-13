@@ -1,12 +1,15 @@
-// ToursPage.scss
 .tours-page {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 24px;
-  min-height: calc(100vh - 70px);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
 
-  @media (max-width: 768px) {
-    padding: 16px;
+  &__wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+
+    @media (max-width: 768px) {
+      padding: 16px;
+    }
   }
 
   // Breadcrumbs
@@ -36,6 +39,10 @@
   &__header {
     margin-bottom: 32px;
     text-align: center;
+    padding: 2rem 1rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 
     .page-title-section {
       max-width: 800px;
@@ -48,17 +55,9 @@
       color: #1e293b;
       line-height: 1.2;
       margin-bottom: 16px;
-      background: linear-gradient(135deg, #1e293b 0%, #6366f1 50%, #8b5cf6 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
 
       .search-highlight {
         color: #6366f1;
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
       }
 
       @media (max-width: 768px) {
@@ -102,13 +101,9 @@
   &__sidebar {
     flex-shrink: 0;
     width: 320px;
-    position: sticky;
-    top: 100px;
 
     @media (max-width: 1024px) {
       width: 100%;
-      position: relative;
-      top: 0;
     }
   }
 
@@ -127,7 +122,7 @@
     background: white;
     border-radius: 16px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     gap: 20px;
 
     @media (max-width: 768px) {
@@ -154,10 +149,6 @@
       font-size: 2rem;
       font-weight: 800;
       color: #6366f1;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
     }
 
     .count-text {
@@ -230,12 +221,6 @@
   .tours-content {
     margin-bottom: 48px;
 
-    &--grid {
-      .cards-grid {
-        // Grid styles are in Cards.scss
-      }
-    }
-
     &--list {
       .cards-grid {
         display: flex;
@@ -274,6 +259,16 @@
               margin-bottom: 12px;
             }
           }
+
+          @media (max-width: 768px) {
+            flex-direction: column;
+            height: auto;
+
+            .card-image-container {
+              width: 100%;
+              height: 200px;
+            }
+          }
         }
       }
     }
@@ -286,8 +281,10 @@
     align-items: center;
     gap: 16px;
     margin-top: 48px;
-    padding-top: 32px;
-    border-top: 1px solid #e2e8f0;
+    padding: 32px 24px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
     .pagination-info {
       font-size: 14px;
@@ -297,74 +294,30 @@
 
     .pagination-component {
       .pagination-wrapper {
-        background: white;
+        background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 8px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-
-        &:hover {
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-          transform: translateY(-2px);
-        }
+        border-radius: 12px;
+        padding: 6px;
       }
 
       .pagination-item {
         font-weight: 500;
         transition: all 0.2s ease;
 
-        &:hover {
-          transform: scale(1.05);
-        }
-
         &[data-active="true"] {
-          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          background: #6366f1;
           color: white;
           font-weight: 600;
-
-          &:hover {
-            transform: scale(1.05);
-          }
         }
-      }
-
-      .pagination-cursor {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
       }
     }
 
     @media (max-width: 768px) {
       margin-top: 32px;
-      padding-top: 24px;
-
-      .pagination-component {
-        .pagination-wrapper {
-          padding: 6px;
-          border-radius: 12px;
-        }
-      }
+      padding: 24px 16px;
     }
   }
 
-  // Loading States
-  .loading-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-  }
-
-  // Empty/Error States (already in Cards.scss)
-  
   // Animations
   .tours-content {
     animation: fadeIn 0.6s ease-out;
@@ -393,75 +346,6 @@
     to {
       opacity: 1;
       transform: translateY(0);
-    }
-  }
-
-  // Responsive Design
-  @media (max-width: 480px) {
-    .results-header {
-      padding: 12px;
-      border-radius: 12px;
-    }
-
-    .results-count {
-      .count-number {
-        font-size: 1.5rem;
-      }
-
-      .count-text {
-        font-size: 0.875rem;
-      }
-    }
-
-    .active-filters .filters-header {
-      font-size: 12px;
-    }
-
-    .tours-content--list {
-      .cards-grid .tour-card {
-        flex-direction: column;
-        height: auto;
-
-        .card-image-container {
-          width: 100%;
-          height: 200px;
-        }
-      }
-    }
-  }
-
-  // Dark mode support
-  @media (prefers-color-scheme: dark) {
-    .results-header {
-      background: #1e293b;
-      border-color: #334155;
-    }
-
-    .results-count .count-text,
-    .pagination-info,
-    .filters-header {
-      color: #94a3b8;
-    }
-
-    .page-title {
-      color: #f1f5f9;
-      background: linear-gradient(135deg, #f1f5f9 0%, #a5b4fc 50%, #c4b5fd 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .page-subtitle {
-      color: #94a3b8;
-    }
-
-    &__pagination {
-      border-color: #334155;
-
-      .pagination-wrapper {
-        background: #1e293b;
-        border-color: #334155;
-      }
     }
   }
 }

@@ -72,7 +72,6 @@ export const Cards: React.FC<CardsProps> = ({
     return { final: price };
   };
 
-  // Компонент для кнопки обраного
   const FavoriteButton: React.FC<{ tourId: number }> = ({ tourId }) => {
     const isFavorite = useIsFavorite(tourId);
     const { toggleFavorite, isLoading } = useToggleFavorite();
@@ -210,7 +209,6 @@ export const Cards: React.FC<CardsProps> = ({
                       </Chip>
                     )}
 
-                    {/* Використовуємо локальний компонент кнопки обраного */}
                     <FavoriteButton tourId={tour.id} />
 
                     {isImageFailed ? (
