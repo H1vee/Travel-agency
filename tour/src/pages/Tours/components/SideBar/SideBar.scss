@@ -1,9 +1,12 @@
+// SideBar.scss
 .sidebar {
   position: sticky;
   top: 90px;
   background: white;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   padding: 24px;
   border-radius: 16px;
   width: 100%;
@@ -13,6 +16,7 @@
   overflow-y: auto;
   transition: all 0.3s ease;
 
+  // Custom scrollbar
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -74,6 +78,7 @@
     position: absolute;
     top: -8px;
     right: -8px;
+    background: #6366f1 !important;
   }
 
   &__controls {
@@ -92,8 +97,12 @@
       transition: transform 0.3s ease;
     }
 
-    &:hover svg {
-      transform: scale(1.1);
+    &:hover {
+      background: #f1f5f9 !important;
+      
+      svg {
+        transform: scale(1.1);
+      }
     }
   }
 
@@ -105,13 +114,13 @@
 
   &__divider {
     margin: 20px 0;
-    background: #e2e8f0;
+    background: linear-gradient(90deg, transparent, #e2e8f0 50%, transparent);
   }
 
   &__active-filters {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     padding: 16px;
-    background: #f0f7ff;
+    background: linear-gradient(135deg, #f0f7ff, #e0f2fe);
     border: 1px solid #bae6fd;
     border-radius: 12px;
 
@@ -132,7 +141,7 @@
     .active-filters__list {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 8px;
     }
   }
 
@@ -155,11 +164,12 @@
 
     .price-range {
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       color: #6366f1;
       background: #f0f7ff;
       padding: 4px 8px;
       border-radius: 6px;
+      border: 1px solid #c7d2fe;
     }
   }
 
@@ -168,6 +178,25 @@
 
     &-control {
       margin-bottom: 20px;
+      
+      .nextui-slider-track {
+        background: #f1f5f9;
+      }
+      
+      .nextui-slider-filler {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      }
+      
+      .nextui-slider-thumb {
+        background: white;
+        border: 3px solid #6366f1;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        
+        &:hover, &:focus {
+          border-color: #8b5cf6;
+          transform: scale(1.1);
+        }
+      }
     }
   }
 
@@ -184,26 +213,55 @@
       color: #64748b;
       font-weight: 500;
     }
+
+    .nextui-input-wrapper {
+      border: 1px solid #e2e8f0 !important;
+      
+      &:hover {
+        border-color: #c7d2fe !important;
+      }
+      
+      &[data-focus="true"] {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+      }
+    }
   }
 
   &__checkbox-group {
     width: 100%;
+    
+    .nextui-checkbox-group-wrapper {
+      gap: 8px;
+    }
   }
 
   &__checkbox {
-    margin-bottom: 12px;
+    margin-bottom: 0;
+    padding: 8px 0;
     transition: all 0.2s ease;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
+    border-radius: 8px;
+    
     &:hover {
+      background: #f8fafc;
       transform: translateX(2px);
 
       .checkbox-content,
       .rating-content {
         color: #1e293b;
+      }
+    }
+
+    .nextui-checkbox-wrapper {
+      margin: 0 12px 0 0;
+      
+      &:before {
+        border-color: #d1d5db;
+      }
+      
+      &[data-selected="true"]:before {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        border-color: #6366f1;
       }
     }
 
@@ -215,6 +273,7 @@
       width: 100%;
       color: #475569;
       transition: color 0.2s ease;
+      padding: 4px 8px;
     }
 
     .checkbox-label,
@@ -234,15 +293,14 @@
   .stars-container {
     display: flex;
     align-items: center;
-    gap: 1px;
+    gap: 2px;
 
     .star {
-      font-size: 16px;
       transition: all 0.2s ease;
       
       &.filled {
         color: #f59e0b;
-        text-shadow: 0 0 4px rgba(245, 158, 11, 0.3);
+        filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.5));
       }
       
       &.empty {
@@ -268,7 +326,8 @@
     transition: all 0.3s ease;
 
     &--reset {
-      border-color: #d1d5db;
+      border: 1px solid #d1d5db;
+      background: white;
       color: #6b7280;
 
       &:hover:not(:disabled) {
@@ -276,6 +335,7 @@
         border-color: #9ca3af;
         color: #374151;
         transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
       &:disabled {
@@ -285,7 +345,9 @@
     }
 
     &--apply {
-      background: #6366f1;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border: none;
+      color: white;
       box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
 
       &:hover:not(:disabled) {
@@ -299,12 +361,8 @@
     }
   }
 
-  @media (max-width: 1200px) {
-    max-width: 280px;
-    padding: 20px;
-  }
-
-  @media (max-width: 768px) {
+  // Responsive design
+  @media (max-width: 1024px) {
     position: relative;
     top: 0;
     max-width: 100%;
@@ -324,6 +382,164 @@
 
     &__collapse-btn {
       display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+    border-radius: 12px;
+
+    &__header {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+    }
+
+    &__title h3 {
+      font-size: 16px;
+    }
+
+    &__section {
+      margin-bottom: 20px;
+    }
+
+    &__section-title {
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    &__slider-control {
+      margin-bottom: 16px;
+    }
+
+    &__inputs {
+      gap: 8px;
+    }
+
+    &__actions {
+      margin-top: 24px;
+      padding-top: 16px;
+      gap: 8px;
+    }
+
+    &__btn {
+      min-height: 40px;
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+
+    &__actions {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    &__btn {
+      width: 100%;
+    }
+  }
+
+  // Animations
+  .sidebar__section,
+  .sidebar__active-filters {
+    animation: fadeInUp 0.4s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // NextUI component overrides
+  .nextui-checkbox-group-label {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    margin-bottom: 12px !important;
+  }
+
+  .nextui-checkbox {
+    margin: 0 !important;
+    
+    .nextui-checkbox-wrapper {
+      &:before {
+        transition: all 0.2s ease;
+      }
+    }
+  }
+
+  .nextui-slider {
+    .nextui-slider-track {
+      height: 6px;
+    }
+    
+    .nextui-slider-thumb {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .nextui-input {
+    .nextui-input-wrapper {
+      min-height: 40px !important;
+    }
+  }
+
+  .nextui-chip {
+    &[data-color="primary"] {
+      background: rgba(99, 102, 241, 0.1) !important;
+      color: #4338ca !important;
+      border: 1px solid rgba(99, 102, 241, 0.2) !important;
+    }
+
+    &[data-color="secondary"] {
+      background: rgba(139, 92, 246, 0.1) !important;
+      color: #7c3aed !important;
+      border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    }
+
+    &[data-color="success"] {
+      background: rgba(16, 185, 129, 0.1) !important;
+      color: #059669 !important;
+      border: 1px solid rgba(16, 185, 129, 0.2) !important;
+    }
+
+    &[data-color="warning"] {
+      background: rgba(245, 158, 11, 0.1) !important;
+      color: #d97706 !important;
+      border: 1px solid rgba(245, 158, 11, 0.2) !important;
+    }
+
+    .nextui-chip-close-button {
+      &:hover {
+        background: rgba(0, 0, 0, 0.1) !important;
+      }
+    }
+  }
+
+  .nextui-badge {
+    &[data-color="default"] {
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+  }
+
+  .nextui-button {
+    &[data-variant="bordered"] {
+      transition: all 0.2s ease;
+    }
+
+    &[data-color="primary"] {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+      border: none !important;
     }
   }
 }

@@ -234,17 +234,16 @@ export const ToursPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="tours-page__search">
-          <SearchBar 
-            searchQuery={searchQuery} 
-            setSearchQuery={setSearchQuery} 
-            onKeyDown={handleKeyDown} 
-            onSearchClear={handleSearchClear}
-            isLoading={isPending}
-            popularSearches={popularSearches}
-          />
-        </div>
+{/* Search Bar */}
+<div className="tours-page__search">
+  <SearchBar 
+    searchQuery={searchQuery} 
+    setSearchQuery={setSearchQuery} 
+    onSearchClear={handleSearchClear}
+    isLoading={isPending}
+    popularSearches={popularSearches}
+  />
+</div>
 
         {/* Main Content */}
         <div className="tours-page__content">

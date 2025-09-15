@@ -61,7 +61,6 @@ export const InfoSide = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isAuthenticated } = useAuth();
 
-  // Використовуємо хуки для роботи з обраним
   const tourId = id ? parseInt(id) : 0;
   const isFavorite = useIsFavorite(tourId);
   const { toggleFavorite, isLoading: isFavoriteLoading } = useToggleFavorite();

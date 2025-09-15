@@ -1,36 +1,63 @@
 import { CheckboxGroup, Checkbox, Slider, Input, Button, Badge, Divider, Chip } from "@heroui/react";
 import React, { useState, useEffect } from "react";
-import { Filter, X, RotateCcw, Sparkles } from "lucide-react";
+import { Filter, X, RotateCcw, Sparkles, Star } from "lucide-react";
 import "./SideBar.scss";
 
-interface SideBarProps {
-  onApply: (filters: any) => void;
-  onReset: () => void;
-  isLoading?: boolean;
+interface Filters {
+  minPrice?: number;
+  maxPrice?: number;
+  duration?: string[];
+  rating?: string[];
+  region?: string[];
 }
 
-export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset, isLoading = false }) => {
+interface SideBarProps {
+  onApply: (filters: Filters) => void;
+  onReset: () => void;
+  isLoading?: boolean;
+  currentFilters?: Filters;
+}
+
+export const SideBar: React.FC<SideBarProps> = ({ 
+  onApply, 
+  onReset, 
+  isLoading = false, 
+  currentFilters = {} 
+}) => {
   const minValue = 0;
   const maxValue = 20000;
-  const [sliderValue, setSliderValue] = useState([minValue, maxValue]);
-  const [selectedDurations, setSelectedDurations] = useState<string[]>([]);
-  const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  
+  // Initialize state from currentFilters
+  const [sliderValue, setSliderValue] = useState([
+    currentFilters.minPrice || minValue, 
+    currentFilters.maxPrice || maxValue
+  ]);
+  const [selectedDurations, setSelectedDurations] = useState<string[]>(
+    currentFilters.duration || []
+  );
+  const [selectedRatings, setSelectedRatings] = useState<string[]>(
+    currentFilters.rating || []
+  );
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(
+    currentFilters.region || []
+  );
   const [isCollapsed, setIsCollapsed] = useState(false);
   
+  // Filter options
   const regions = [
-    { id: "1", name: "Європа", count: 45 },
-    { id: "2", name: "Азія", count: 32 },
-    { id: "3", name: "Америка", count: 28 },
-    { id: "4", name: "Африка", count: 15 },
-    { id: "5", name: "Океанія", count: 8 }
+    { id: "ukraine", name: "Україна", count: 5 },
+    { id: "europe", name: "Європа", count: 8 },
+    { id: "asia", name: "Азія", count: 6 },
+    { id: "america", name: "Америка", count: 4 },
+    { id: "middle-east", name: "Близький Схід", count: 3 },
+    { id: "oceania", name: "Океанія", count: 2 }
   ];
 
   const durations = [
-    { id: "1-3", name: "1-3 дні", count: 25 },
-    { id: "4-7", name: "4-7 днів", count: 48 },
-    { id: "8-14", name: "8-14 днів", count: 32 },
-    { id: "15+", name: "15+ днів", count: 12 }
+    { id: "1-3", name: "1-3 дні", count: 8 },
+    { id: "4-7", name: "4-7 днів", count: 15 },
+    { id: "8-14", name: "8-14 днів", count: 10 },
+    { id: "15+", name: "15+ днів", count: 5 }
   ];
 
   const ratings = [
@@ -40,13 +67,25 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset, isLoading = 
     { id: "2", stars: 2, label: "2+ зірки" },
     { id: "1", stars: 1, label: "1+ зірка" }
   ];
+
+  // Update state when currentFilters change
+  useEffect(() => {
+    setSliderValue([
+      currentFilters.minPrice || minValue,
+      currentFilters.maxPrice || maxValue
+    ]);
+    setSelectedDurations(currentFilters.duration || []);
+    setSelectedRatings(currentFilters.rating || []);
+    setSelectedRegions(currentFilters.region || []);
+  }, [currentFilters, minValue, maxValue]);
   
-  const handleSliderChange = (newValue: any) => {
-    setSliderValue(newValue);
+  const handleSliderChange = (newValue: number | number[]) => {
+    const values = Array.isArray(newValue) ? newValue : [newValue, newValue];
+    setSliderValue(values);
   };
   
   const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === '' ? 0 : Number(e.target.value);
+    const value = e.target.value === '' ? minValue : Number(e.target.value);
     const newMin = Math.max(minValue, Math.min(value, sliderValue[1] - 100));
     setSliderValue([newMin, sliderValue[1]]);
   };
@@ -58,13 +97,15 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset, isLoading = 
   };
   
   const applyFilters = () => {
-    onApply({
-      minPrice: sliderValue[0] !== minValue ? sliderValue[0] : undefined,
-      maxPrice: sliderValue[1] !== maxValue ? sliderValue[1] : undefined,
-      duration: selectedDurations.length ? selectedDurations : undefined,
-      rating: selectedRatings.length ? selectedRatings : undefined,
-      region: selectedRegions.length ? selectedRegions : undefined,
-    });
+    const filters: Filters = {};
+    
+    if (sliderValue[0] !== minValue) filters.minPrice = sliderValue[0];
+    if (sliderValue[1] !== maxValue) filters.maxPrice = sliderValue[1];
+    if (selectedDurations.length > 0) filters.duration = selectedDurations;
+    if (selectedRatings.length > 0) filters.rating = selectedRatings;
+    if (selectedRegions.length > 0) filters.region = selectedRegions;
+    
+    onApply(filters);
   };
   
   const resetFilters = () => {
@@ -121,12 +162,12 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset, isLoading = 
     return (
       <div className="stars-container">
         {[1, 2, 3, 4, 5].map((star) => (
-          <span
+          <Star
             key={star}
+            size={14}
             className={`star ${star <= rating ? 'filled' : 'empty'}`}
-          >
-            ★
-          </span>
+            fill={star <= rating ? 'currentColor' : 'none'}
+          />
         ))}
       </div>
     );
@@ -135,10 +176,8 @@ export const SideBar: React.FC<SideBarProps> = ({ onApply, onReset, isLoading = 
   // Auto-apply filters with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (hasActiveFilters()) {
-        applyFilters();
-      }
-    }, 500);
+      applyFilters();
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [sliderValue, selectedDurations, selectedRatings, selectedRegions]);

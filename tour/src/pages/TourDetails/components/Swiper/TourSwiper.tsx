@@ -60,46 +60,45 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     queryKey: ['toursData', id],
     queryFn: async () => {
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        console.log('Fetching tour carousel for ID:', id);
         
-        const response = await fetch(`/api/tour-carousel/${id}`, {
-          signal: controller.signal,
+        // Правильный URL для вашего Go сервера
+        const response = await fetch(`http://127.0.0.1:1323/tour-carousel/${id}`, {
           headers: {
             'Accept': 'application/json',
             'Cache-Control': 'max-age=300'
           }
         });
         
-        clearTimeout(timeoutId);
-        
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data: Tour[] = await response.json();
+        console.log('Received carousel data:', data);
         
         if (!Array.isArray(data)) {
           throw new Error('Invalid response format: expected array');
         }
         
-        return data.filter(tour => tour.image_src && tour.tourID);
+        return data.filter(tour => tour.image_src);
       } catch (err) {
-        console.error('Error fetching tour data:', err);
+        console.error('Error fetching tour carousel:', err);
         throw err;
       }
     },
     staleTime: 5 * 60 * 1000, 
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    enabled: !!id, // Добавим проверку наличия ID
   });
   
-
   const displayTours = tours.slice(0, maxSlides);
   
   const preloadImage = useCallback((src: string, index: number): Promise<void> => {
     return new Promise((resolve, reject) => {
-      const fullSrc = `${process.env.REACT_APP_API_BASE_URL || ''}${src}`;
+      // Убираем базовый URL, так как изображения уже содержат полный путь от сервера
+      const fullSrc = `http://127.0.0.1:1323${src}`;
       
       if (imageCache.current.has(fullSrc)) {
         setImagesLoaded(prev => ({ ...prev, [index]: true }));
@@ -121,17 +120,14 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     });
   }, []);
   
-
   const handleImageLoaded = useCallback((index: number) => {
     setImagesLoaded(prev => ({ ...prev, [index]: true }));
   }, []);
   
-
   useEffect(() => {
     setImagesLoaded({});
     setActiveIndex(0);
   }, [tours]);
-
 
   useEffect(() => {
     if (displayTours.length) {
@@ -285,7 +281,7 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
       >
         {displayTours.map((tour, index) => (
           <SwiperSlide 
-            key={`tour-${tour.tourID}-${index}`} 
+            key={`tour-${tour.tourID || index}-${index}`} 
             virtualIndex={index}
             className="tour-swiper__slide"
           >
@@ -295,11 +291,12 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
             <div 
               className="tour-swiper__slide-image"
               style={{ 
-                backgroundImage: `url(${process.env.REACT_APP_API_BASE_URL || ''}${tour.image_src})`,
+                backgroundImage: `url(http://127.0.0.1:1323${tour.image_src})`,
                 opacity: imagesLoaded[index] ? 1 : 0
               }}
               role="img"
               aria-label={tour.title || `Tour image ${index + 1}`}
+              onLoad={() => handleImageLoaded(index)}
             />
             <div className="tour-swiper__slide-overlay" aria-hidden="true" />
             {tour.title && (
@@ -324,9 +321,9 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
       
       {showThumbnails && displayTours.length > 1 && (
         <div className="tour-swiper__thumbnails" role="tablist">
-          {displayTours.map((tour, index) => (
+          {displayTours.map((image, index) => (
             <button
-              key={`thumb-${tour.tourID}-${index}`}
+              key={`thumb-${image.tourID}-${index}`}
               className={`tour-swiper__thumbnail ${activeIndex === index ? 'active' : ''}`}
               onClick={() => swiper?.slideTo(index)}
               role="tab"
@@ -335,8 +332,8 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
               type="button"
             >
               <img
-                src={`${process.env.REACT_APP_API_BASE_URL || ''}${tour.image_src}`}
-                alt={tour.title || `Tour thumbnail ${index + 1}`}
+                src={`http://127.0.0.1:1323${image.image_src}`}
+                alt={`Tour thumbnail ${index + 1}`}
                 loading="lazy"
               />
             </button>
