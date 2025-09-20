@@ -1,140 +1,92 @@
 // SideBar.scss
 .sidebar {
-  position: sticky;
-  top: 90px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding: 24px;
+  background: #ffffff;
   border-radius: 16px;
-  width: 100%;
-  max-width: 320px;
-  height: fit-content;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
+  border: 1px solid #e4e4e7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
   transition: all 0.3s ease;
-
-  // Custom scrollbar
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
-    
-    &:hover {
-      background: #94a3b8;
-    }
-  }
+  height: fit-content;
+  position: sticky;
+  top: 24px;
 
   &--collapsed {
-    max-width: 80px;
-    padding: 16px;
-    
-    .sidebar__section,
-    .sidebar__active-filters,
-    .sidebar__actions {
-      display: none;
+    .sidebar__header {
+      border-bottom: none;
     }
   }
 
+  // Header
   &__header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e2e8f0;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid #f4f4f5;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   }
 
   &__title {
     display: flex;
     align-items: center;
-    gap: 10px;
-    position: relative;
-
-    svg {
-      color: #6366f1;
-      flex-shrink: 0;
+    gap: 8px;
+    
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #18181b;
     }
 
-    h3 {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1e293b;
-      margin: 0;
+    svg {
+      color: #3b82f6;
     }
   }
 
   &__badge {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #6366f1 !important;
+    margin-left: 4px;
   }
 
   &__controls {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
   }
 
   &__reset-btn,
   &__collapse-btn {
-    min-width: 32px !important;
-    width: 32px !important;
-    height: 32px !important;
+    min-width: 32px;
+    height: 32px;
     
     svg {
       transition: transform 0.3s ease;
-    }
-
-    &:hover {
-      background: #f1f5f9 !important;
       
-      svg {
-        transform: scale(1.1);
+      &.rotated {
+        transform: rotate(45deg);
       }
     }
   }
 
-  &__collapse-btn {
-    .rotated {
-      transform: rotate(45deg);
-    }
-  }
-
-  &__divider {
-    margin: 20px 0;
-    background: linear-gradient(90deg, transparent, #e2e8f0 50%, transparent);
-  }
-
+  // Active Filters
   &__active-filters {
-    margin-bottom: 20px;
-    padding: 16px;
-    background: linear-gradient(135deg, #f0f7ff, #e0f2fe);
-    border: 1px solid #bae6fd;
-    border-radius: 12px;
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
 
     .active-filters__header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #0369a1;
+      gap: 6px;
       margin-bottom: 12px;
+      
+      span {
+        font-size: 14px;
+        font-weight: 500;
+        color: #475569;
+      }
 
       svg {
-        color: #0ea5e9;
+        color: #8b5cf6;
       }
     }
 
@@ -145,11 +97,18 @@
     }
   }
 
-  &__section {
-    margin-bottom: 24px;
+  // Dividers
+  &__divider {
+    margin: 0;
+    background-color: #f1f5f9;
+  }
 
-    &:last-child {
-      margin-bottom: 0;
+  // Sections
+  &__section {
+    padding: 20px;
+
+    &:last-of-type {
+      padding-bottom: 16px;
     }
   }
 
@@ -157,389 +116,318 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin: 0 0 16px 0;
     font-size: 16px;
     font-weight: 600;
-    margin: 0 0 16px;
     color: #1e293b;
 
     .price-range {
-      font-size: 13px;
-      font-weight: 600;
-      color: #6366f1;
-      background: #f0f7ff;
+      font-size: 14px;
+      font-weight: 500;
+      color: #3b82f6;
+      background: #eff6ff;
       padding: 4px 8px;
       border-radius: 6px;
-      border: 1px solid #c7d2fe;
     }
   }
 
+  // Price Slider
   &__slider {
-    width: 100%;
-
-    &-control {
+    .sidebar__slider-control {
       margin-bottom: 20px;
-      
-      .nextui-slider-track {
-        background: #f1f5f9;
+    }
+  }
+
+  &__price-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    .price-input {
+      input {
+        font-size: 13px;
       }
-      
-      .nextui-slider-filler {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      }
-      
-      .nextui-slider-thumb {
-        background: white;
-        border: 3px solid #6366f1;
-        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+  }
+
+  // Checkbox Groups
+  &__checkbox-group {
+    gap: 12px;
+  }
+
+  &__checkbox {
+    &--rating {
+      .rating-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         
-        &:hover, &:focus {
-          border-color: #8b5cf6;
-          transform: scale(1.1);
+        .stars-container {
+          display: flex;
+          gap: 2px;
+          
+          .star {
+            &.filled {
+              color: #fbbf24;
+            }
+            
+            &.empty {
+              color: #d1d5db;
+            }
+          }
+        }
+        
+        .rating-label {
+          font-size: 14px;
+          color: #64748b;
         }
       }
     }
   }
 
-  &__inputs {
+  // Footer
+  &__footer {
+    padding: 20px;
+    background: #fafafa;
+    border-top: 1px solid #e4e4e7;
     display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 
-  &__input {
-    flex: 1;
-
-    .currency {
-      font-size: 14px;
-      color: #64748b;
-      font-weight: 500;
-    }
-
-    .nextui-input-wrapper {
-      border: 1px solid #e2e8f0 !important;
-      
-      &:hover {
-        border-color: #c7d2fe !important;
-      }
-      
-      &[data-focus="true"] {
-        border-color: #6366f1 !important;
-        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
-      }
-    }
-  }
-
-  &__checkbox-group {
-    width: 100%;
-    
-    .nextui-checkbox-group-wrapper {
-      gap: 8px;
-    }
-  }
-
-  &__checkbox {
-    margin-bottom: 0;
-    padding: 8px 0;
-    transition: all 0.2s ease;
-    border-radius: 8px;
-    
-    &:hover {
-      background: #f8fafc;
-      transform: translateX(2px);
-
-      .checkbox-content,
-      .rating-content {
-        color: #1e293b;
-      }
-    }
-
-    .nextui-checkbox-wrapper {
-      margin: 0 12px 0 0;
-      
-      &:before {
-        border-color: #d1d5db;
-      }
-      
-      &[data-selected="true"]:before {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        border-color: #6366f1;
-      }
-    }
-
-    .checkbox-content,
-    .rating-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      color: #475569;
-      transition: color 0.2s ease;
-      padding: 4px 8px;
-    }
-
-    .checkbox-label,
-    .rating-label {
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    &--rating {
-      .rating-content {
-        justify-content: flex-start;
-        gap: 12px;
-      }
-    }
-  }
-
-  .stars-container {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-
-    .star {
-      transition: all 0.2s ease;
-      
-      &.filled {
-        color: #f59e0b;
-        filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.5));
-      }
-      
-      &.empty {
-        color: #d1d5db;
-      }
-    }
-  }
-
-  &__actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
-  }
-
-  &__btn {
-    flex: 1;
-    min-height: 44px;
-    font-size: 14px;
+  &__apply-btn {
+    height: 44px;
     font-weight: 600;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-
-    &--reset {
-      border: 1px solid #d1d5db;
-      background: white;
-      color: #6b7280;
-
-      &:hover:not(:disabled) {
-        background: #f9fafb;
-        border-color: #9ca3af;
-        color: #374151;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-
-    &--apply {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      border: none;
-      color: white;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
-
-      &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-      }
-
-      &:disabled {
-        opacity: 0.7;
-      }
-    }
+    font-size: 14px;
   }
 
-  // Responsive design
+  &__reset-all-btn {
+    height: 40px;
+    font-size: 13px;
+  }
+
+  // Responsive
   @media (max-width: 1024px) {
-    position: relative;
-    top: 0;
-    max-width: 100%;
+    position: static;
+    border-radius: 12px;
     margin-bottom: 24px;
-    max-height: none;
-
-    &--collapsed {
-      max-width: 100%;
-      padding: 20px;
-
-      .sidebar__section,
-      .sidebar__active-filters,
-      .sidebar__actions {
-        display: block;
-      }
-    }
-
-    &__collapse-btn {
-      display: none;
-    }
   }
 
   @media (max-width: 768px) {
-    padding: 16px;
-    border-radius: 12px;
-
     &__header {
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-    }
-
-    &__title h3 {
-      font-size: 16px;
+      padding: 16px;
     }
 
     &__section {
-      margin-bottom: 20px;
+      padding: 16px;
+    }
+
+    &__footer {
+      padding: 16px;
+    }
+
+    &__price-inputs {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+}
+
+// NextUI overrides
+[data-theme="light"] {
+  .sidebar {
+    // Slider customization
+    .sidebar__slider-control {
+      [data-slot="track"] {
+        background: #e2e8f0;
+        height: 6px;
+      }
+
+      [data-slot="filler"] {
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+      }
+
+      [data-slot="thumb"] {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #ffffff;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        
+        &:hover {
+          transform: scale(1.1);
+        }
+      }
+    }
+
+    // Checkbox customization
+    .sidebar__checkbox {
+      [data-slot="wrapper"] {
+        border-radius: 6px;
+        border: 2px solid #e2e8f0;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #cbd5e1;
+        }
+      }
+
+      [data-selected="true"] {
+        [data-slot="wrapper"] {
+          background: #3b82f6;
+          border-color: #3b82f6;
+        }
+      }
+
+      [data-slot="label"] {
+        font-size: 14px;
+        color: #475569;
+        font-weight: 500;
+      }
+    }
+
+    // Input customization
+    .price-input {
+      [data-slot="input-wrapper"] {
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        
+        &[data-focus="true"] {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+      }
+
+      [data-slot="label"] {
+        font-size: 12px;
+        font-weight: 500;
+        color: #64748b;
+      }
+    }
+
+    // Button customization
+    .sidebar__apply-btn {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+      }
+    }
+
+    // Chip customization
+    [data-slot="base"] {
+      &[data-color="primary"] {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+      }
+
+      &[data-color="secondary"] {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+      }
+
+      &[data-color="success"] {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+      }
+
+      &[data-color="warning"] {
+        background: #fffbeb;
+        color: #d97706;
+        border: 1px solid #fed7aa;
+      }
+    }
+  }
+}
+
+// Dark theme support
+[data-theme="dark"] {
+  .sidebar {
+    background: #18181b;
+    border-color: #27272a;
+    color: #f4f4f5;
+
+    &__header {
+      background: linear-gradient(135deg, #1f1f23 0%, #27272a 100%);
+      border-color: #3f3f46;
+    }
+
+    &__title h3 {
+      color: #f4f4f5;
     }
 
     &__section-title {
-      font-size: 15px;
-      margin-bottom: 12px;
-    }
+      color: #f4f4f5;
 
-    &__slider-control {
-      margin-bottom: 16px;
-    }
-
-    &__inputs {
-      gap: 8px;
-    }
-
-    &__actions {
-      margin-top: 24px;
-      padding-top: 16px;
-      gap: 8px;
-    }
-
-    &__btn {
-      min-height: 40px;
-      font-size: 13px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    padding: 12px;
-
-    &__actions {
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    &__btn {
-      width: 100%;
-    }
-  }
-
-  // Animations
-  .sidebar__section,
-  .sidebar__active-filters {
-    animation: fadeInUp 0.4s ease-out;
-  }
-
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  // NextUI component overrides
-  .nextui-checkbox-group-label {
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    color: #1e293b !important;
-    margin-bottom: 12px !important;
-  }
-
-  .nextui-checkbox {
-    margin: 0 !important;
-    
-    .nextui-checkbox-wrapper {
-      &:before {
-        transition: all 0.2s ease;
+      .price-range {
+        background: #1e293b;
+        color: #60a5fa;
       }
     }
-  }
 
-  .nextui-slider {
-    .nextui-slider-track {
-      height: 6px;
+    &__active-filters {
+      background: #1f1f23;
+      border-color: #3f3f46;
     }
-    
-    .nextui-slider-thumb {
-      width: 20px;
-      height: 20px;
-    }
-  }
 
-  .nextui-input {
-    .nextui-input-wrapper {
-      min-height: 40px !important;
+    &__footer {
+      background: #1f1f23;
+      border-color: #3f3f46;
+    }
+
+    &__divider {
+      background-color: #3f3f46;
     }
   }
+}
 
-  .nextui-chip {
-    &[data-color="primary"] {
-      background: rgba(99, 102, 241, 0.1) !important;
-      color: #4338ca !important;
-      border: 1px solid rgba(99, 102, 241, 0.2) !important;
-    }
-
-    &[data-color="secondary"] {
-      background: rgba(139, 92, 246, 0.1) !important;
-      color: #7c3aed !important;
-      border: 1px solid rgba(139, 92, 246, 0.2) !important;
-    }
-
-    &[data-color="success"] {
-      background: rgba(16, 185, 129, 0.1) !important;
-      color: #059669 !important;
-      border: 1px solid rgba(16, 185, 129, 0.2) !important;
-    }
-
-    &[data-color="warning"] {
-      background: rgba(245, 158, 11, 0.1) !important;
-      color: #d97706 !important;
-      border: 1px solid rgba(245, 158, 11, 0.2) !important;
-    }
-
-    .nextui-chip-close-button {
-      &:hover {
-        background: rgba(0, 0, 0, 0.1) !important;
-      }
-    }
+// Animation utilities
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
   }
-
-  .nextui-badge {
-    &[data-color="default"] {
-      background: #f1f5f9 !important;
-      color: #64748b !important;
-      border: 1px solid #e2e8f0 !important;
-    }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
+}
 
-  .nextui-button {
-    &[data-variant="bordered"] {
-      transition: all 0.2s ease;
-    }
+.sidebar__active-filters {
+  animation: slideIn 0.3s ease-out;
+}
 
-    &[data-color="primary"] {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-      border: none !important;
-    }
+.sidebar__checkbox,
+.sidebar__section {
+  transition: all 0.2s ease;
+}
+
+// Loading state
+.sidebar--loading {
+  .sidebar__section {
+    opacity: 0.6;
+    pointer-events: none;
   }
+}
+
+// Hover effects
+.sidebar__checkbox:hover {
+  transform: translateX(2px);
+}
+
+.sidebar__apply-btn,
+.sidebar__reset-all-btn {
+  transition: all 0.2s ease;
+}
+
+// Focus states
+.sidebar__checkbox:focus-within,
+.price-input:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }

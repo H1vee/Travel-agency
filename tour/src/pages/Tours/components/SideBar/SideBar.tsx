@@ -1,5 +1,5 @@
 import { CheckboxGroup, Checkbox, Slider, Input, Button, Badge, Divider, Chip } from "@heroui/react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Filter, X, RotateCcw, Sparkles, Star } from "lucide-react";
 import "./SideBar.scss";
 
@@ -25,9 +25,9 @@ export const SideBar: React.FC<SideBarProps> = ({
   currentFilters = {} 
 }) => {
   const minValue = 0;
-  const maxValue = 20000;
+  const maxValue = 100000;
   
-  // Initialize state from currentFilters
+  // Local state
   const [sliderValue, setSliderValue] = useState([
     currentFilters.minPrice || minValue, 
     currentFilters.maxPrice || maxValue
@@ -43,21 +43,21 @@ export const SideBar: React.FC<SideBarProps> = ({
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // Filter options
+  // Filter options - відповідають серверній логіці
   const regions = [
-    { id: "ukraine", name: "Україна", count: 5 },
-    { id: "europe", name: "Європа", count: 8 },
-    { id: "asia", name: "Азія", count: 6 },
-    { id: "america", name: "Америка", count: 4 },
-    { id: "middle-east", name: "Близький Схід", count: 3 },
-    { id: "oceania", name: "Океанія", count: 2 }
+    { id: "1", name: "Україна" },
+    { id: "2", name: "Європа" },
+    { id: "3", name: "Азія" },
+    { id: "4", name: "Америка" },
+    { id: "5", name: "Близький Схід" },
+    { id: "6", name: "Океанія" }
   ];
 
   const durations = [
-    { id: "1-3", name: "1-3 дні", count: 8 },
-    { id: "4-7", name: "4-7 днів", count: 15 },
-    { id: "8-14", name: "8-14 днів", count: 10 },
-    { id: "15+", name: "15+ днів", count: 5 }
+    { id: "1", name: "1-3 дні" },
+    { id: "2", name: "4-7 днів" },
+    { id: "3", name: "8-14 днів" },
+    { id: "4", name: "15+ днів" }
   ];
 
   const ratings = [
@@ -68,7 +68,7 @@ export const SideBar: React.FC<SideBarProps> = ({
     { id: "1", stars: 1, label: "1+ зірка" }
   ];
 
-  // Update state when currentFilters change
+  // Update local state when currentFilters change
   useEffect(() => {
     setSliderValue([
       currentFilters.minPrice || minValue,
@@ -79,24 +79,24 @@ export const SideBar: React.FC<SideBarProps> = ({
     setSelectedRegions(currentFilters.region || []);
   }, [currentFilters, minValue, maxValue]);
   
-  const handleSliderChange = (newValue: number | number[]) => {
+  const handleSliderChange = useCallback((newValue: number | number[]) => {
     const values = Array.isArray(newValue) ? newValue : [newValue, newValue];
     setSliderValue(values);
-  };
+  }, []);
   
-  const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMinInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value === '' ? minValue : Number(e.target.value);
     const newMin = Math.max(minValue, Math.min(value, sliderValue[1] - 100));
     setSliderValue([newMin, sliderValue[1]]);
-  };
+  }, [sliderValue, minValue]);
   
-  const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMaxInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value === '' ? maxValue : Number(e.target.value);
     const newMax = Math.min(maxValue, Math.max(value, sliderValue[0] + 100));
     setSliderValue([sliderValue[0], newMax]);
-  };
+  }, [sliderValue, maxValue]);
   
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     const filters: Filters = {};
     
     if (sliderValue[0] !== minValue) filters.minPrice = sliderValue[0];
@@ -105,18 +105,20 @@ export const SideBar: React.FC<SideBarProps> = ({
     if (selectedRatings.length > 0) filters.rating = selectedRatings;
     if (selectedRegions.length > 0) filters.region = selectedRegions;
     
+    console.log("🔧 SideBar: Застосовуємо фільтри для сервера:", filters);
     onApply(filters);
-  };
+  }, [sliderValue, selectedDurations, selectedRatings, selectedRegions, minValue, maxValue, onApply]);
   
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
+    console.log("🔄 SideBar: Скидання фільтрів");
     setSliderValue([minValue, maxValue]);
     setSelectedDurations([]);
     setSelectedRatings([]);
     setSelectedRegions([]);
     onReset();
-  };
+  }, [minValue, maxValue, onReset]);
   
-  const hasActiveFilters = () => {
+  const hasActiveFilters = useCallback(() => {
     return (
       sliderValue[0] !== minValue ||
       sliderValue[1] !== maxValue ||
@@ -124,18 +126,18 @@ export const SideBar: React.FC<SideBarProps> = ({
       selectedRatings.length > 0 ||
       selectedRegions.length > 0
     );
-  };
+  }, [sliderValue, selectedDurations, selectedRatings, selectedRegions, minValue, maxValue]);
 
-  const getActiveFiltersCount = () => {
+  const getActiveFiltersCount = useCallback(() => {
     let count = 0;
     if (sliderValue[0] !== minValue || sliderValue[1] !== maxValue) count++;
     if (selectedDurations.length > 0) count++;
     if (selectedRatings.length > 0) count++;
     if (selectedRegions.length > 0) count++;
     return count;
-  };
+  }, [sliderValue, selectedDurations, selectedRatings, selectedRegions, minValue, maxValue]);
 
-  const removeFilter = (type: string, value?: string) => {
+  const removeFilter = useCallback((type: string, value?: string) => {
     switch (type) {
       case 'price':
         setSliderValue([minValue, maxValue]);
@@ -156,7 +158,7 @@ export const SideBar: React.FC<SideBarProps> = ({
         }
         break;
     }
-  };
+  }, [minValue, maxValue]);
 
   const renderStars = (rating: number) => {
     return (
@@ -180,7 +182,7 @@ export const SideBar: React.FC<SideBarProps> = ({
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [sliderValue, selectedDurations, selectedRatings, selectedRegions]);
+  }, [applyFilters]);
 
   return (
     <div className={`sidebar ${isCollapsed ? 'sidebar--collapsed' : ''}`}>
@@ -298,7 +300,7 @@ export const SideBar: React.FC<SideBarProps> = ({
               <Slider
                 maxValue={maxValue}
                 minValue={minValue}
-                step={100}
+                step={1000}
                 value={sliderValue}
                 onChange={handleSliderChange}
                 size="sm"
@@ -311,24 +313,31 @@ export const SideBar: React.FC<SideBarProps> = ({
                   minimumFractionDigits: 0
                 }}
               />
-              <div className="sidebar__inputs">
+              
+              <div className="sidebar__price-inputs">
                 <Input
+                  type="number"
+                  label="Від"
                   value={sliderValue[0].toString()}
                   onChange={handleMinInputChange}
+                  min={minValue}
+                  max={sliderValue[1] - 100}
                   size="sm"
                   variant="bordered"
-                  startContent={<span className="currency">₴</span>}
-                  label="Мінімум"
-                  className="sidebar__input"
+                  startContent="₴"
+                  className="price-input"
                 />
                 <Input
+                  type="number"
+                  label="До"
                   value={sliderValue[1].toString()}
                   onChange={handleMaxInputChange}
+                  min={sliderValue[0] + 100}
+                  max={maxValue}
                   size="sm"
                   variant="bordered"
-                  startContent={<span className="currency">₴</span>}
-                  label="Максимум"
-                  className="sidebar__input"
+                  startContent="₴"
+                  className="price-input"
                 />
               </div>
             </div>
@@ -338,24 +347,20 @@ export const SideBar: React.FC<SideBarProps> = ({
 
           {/* Regions */}
           <div className="sidebar__section">
+            <h4 className="sidebar__section-title">Регіон</h4>
             <CheckboxGroup
-              label="Регіони"
               value={selectedRegions}
-              onChange={setSelectedRegions}
+              onValueChange={setSelectedRegions}
+              size="sm"
               className="sidebar__checkbox-group"
             >
-              {regions.map(region => (
+              {regions.map((region) => (
                 <Checkbox 
-                  key={region.id}
-                  value={region.id} 
+                  key={region.id} 
+                  value={region.id}
                   className="sidebar__checkbox"
                 >
-                  <div className="checkbox-content">
-                    <span className="checkbox-label">{region.name}</span>
-                    <Badge size="sm" variant="flat" color="default">
-                      {region.count}
-                    </Badge>
-                  </div>
+                  {region.name}
                 </Checkbox>
               ))}
             </CheckboxGroup>
@@ -365,24 +370,20 @@ export const SideBar: React.FC<SideBarProps> = ({
 
           {/* Duration */}
           <div className="sidebar__section">
+            <h4 className="sidebar__section-title">Тривалість</h4>
             <CheckboxGroup
-              label="Тривалість туру"
               value={selectedDurations}
-              onChange={setSelectedDurations}
+              onValueChange={setSelectedDurations}
+              size="sm"
               className="sidebar__checkbox-group"
             >
-              {durations.map(duration => (
+              {durations.map((duration) => (
                 <Checkbox 
-                  key={duration.id}
-                  value={duration.id} 
+                  key={duration.id} 
+                  value={duration.id}
                   className="sidebar__checkbox"
                 >
-                  <div className="checkbox-content">
-                    <span className="checkbox-label">{duration.name}</span>
-                    <Badge size="sm" variant="flat" color="default">
-                      {duration.count}
-                    </Badge>
-                  </div>
+                  {duration.name}
                 </Checkbox>
               ))}
             </CheckboxGroup>
@@ -390,21 +391,22 @@ export const SideBar: React.FC<SideBarProps> = ({
 
           <Divider className="sidebar__divider" />
 
-          {/* Ratings */}
+          {/* Rating */}
           <div className="sidebar__section">
+            <h4 className="sidebar__section-title">Рейтинг</h4>
             <CheckboxGroup
-              label="Рейтинг туру"
               value={selectedRatings}
-              onChange={setSelectedRatings}
+              onValueChange={setSelectedRatings}
+              size="sm"
               className="sidebar__checkbox-group"
             >
-              {ratings.map(rating => (
+              {ratings.map((rating) => (
                 <Checkbox 
-                  key={rating.id}
-                  value={rating.id} 
+                  key={rating.id} 
+                  value={rating.id}
                   className="sidebar__checkbox sidebar__checkbox--rating"
                 >
-                  <div className="rating-content">
+                  <div className="rating-option">
                     {renderStars(rating.stars)}
                     <span className="rating-label">{rating.label}</span>
                   </div>
@@ -413,27 +415,30 @@ export const SideBar: React.FC<SideBarProps> = ({
             </CheckboxGroup>
           </div>
 
-          {/* Actions */}
-          <div className="sidebar__actions">
-            <Button 
-              onClick={resetFilters}
-              variant="bordered"
-              className="sidebar__btn sidebar__btn--reset"
-              startContent={<RotateCcw size={16} />}
-              isDisabled={!hasActiveFilters()}
-            >
-              Скинути
-            </Button>
-            <Button 
-              onClick={applyFilters}
+          {/* Footer Actions */}
+          <div className="sidebar__footer">
+            <Button
               color="primary"
-              variant="solid"
-              className="sidebar__btn sidebar__btn--apply"
-              startContent={<Filter size={16} />}
-              isLoading={isLoading}
+              onClick={applyFilters}
+              isDisabled={isLoading}
+              className="sidebar__apply-btn"
+              fullWidth
             >
-              Застосувати
+              {isLoading ? "Застосовується..." : "Застосувати фільтри"}
             </Button>
+            
+            {hasActiveFilters() && (
+              <Button
+                variant="light"
+                color="danger"
+                onClick={resetFilters}
+                startContent={<RotateCcw size={16} />}
+                className="sidebar__reset-all-btn"
+                fullWidth
+              >
+                Скинути всі фільтри
+              </Button>
+            )}
           </div>
         </>
       )}

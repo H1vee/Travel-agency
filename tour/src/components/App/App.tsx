@@ -9,7 +9,7 @@ import { AuthProvider } from '../../context/AuthContext';
 import { Navbar } from '../../components/Navbar/Navbar';
 import { Main } from '../../pages/Main/Main';
 import { AboutUs } from '../../pages/AboutUs/AboutUs';
-import { ToursPage } from '../../pages/Tours/Tours';
+import { Tours } from '../../pages/Tours/Tours';
 import { TourDetails } from '../../pages/TourDetails/TourDetails';
 import { UserProfile } from '../../pages/Profile/UserProfile';
 import { UserBookings } from '../../pages/Bookings/UserBookings';
@@ -66,7 +66,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Main />} />
                   <Route path="/AboutUs" element={<AboutUs />} />
-                  <Route path="/Tours" element={<ToursPage />} />
+                  <Route path="/Tours" element={<Tours />} />
                   <Route path="/TourDetails/:id" element={<TourDetails />} />
                   <Route path="/profile" element={<UserProfile />} />
                   <Route path="/bookings" element={<UserBookings />} />

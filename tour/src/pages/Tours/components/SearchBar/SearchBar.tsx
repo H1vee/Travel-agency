@@ -1,13 +1,26 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Input, Kbd, Spinner } from "@heroui/react";
-import { Search, X, Sparkles, Clock } from "lucide-react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { 
+  Input, 
+  Button, 
+  Chip, 
+  Card, 
+  CardBody,
+  Spinner,
+  Kbd
+} from "@heroui/react";
+import { 
+  Search, 
+  X, 
+  TrendingUp, 
+  Clock, 
+  MapPin
+} from "lucide-react";
 import "./SearchBar.scss";
 
 interface SearchBarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onSearchClear: () => void;
-  placeholder?: string;
   isLoading?: boolean;
   popularSearches?: string[];
 }
@@ -16,182 +29,268 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   searchQuery,
   setSearchQuery,
   onSearchClear,
-  placeholder = "Шукайте тури за назвою, містом, країною...",
   isLoading = false,
-  popularSearches = ["Єгипет", "Дубай", "Бостон", "Мальдіви", "Тайвань"]
+  popularSearches = []
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Load recent searches from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('recent_searches');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setRecentSearches(Array.isArray(parsed) ? parsed : []);
-      } catch {
-        setRecentSearches([]);
+    try {
+      const saved = localStorage.getItem('recent-searches');
+      if (saved) {
+        setRecentSearches(JSON.parse(saved));
       }
+    } catch (error) {
+      console.warn('Failed to load recent searches:', error);
     }
   }, []);
 
   // Save search to recent searches
-  const saveRecentSearch = (query: string) => {
+  const saveToRecentSearches = useCallback((query: string) => {
     if (!query.trim()) return;
     
-    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
-    setRecentSearches(updated);
-    localStorage.setItem('recent_searches', JSON.stringify(updated));
-  };
+    try {
+      const updated = [
+        query.trim(),
+        ...recentSearches.filter(item => item !== query.trim())
+      ].slice(0, 5); // Keep only 5 recent searches
+      
+      setRecentSearches(updated);
+      localStorage.setItem('recent-searches', JSON.stringify(updated));
+    } catch (error) {
+      console.warn('Failed to save recent search:', error);
+    }
+  }, [recentSearches]);
 
-  const handleSearchChange = (value: string) => {
+  // Handle search input change
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     setSearchQuery(value);
-  };
+  }, [setSearchQuery]);
 
-  const handleSearchSubmit = () => {
-    if (searchQuery.trim()) {
-      saveRecentSearch(searchQuery.trim());
-      setIsFocused(false);
+  // Handle search submission
+  const handleSearch = useCallback((query?: string) => {
+    const searchTerm = query || searchQuery;
+    if (searchTerm.trim()) {
+      saveToRecentSearches(searchTerm.trim());
+      setSearchQuery(searchTerm.trim());
+      setShowSuggestions(false);
       inputRef.current?.blur();
     }
-  };
+  }, [searchQuery, setSearchQuery, saveToRecentSearches]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSearchSubmit();
-    } else if (e.key === 'Escape') {
-      setIsFocused(false);
-      inputRef.current?.blur();
-    }
-  };
-
-  const onClearSearch = () => {
+  // Handle clear search
+  const handleClear = useCallback(() => {
     setSearchQuery("");
     onSearchClear();
+    setShowSuggestions(false);
     inputRef.current?.focus();
-  };
+  }, [setSearchQuery, onSearchClear]);
 
-  const handleSuggestionClick = (search: string) => {
-    setSearchQuery(search);
-    saveRecentSearch(search);
+  // Handle key press
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      inputRef.current?.blur();
+    }
+  }, [handleSearch]);
+
+  // Handle focus
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+    setShowSuggestions(true);
+  }, []);
+
+  // Handle blur
+  const handleBlur = useCallback((e: React.FocusEvent) => {
+    // Don't close suggestions if clicking inside suggestions
+    if (suggestionsRef.current?.contains(e.relatedTarget as Node)) {
+      return;
+    }
     setIsFocused(false);
-  };
+    setTimeout(() => setShowSuggestions(false), 200);
+  }, []);
 
-  const clearRecentSearches = () => {
-    setRecentSearches([]);
-    localStorage.removeItem('recent_searches');
-  };
+  // Handle suggestion click
+  const handleSuggestionClick = useCallback((suggestion: string) => {
+    handleSearch(suggestion);
+  }, [handleSearch]);
+
+  // Remove from recent searches
+  const removeFromRecentSearches = useCallback((query: string) => {
+    try {
+      const updated = recentSearches.filter(item => item !== query);
+      setRecentSearches(updated);
+      localStorage.setItem('recent-searches', JSON.stringify(updated));
+    } catch (error) {
+      console.warn('Failed to remove recent search:', error);
+    }
+  }, [recentSearches]);
+
+  // Handle click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        inputRef.current && 
+        !inputRef.current.contains(event.target as Node) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
-    <div className="search-container">
-      <div className={`search-bar ${isFocused ? 'search-bar--focused' : ''} ${searchQuery ? 'search-bar--has-value' : ''}`}>
-        <div className="search-icon">
-          {isLoading ? (
-            <Spinner size="sm" color="primary" />
-          ) : (
-            <Search size={20} />
-          )}
-        </div>
-
-        <div className="search-input-container">
+    <div className="search-bar">
+      <div className={`search-bar__wrapper ${isFocused ? 'search-bar__wrapper--focused' : ''}`}>
+        <div className="search-bar__input-container">
           <Input
             ref={inputRef}
-            fullWidth
-            placeholder={placeholder}
             value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyPress}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            placeholder="Шукайте тури за назвою, країною, містом..."
             size="lg"
-            variant="flat"
-            className="search-input"
+            variant="bordered"
             classNames={{
-              inputWrapper: "search-input-wrapper",
-              innerWrapper: "search-inner-wrapper",
-              input: "search-input-field"
+              base: "search-bar__input-base",
+              mainWrapper: "search-bar__input-wrapper",
+              input: "search-bar__input",
+              inputWrapper: "search-bar__input-inner"
             }}
+            startContent={
+              <div className="search-bar__start-content">
+                <Search size={20} className="search-icon" />
+              </div>
+            }
             endContent={
-              <>
-                {searchQuery && (
-                  <button
-                    className="search-clear-button"
-                    onClick={onClearSearch}
+              <div className="search-bar__end-content">
+                {isLoading && (
+                  <Spinner size="sm" className="search-spinner" />
+                )}
+                {searchQuery && !isLoading && (
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onClick={handleClear}
+                    className="clear-button"
                     aria-label="Очистити пошук"
                   >
-                    <X size={18} />
-                  </button>
+                    <X size={16} />
+                  </Button>
                 )}
                 <div className="search-shortcut">
-                  <Kbd keys={["command"]}>K</Kbd>
+                  <Kbd keys={["enter"]}>Enter</Kbd>
                 </div>
-              </>
+              </div>
             }
           />
         </div>
 
-        {isFocused && !searchQuery && (
-          <div className="search-dropdown">
-            <div className="search-suggestions">
+        {/* Search Suggestions */}
+        {showSuggestions && (
+          <Card 
+            ref={suggestionsRef}
+            className="search-bar__suggestions"
+            shadow="lg"
+          >
+            <CardBody className="search-bar__suggestions-body">
               {/* Recent Searches */}
               {recentSearches.length > 0 && (
                 <div className="suggestions-section">
-                  <div className="suggestions-header">
+                  <div className="suggestions-section__header">
                     <Clock size={16} />
-                    <span>Нещодавні пошуки</span>
-                    <button 
-                      className="clear-recent-btn"
-                      onClick={clearRecentSearches}
-                    >
-                      Очистити
-                    </button>
+                    <span>Останні пошуки</span>
                   </div>
-                  <div className="suggestions-list">
+                  <div className="suggestions-section__items">
                     {recentSearches.map((search, index) => (
-                      <button
+                      <div
                         key={`recent-${index}`}
-                        className="suggestion-item"
+                        className="suggestion-item suggestion-item--recent"
                         onClick={() => handleSuggestionClick(search)}
                       >
-                        <Clock size={14} />
-                        <span>{search}</span>
-                      </button>
+                        <Clock size={14} className="suggestion-icon" />
+                        <span className="suggestion-text">{search}</span>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFromRecentSearches(search);
+                          }}
+                          className="suggestion-remove"
+                        >
+                          <X size={12} />
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
               {/* Popular Searches */}
-              <div className="suggestions-section">
-                <div className="suggestions-header">
-                  <Sparkles size={16} />
-                  <span>Популярні напрямки</span>
+              {popularSearches.length > 0 && (
+                <div className="suggestions-section">
+                  <div className="suggestions-section__header">
+                    <TrendingUp size={16} />
+                    <span>Популярні напрямки</span>
+                  </div>
+                  <div className="suggestions-section__items">
+                    {popularSearches.map((search, index) => (
+                      <div
+                        key={`popular-${index}`}
+                        className="suggestion-item suggestion-item--popular"
+                        onClick={() => handleSuggestionClick(search)}
+                      >
+                        <MapPin size={14} className="suggestion-icon" />
+                        <span className="suggestion-text">{search}</span>
+                        <TrendingUp size={12} className="suggestion-trend" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="suggestions-list">
-                  {popularSearches.map((search, index) => (
-                    <button
-                      key={`popular-${index}`}
-                      className="suggestion-item"
-                      onClick={() => handleSuggestionClick(search)}
-                    >
-                      <Search size={14} />
-                      <span>{search}</span>
-                    </button>
-                  ))}
+              )}
+
+              {/* Quick Tips */}
+              <div className="suggestions-section suggestions-section--tips">
+                <div className="search-tips">
+                  <h4>💡 Поради для пошуку:</h4>
+                  <ul>
+                    <li>Спробуйте назву країни або міста</li>
+                    <li>Використовуйте ключові слова типу "пляж", "гори"</li>
+                    <li>Поєднуйте пошук з фільтрами для кращих результатів</li>
+                  </ul>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         )}
       </div>
 
+      {/* Search Results Count */}
       {searchQuery && (
-        <div className="search-info">
-          <div className="search-info-content">
-            <span>Результати пошуку для:</span>
-            <span className="search-query">"{searchQuery}"</span>
+        <div className="search-bar__info">
+          <div className="search-info">
+            <Search size={14} />
+            <span>Результати для:</span>
+            <Chip size="sm" variant="flat" color="primary">
+              "{searchQuery}"
+            </Chip>
           </div>
         </div>
       )}
