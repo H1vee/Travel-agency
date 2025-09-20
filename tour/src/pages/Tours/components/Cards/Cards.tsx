@@ -13,21 +13,8 @@ import {
 } from "lucide-react";
 import { useAuth } from '../../../../context/AuthContext';
 import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
+import { Tour } from '../../../../types/tours';
 import "./Cards.scss";
-
-interface Tour {
-  id: number;
-  title: string;
-  description?: string;
-  price: number;
-  imageSrc: string;
-  rating?: number;
-  duration?: string;
-  location?: string;
-  participants?: number;
-  isPopular?: boolean;
-  discount?: number;
-}
 
 interface CardsProps {
   tours: Tour[];
@@ -82,7 +69,7 @@ export const Cards: React.FC<CardsProps> = ({
       e.stopPropagation();
       
       if (!isAuthenticated) {
-        // Показать toast или модальное окно с предложением войти
+        // Показати toast або модальне окно з пропозицією увійти
         alert('Увійдіть у свій акаунт, щоб додавати тури в обране');
         return;
       }

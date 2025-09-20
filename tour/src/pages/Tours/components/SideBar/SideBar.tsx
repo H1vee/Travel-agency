@@ -1,31 +1,25 @@
 import { CheckboxGroup, Checkbox, Slider, Input, Button, Badge, Divider, Chip } from "@heroui/react";
 import React, { useState, useEffect, useCallback } from "react";
 import { Filter, X, RotateCcw, Sparkles, Star } from "lucide-react";
+import { Filters, PriceRange, REGIONS, DURATIONS, RATINGS } from "../../../../types/tours";
 import "./SideBar.scss";
-
-interface Filters {
-  minPrice?: number;
-  maxPrice?: number;
-  duration?: string[];
-  rating?: string[];
-  region?: string[];
-}
 
 interface SideBarProps {
   onApply: (filters: Filters) => void;
   onReset: () => void;
   isLoading?: boolean;
   currentFilters?: Filters;
+  priceRange?: PriceRange;
 }
 
 export const SideBar: React.FC<SideBarProps> = ({ 
   onApply, 
   onReset, 
   isLoading = false, 
-  currentFilters = {} 
+  currentFilters = {},
+  priceRange = { min: 0, max: 100000 }
 }) => {
-  const minValue = 0;
-  const maxValue = 100000;
+  const { min: minValue, max: maxValue } = priceRange;
   
   // Local state
   const [sliderValue, setSliderValue] = useState([
@@ -43,32 +37,12 @@ export const SideBar: React.FC<SideBarProps> = ({
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // Filter options - відповідають серверній логіці
-  const regions = [
-    { id: "1", name: "Україна" },
-    { id: "2", name: "Європа" },
-    { id: "3", name: "Азія" },
-    { id: "4", name: "Америка" },
-    { id: "5", name: "Близький Схід" },
-    { id: "6", name: "Океанія" }
-  ];
+  // Filter options - використовуємо з спільного файлу типів
+  const regions = REGIONS;
+  const durations = DURATIONS;
+  const ratings = RATINGS;
 
-  const durations = [
-    { id: "1", name: "1-3 дні" },
-    { id: "2", name: "4-7 днів" },
-    { id: "3", name: "8-14 днів" },
-    { id: "4", name: "15+ днів" }
-  ];
-
-  const ratings = [
-    { id: "5", stars: 5, label: "5 зірок" },
-    { id: "4", stars: 4, label: "4+ зірки" },
-    { id: "3", stars: 3, label: "3+ зірки" },
-    { id: "2", stars: 2, label: "2+ зірки" },
-    { id: "1", stars: 1, label: "1+ зірка" }
-  ];
-
-  // Update local state when currentFilters change
+  // Update local state when currentFilters or priceRange change
   useEffect(() => {
     setSliderValue([
       currentFilters.minPrice || minValue,
@@ -78,6 +52,16 @@ export const SideBar: React.FC<SideBarProps> = ({
     setSelectedRatings(currentFilters.rating || []);
     setSelectedRegions(currentFilters.region || []);
   }, [currentFilters, minValue, maxValue]);
+
+  // Update slider when price range changes
+  useEffect(() => {
+    if (priceRange.min !== minValue || priceRange.max !== maxValue) {
+      setSliderValue([
+        Math.max(sliderValue[0], minValue),
+        Math.min(sliderValue[1], maxValue)
+      ]);
+    }
+  }, [priceRange, minValue, maxValue]);
   
   const handleSliderChange = useCallback((newValue: number | number[]) => {
     const values = Array.isArray(newValue) ? newValue : [newValue, newValue];
@@ -99,13 +83,15 @@ export const SideBar: React.FC<SideBarProps> = ({
   const applyFilters = useCallback(() => {
     const filters: Filters = {};
     
-    if (sliderValue[0] !== minValue) filters.minPrice = sliderValue[0];
-    if (sliderValue[1] !== maxValue) filters.maxPrice = sliderValue[1];
+    // Ціна - відправляємо тільки якщо значення відрізняються від дефолтних
+    if (sliderValue[0] > minValue) filters.minPrice = sliderValue[0];
+    if (sliderValue[1] < maxValue) filters.maxPrice = sliderValue[1];
     if (selectedDurations.length > 0) filters.duration = selectedDurations;
     if (selectedRatings.length > 0) filters.rating = selectedRatings;
     if (selectedRegions.length > 0) filters.region = selectedRegions;
     
     console.log("🔧 SideBar: Застосовуємо фільтри для сервера:", filters);
+    console.log("🔧 Діапазон цін:", { min: minValue, max: maxValue, current: sliderValue });
     onApply(filters);
   }, [sliderValue, selectedDurations, selectedRatings, selectedRegions, minValue, maxValue, onApply]);
   
@@ -120,8 +106,8 @@ export const SideBar: React.FC<SideBarProps> = ({
   
   const hasActiveFilters = useCallback(() => {
     return (
-      sliderValue[0] !== minValue ||
-      sliderValue[1] !== maxValue ||
+      sliderValue[0] > minValue ||
+      sliderValue[1] < maxValue ||
       selectedDurations.length > 0 ||
       selectedRatings.length > 0 ||
       selectedRegions.length > 0
@@ -130,7 +116,7 @@ export const SideBar: React.FC<SideBarProps> = ({
 
   const getActiveFiltersCount = useCallback(() => {
     let count = 0;
-    if (sliderValue[0] !== minValue || sliderValue[1] !== maxValue) count++;
+    if (sliderValue[0] > minValue || sliderValue[1] < maxValue) count++;
     if (selectedDurations.length > 0) count++;
     if (selectedRatings.length > 0) count++;
     if (selectedRegions.length > 0) count++;
@@ -183,6 +169,17 @@ export const SideBar: React.FC<SideBarProps> = ({
 
     return () => clearTimeout(timeoutId);
   }, [applyFilters]);
+
+  // Format price for display
+  const formatPrice = (price: number) => {
+    if (price >= 1000000) {
+      return `${(price / 1000000).toFixed(1)}M`;
+    }
+    if (price >= 1000) {
+      return `${(price / 1000).toFixed(0)}K`;
+    }
+    return price.toString();
+  };
 
   return (
     <div className={`sidebar ${isCollapsed ? 'sidebar--collapsed' : ''}`}>
@@ -238,14 +235,14 @@ export const SideBar: React.FC<SideBarProps> = ({
                 <span>Активні фільтри</span>
               </div>
               <div className="active-filters__list">
-                {(sliderValue[0] !== minValue || sliderValue[1] !== maxValue) && (
+                {(sliderValue[0] > minValue || sliderValue[1] < maxValue) && (
                   <Chip
                     size="sm"
                     variant="flat"
                     color="primary"
                     onClose={() => removeFilter('price')}
                   >
-                    ₴{sliderValue[0]} - ₴{sliderValue[1]}
+                    ₴{formatPrice(sliderValue[0])} - ₴{formatPrice(sliderValue[1])}
                   </Chip>
                 )}
                 {selectedRegions.map(regionId => {
@@ -294,13 +291,15 @@ export const SideBar: React.FC<SideBarProps> = ({
           <div className="sidebar__section">
             <h4 className="sidebar__section-title">
               <span>Ціна за тур</span>
-              <span className="price-range">₴{sliderValue[0]} - ₴{sliderValue[1]}</span>
+              <span className="price-range">
+                ₴{formatPrice(sliderValue[0])} - ₴{formatPrice(sliderValue[1])}
+              </span>
             </h4>
             <div className="sidebar__slider">
               <Slider
                 maxValue={maxValue}
                 minValue={minValue}
-                step={1000}
+                step={Math.max(1000, Math.floor((maxValue - minValue) / 100))}
                 value={sliderValue}
                 onChange={handleSliderChange}
                 size="sm"

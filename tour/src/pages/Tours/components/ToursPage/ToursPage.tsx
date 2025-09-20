@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Cards } from "../Cards/Cards";
 import { SearchBar } from "../SearchBar/SearchBar";
 import { SideBar } from "../SideBar/SideBar";
+import { useSearchTours } from "../../../../hooks/useSearchTours";
+import { Filters, SortOption, ViewMode } from "../../../../types/tours";
 
 import { 
   Pagination, 
@@ -25,33 +26,6 @@ import {
 } from "lucide-react";
 import "./ToursPage.scss";
 
-interface Tour {
-  id: number;
-  title: string;
-  price: number;
-  imageSrc: string;
-  region?: string;
-  duration?: number;
-  rating?: number;
-}
-
-interface SearchResult {
-  id: number;
-}
-
-interface Filters {
-  minPrice?: number;
-  maxPrice?: number;
-  duration?: string[];
-  rating?: string[];
-  region?: string[];
-}
-
-type SortOption = 'price-asc' | 'price-desc' | 'rating-desc' | 'popular' | 'newest';
-type ViewMode = 'grid' | 'list';
-
-const API_BASE_URL = "http://127.0.0.1:1323";
-
 export const ToursPage: React.FC = () => {
   // State management
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -60,8 +34,21 @@ export const ToursPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [searchResults, setSearchResults] = useState<Tour[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+
+  // Використовуємо наш хук для пошуку
+  const {
+    allTours,
+    searchResults,
+    priceRange,
+    isLoadingAllTours,
+    isSearching,
+    searchError,
+    allToursError,
+    searchTours,
+    getCurrentTours,
+    clearSearchResults,
+    refetchAllTours,
+  } = useSearchTours();
 
   // Load preferences from localStorage
   useEffect(() => {
@@ -93,115 +80,18 @@ export const ToursPage: React.FC = () => {
     }
   }, []);
 
-  // Fetch all tours for fallback
-  const { isPending: isLoadingAllTours, data: allTours = [], error, refetch } = useQuery({
-    queryKey: ["toursData"],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/cards`);
-      if (!res.ok) {
-        throw new Error(`Помилка завантаження турів: ${res.status}`);
-      }
-      const data = await res.json();
-      console.log("🔍 Завантажено всіх турів:", data.length);
-      return Array.isArray(data) ? data : [];
-    },
-    retry: 3,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-  });
-
-  // Search function using server API
-  const searchTours = useCallback(async () => {
-    const params = new URLSearchParams();
-    
-    // Add search query
-    if (searchQuery.trim()) {
-      params.append("title", searchQuery.trim());
-    }
-    
-    // Add filters
-    if (filters.minPrice !== undefined) {
-      params.append("minPrice", String(filters.minPrice));
-    }
-    if (filters.maxPrice !== undefined) {
-      params.append("maxPrice", String(filters.maxPrice));
-    }
-    if (filters.duration && filters.duration.length > 0) {
-      params.append("duration", filters.duration.join(","));
-    }
-    if (filters.rating && filters.rating.length > 0) {
-      const minRating = Math.min(...filters.rating.map(r => parseInt(r)));
-      const maxRating = Math.max(...filters.rating.map(r => parseInt(r)));
-      params.append("minRating", String(minRating));
-      if (minRating !== maxRating) {
-        params.append("maxRating", String(maxRating));
-      }
-    }
-    if (filters.region && filters.region.length > 0) {
-      params.append("region", filters.region.join(","));
-    }
-
-    const searchUrl = `${API_BASE_URL}/search?${params.toString()}`;
-    console.log("🔍 Пошуковий URL:", searchUrl);
-
-    // If no search parameters - show all tours
-    if (!params.toString()) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    try {
-      setIsSearching(true);
-      
-      // Perform search
-      const searchResponse = await fetch(searchUrl);
-      if (!searchResponse.ok) {
-        throw new Error(`Search failed: ${searchResponse.status}`);
-      }
-      
-      const searchData: SearchResult[] = await searchResponse.json();
-      console.log("🔍 Результати пошуку (ID):", searchData);
-
-      if (Array.isArray(searchData) && searchData.length > 0) {
-        // Get detailed information about found tours
-        const idsString = searchData.map(item => item.id).join(",");
-        const detailsResponse = await fetch(`${API_BASE_URL}/tours-search-by-ids?ids=${idsString}`);
-        
-        if (!detailsResponse.ok) {
-          throw new Error(`Details fetch failed: ${detailsResponse.status}`);
-        }
-        
-        const toursDetails: Tour[] = await detailsResponse.json();
-        console.log("📋 Деталі турів:", toursDetails);
-        setSearchResults(toursDetails);
-      } else {
-        console.log("🔍 Нічого не знайдено");
-        setSearchResults([]);
-      }
-    } catch (error) {
-      console.error("❌ Помилка пошуку:", error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, [searchQuery, filters]);
-
   // Trigger search when query or filters change with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      searchTours();
+      searchTours(searchQuery, filters);
     }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, filters, searchTours]);
 
   // Determine which tours to display
-  const currentTours = useMemo(() => {
-    return (searchQuery.trim() || Object.keys(filters).length > 0) ? searchResults : allTours;
-  }, [searchQuery, filters, searchResults, allTours]);
-  
-  // Sort tours
+  const currentTours = getCurrentTours(searchQuery, filters);  
+  // Sort tours on client side
   const sortedTours = useMemo(() => {
     const sorted = [...currentTours];
     
@@ -216,7 +106,8 @@ export const ToursPage: React.FC = () => {
         return sorted.sort((a, b) => b.id - a.id);
       case 'popular':
       default:
-        return sorted;
+        // Популярні - можна сортувати по рейтингу + ціні або залишити як є
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
   }, [currentTours, sortBy]);
 
@@ -236,10 +127,9 @@ export const ToursPage: React.FC = () => {
   const handleSearchClear = useCallback(() => {
     console.log("🧹 Очищення пошуку");
     setSearchQuery("");
-    setSearchResults([]);
-    setIsSearching(false);
+    clearSearchResults();
     setCurrentPage(1);
-  }, []);
+  }, [clearSearchResults]);
 
   const handleFiltersChange = useCallback((newFilters: Filters) => {
     console.log("🔧 Нові фільтри:", newFilters);
@@ -251,10 +141,33 @@ export const ToursPage: React.FC = () => {
     console.log("🔄 Скидання фільтрів");
     setFilters({});
     setSearchQuery("");
-    setSearchResults([]);
-    setIsSearching(false);
+    clearSearchResults();
     setCurrentPage(1);
-  }, []);
+  }, [clearSearchResults]);
+
+  // Get active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.minPrice !== undefined && filters.minPrice > 0) count++;
+    if (filters.maxPrice !== undefined && filters.maxPrice < priceRange.max) count++;
+    if (filters.duration && filters.duration.length > 0) count++;
+    if (filters.rating && filters.rating.length > 0) count++;
+    if (filters.region && filters.region.length > 0) count++;
+    return count;
+  }, [filters, priceRange.max]);
+
+  const clearAllFilters = useCallback(() => {
+    setFilters({});
+    setSearchQuery("");
+    clearSearchResults();
+    setCurrentPage(1);
+  }, [clearSearchResults]);
+
+  const popularSearches = ["Єгипет", "Дубай", "Бостон", "Мальдіви", "Тайвань"];
+  const hasSearchOrFilters = !!searchQuery.trim() || activeFiltersCount > 0;
+
+  // Визначаємо помилку для відображення
+  const displayError = allToursError || searchError;
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -281,27 +194,6 @@ export const ToursPage: React.FC = () => {
     setViewMode(mode);
     savePreference('tours-view-mode', mode);
   }, [savePreference]);
-
-  // Get active filters count
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) count++;
-    if (filters.duration && filters.duration.length > 0) count++;
-    if (filters.rating && filters.rating.length > 0) count++;
-    if (filters.region && filters.region.length > 0) count++;
-    return count;
-  }, [filters]);
-
-  const clearAllFilters = useCallback(() => {
-    setFilters({});
-    setSearchQuery("");
-    setSearchResults([]);
-    setIsSearching(false);
-    setCurrentPage(1);
-  }, []);
-
-  const popularSearches = ["Єгипет", "Дубай", "Бостон", "Мальдіви", "Тайвань"];
-  const hasSearchOrFilters = !!searchQuery.trim() || activeFiltersCount > 0;
 
   return (
     <>
@@ -350,6 +242,7 @@ export const ToursPage: React.FC = () => {
                 onReset={handleFiltersReset}
                 isLoading={isLoadingAllTours || isSearching}
                 currentFilters={filters}
+                priceRange={priceRange} // Передаємо діапазон цін
               />
             </div>
 
@@ -480,13 +373,13 @@ export const ToursPage: React.FC = () => {
               )}
 
               {/* Error State */}
-              {error && !isLoadingAllTours && (
+              {displayError && !isLoadingAllTours && (
                 <div className="error-state">
                   <h3>Помилка завантаження</h3>
                   <p>Не вдалося завантажити тури. Спробуйте ще раз.</p>
                   <Button 
                     color="primary" 
-                    onClick={() => refetch()}
+                    onClick={() => refetchAllTours()}
                     startContent={<RefreshCw size={16} />}
                   >
                     Оновити
@@ -495,7 +388,7 @@ export const ToursPage: React.FC = () => {
               )}
 
               {/* No Results State */}
-              {!isLoadingAllTours && !isSearching && !error && sortedTours.length === 0 && hasSearchOrFilters && (
+              {!isLoadingAllTours && !isSearching && !displayError && sortedTours.length === 0 && hasSearchOrFilters && (
                 <div className="no-results-state">
                   <h3>Нічого не знайдено</h3>
                   <p>Спробуйте змінити параметри пошуку або фільтри</p>
@@ -510,18 +403,18 @@ export const ToursPage: React.FC = () => {
               )}
 
               {/* Tours Cards */}
-              {!isLoadingAllTours && !isSearching && !error && sortedTours.length > 0 && (
+              {!isLoadingAllTours && !isSearching && !displayError && sortedTours.length > 0 && (
                 <div className={`tours-content tours-content--${viewMode}`}>
                   <Cards 
                     tours={displayedTours} 
                     loading={false}
-                    onRetry={refetch}
+                    onRetry={refetchAllTours}
                   />
                 </div>
               )}
 
               {/* Pagination */}
-              {!isLoadingAllTours && !isSearching && !error && totalPages > 1 && (
+              {!isLoadingAllTours && !isSearching && !displayError && totalPages > 1 && (
                 <div className="tours-page__pagination">
                   <div className="pagination-info">
                     <span>
