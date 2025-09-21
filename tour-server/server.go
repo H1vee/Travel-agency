@@ -15,6 +15,7 @@ import (
 	tourseats "tour-server/tourseats/api"
 	tourusers "tour-server/tourusers/api"
 	userfavorites "tour-server/userfavorites/api"
+	tourcomments "tour-server/tourcomments/api"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -84,6 +85,10 @@ func main() {
 	bookingRoute.Use(middleware.OptionalJWTMiddleware())
 	bookingRoute.POST("/tour/bookings", bookings.PostBookings(database.DB))
 
+	commentRoute := e.Group("")
+	commentRoute.Use(middleware.OptionalJWTMiddleware())
+	commentRoute.GET("/tour-comments/:id", tourcomments.GetTourComments(database.DB))
+
 	protected := e.Group("")
 	protected.Use(middleware.JWTMiddleware())
 
@@ -98,6 +103,10 @@ func main() {
 	protected.GET("/user-favorites", userfavorites.GetUserFavorites(database.DB))
 	protected.DELETE("/user-favorites/:tour_id", userfavorites.RemoveFavorite(database.DB))
 
+	protected.POST("/tour-comments", tourcomments.CreateComment(database.DB))
+	protected.PUT("/tour-comments/:id", tourcomments.UpdateComment(database.DB))
+	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB))
+	
 	serverAddr := cfg.Server.Host + ":" + cfg.Server.Port
 	log.Printf("Starting %s v%s", cfg.App.Name, cfg.App.Version)
 	log.Printf("Environment: %s", cfg.App.Environment)
