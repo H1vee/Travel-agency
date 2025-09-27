@@ -11,11 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// SearchTours returns an Echo handler function that searches for tours based on
-// various filtering criteria provided as query parameters
 func SearchTours(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Extract all search parameters from query string
 		searchTitle := c.QueryParam("title")
 		searchDuration := c.QueryParam("duration")
 		minPriceStr := c.QueryParam("minPrice")
@@ -28,13 +25,11 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 		var minRating, maxRating float64
 		var err error
 
-		// Parse and validate price range parameters
-		// Price parsing
 		if minPriceStr != "" {
 			minPrice, err = strconv.ParseFloat(minPriceStr, 64)
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, map[string]string{
-					"error": "Invalid minPrice format",
+					"error": "Неправильний формат мінімальної ціни",
 				})
 			}
 		}
@@ -42,18 +37,16 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			maxPrice, err = strconv.ParseFloat(maxPriceStr, 64)
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, map[string]string{
-					"error": "Invalid maxPrice format",
+					"error": "Неправильний формат максимальної ціни",
 				})
 			}
 		}
 
-		// Parse and validate rating range parameters (must be between 0 and 5)
-		// Rating parsing
 		if minRatingStr != "" {
 			minRating, err = strconv.ParseFloat(minRatingStr, 64)
 			if err != nil || minRating < 0 || minRating > 5 {
 				return c.JSON(http.StatusBadRequest, map[string]string{
-					"error": "Invalid minRating format",
+					"error": "Неправильний формат рейтингу",
 				})
 			}
 		}
@@ -61,32 +54,23 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			maxRating, err = strconv.ParseFloat(maxRatingStr, 64)
 			if err != nil || maxRating < 0 || maxRating > 5 {
 				return c.JSON(http.StatusBadRequest, map[string]string{
-					"error": "Invalid maxRating format",
+					"error": "Неправильний формат максимального рейтингу",
 				})
 			}
 		}
 
-		// Initialize query with required joins for tour locations
-		var tours []dto.SearchTour
+		var tours []dto.SearchTourResult
 		query := db.Debug().Table("tours").
-			Select("DISTINCT tours.id").
-			Joins("JOIN tour_dates ON tour_dates.tour_id = tours.id").
-			Joins("JOIN locations from_loc ON tour_dates.from_location_id = from_loc.id").
-			Joins("JOIN locations to_loc ON tour_dates.to_location_id = to_loc.id").
-			Where("1=1") // Starting condition that's always true
+			Select(`tours.id, tours.title, tours.price, tours.rating, 
+				COALESCE(tour_card_images.image_src, '/static/images/no-image.jpg') AS image_src`).
+			Joins("LEFT JOIN tour_card_images ON tours.id = tour_card_images.tour_id").
+			Where("tours.status_id = (SELECT id FROM statuses WHERE name = 'active')")
 
-		// Add title search filter if provided (case insensitive)
 		if searchTitle != "" {
-			query = query.Where("tours.title ILIKE ?", "%"+searchTitle+"%")
+			query = query.Where("tours.title ILIKE ? OR tours.description ILIKE ?", 
+				"%"+searchTitle+"%", "%"+searchTitle+"%")
 		}
 
-		// Add region filter if provided (matches either departure or arrival regions)
-		if regionStr != "" {
-			regionIDs := strings.Split(regionStr, ",")
-			query = query.Where("from_loc.region_id IN ? OR to_loc.region_id IN ?", regionIDs, regionIDs)
-		}
-
-		// Add price range filters based on provided parameters
 		if minPriceStr != "" && maxPriceStr != "" {
 			query = query.Where("tours.price BETWEEN ? AND ?", minPrice, maxPrice)
 		} else if minPriceStr != "" {
@@ -95,7 +79,6 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			query = query.Where("tours.price <= ?", maxPrice)
 		}
 
-		// Add rating range filters based on provided parameters
 		if minRatingStr != "" && maxRatingStr != "" {
 			query = query.Where("tours.rating BETWEEN ? AND ?", minRating, maxRating)
 		} else if minRatingStr != "" {
@@ -104,32 +87,61 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			query = query.Where("tours.rating <= ?", maxRating)
 		}
 
-		// Add duration filter if provided (using PostgreSQL's make_interval function)
 		if searchDuration != "" {
-			query = query.Where("tour_dates.duration = make_interval(days := ?)", searchDuration)
+			durationDays, err := strconv.Atoi(searchDuration)
+			if err == nil {
+				query = query.Joins("JOIN tour_dates ON tour_dates.tour_id = tours.id").
+					Where("EXTRACT(DAY FROM (tour_dates.date_to - tour_dates.date_from)) <= ?", durationDays).
+					Group("tours.id, tours.title, tours.price, tours.rating, tour_card_images.image_src")
+			}
 		}
 
-		// Execute the query
+		if regionStr != "" {
+			regions := strings.Split(regionStr, ",")
+			regionNames := make([]string, 0, len(regions))
+			
+			regionMap := map[string][]string{
+				"1": {"Україна", "Ukraine"},
+				"2": {"Франція", "Італія", "Іспанія", "Німеччина", "Польща", 
+					  "France", "Italy", "Spain", "Germany", "Poland"},
+				"3": {"Китай", "Японія", "Таїланд", "В'єтнам", "Індія", 
+					  "China", "Japan", "Thailand", "Vietnam", "India"},
+				"4": {"США", "Канада", "Мексика", "Бразилія", 
+					  "USA", "Canada", "Mexico", "Brazil"},
+				"5": {"ОАЕ", "Туреччина", "Єгипет", "Ізраїль", 
+					  "UAE", "Turkey", "Egypt", "Israel"},
+				"6": {"Австралія", "Нова Зеландія", "Фіджі", 
+					  "Australia", "New Zealand", "Fiji"},
+			}
+			
+			for _, regionID := range regions {
+				if countries, exists := regionMap[strings.TrimSpace(regionID)]; exists {
+					regionNames = append(regionNames, countries...)
+				}
+			}
+			
+			if len(regionNames) > 0 {
+				query = query.Joins("JOIN tour_dates td ON td.tour_id = tours.id").
+					Joins("JOIN locations from_loc ON td.from_location_id = from_loc.id").
+					Joins("JOIN locations to_loc ON td.to_location_id = to_loc.id").
+					Where("from_loc.country IN ? OR to_loc.country IN ?", regionNames, regionNames).
+					Group("tours.id, tours.title, tours.price, tours.rating, tour_card_images.image_src")
+			}
+		}
+
 		err = query.Find(&tours).Error
 
-		// Log all search parameters and the resulting query for debugging
-		log.Printf("Search Parameters:")
-		log.Printf("Title: %s", searchTitle)
-		log.Printf("Region: %s", regionStr)
-		log.Printf("Price Range: %f - %f", minPrice, maxPrice)
-		log.Printf("Rating Range: %f - %f", minRating, maxRating)
-		log.Printf("Duration: %s", searchDuration)
-		log.Printf("Full SQL Query: %s", query.Statement.SQL.String())
-		log.Printf("Query Parameters: %+v", query.Statement.Vars)
+		log.Printf("Пошук: назва='%s', регіон='%s', ціна=%v-%v, рейтинг=%v-%v, тривалість='%s'", 
+			searchTitle, regionStr, minPrice, maxPrice, minRating, maxRating, searchDuration)
+		log.Printf("Знайдено %d турів", len(tours))
 
-		// Handle database errors
 		if err != nil {
+			log.Printf("Помилка пошуку: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": "Failed to fetch tours",
+				"error": "Помилка пошуку турів",
 			})
 		}
 
-		// Return the search results as JSON with HTTP 200 OK status
 		return c.JSON(http.StatusOK, tours)
 	}
 }
