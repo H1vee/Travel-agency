@@ -21,7 +21,6 @@ export const SideBar: React.FC<SideBarProps> = ({
 }) => {
   const { min: minValue, max: maxValue } = priceRange;
   
-  // Local state
   const [sliderValue, setSliderValue] = useState([
     currentFilters.minPrice || minValue, 
     currentFilters.maxPrice || maxValue
@@ -36,13 +35,7 @@ export const SideBar: React.FC<SideBarProps> = ({
     currentFilters.region || []
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
-  // Filter options - використовуємо з спільного файлу типів
-  const regions = REGIONS;
-  const durations = DURATIONS;
-  const ratings = RATINGS;
 
-  // Update local state when currentFilters or priceRange change
   useEffect(() => {
     setSliderValue([
       currentFilters.minPrice || minValue,
@@ -53,7 +46,6 @@ export const SideBar: React.FC<SideBarProps> = ({
     setSelectedRegions(currentFilters.region || []);
   }, [currentFilters, minValue, maxValue]);
 
-  // Update slider when price range changes
   useEffect(() => {
     if (priceRange.min !== minValue || priceRange.max !== maxValue) {
       setSliderValue([
@@ -83,15 +75,13 @@ export const SideBar: React.FC<SideBarProps> = ({
   const applyFilters = useCallback(() => {
     const filters: Filters = {};
     
-    // Ціна - відправляємо тільки якщо значення відрізняються від дефолтних
     if (sliderValue[0] > minValue) filters.minPrice = sliderValue[0];
     if (sliderValue[1] < maxValue) filters.maxPrice = sliderValue[1];
     if (selectedDurations.length > 0) filters.duration = selectedDurations;
     if (selectedRatings.length > 0) filters.rating = selectedRatings;
     if (selectedRegions.length > 0) filters.region = selectedRegions;
     
-    console.log("🔧 SideBar: Застосовуємо фільтри для сервера:", filters);
-    console.log("🔧 Діапазон цін:", { min: minValue, max: maxValue, current: sliderValue });
+    console.log("🔧 SideBar: Застосовуємо фільтри:", filters);
     onApply(filters);
   }, [sliderValue, selectedDurations, selectedRatings, selectedRegions, minValue, maxValue, onApply]);
   
@@ -161,7 +151,6 @@ export const SideBar: React.FC<SideBarProps> = ({
     );
   };
 
-  // Auto-apply filters with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       applyFilters();
@@ -170,13 +159,12 @@ export const SideBar: React.FC<SideBarProps> = ({
     return () => clearTimeout(timeoutId);
   }, [applyFilters]);
 
-  // Format price for display
   const formatPrice = (price: number) => {
     if (price >= 1000000) {
-      return `${(price / 1000000).toFixed(1)}M`;
+      return `${(price / 1000000).toFixed(1)}М`;
     }
     if (price >= 1000) {
-      return `${(price / 1000).toFixed(0)}K`;
+      return `${(price / 1000).toFixed(0)}К`;
     }
     return price.toString();
   };
@@ -227,7 +215,6 @@ export const SideBar: React.FC<SideBarProps> = ({
 
       {!isCollapsed && (
         <>
-          {/* Active Filters */}
           {hasActiveFilters() && (
             <div className="sidebar__active-filters">
               <div className="active-filters__header">
@@ -246,7 +233,7 @@ export const SideBar: React.FC<SideBarProps> = ({
                   </Chip>
                 )}
                 {selectedRegions.map(regionId => {
-                  const region = regions.find(r => r.id === regionId);
+                  const region = REGIONS.find(r => r.id === regionId);
                   return region ? (
                     <Chip
                       key={regionId}
@@ -267,7 +254,7 @@ export const SideBar: React.FC<SideBarProps> = ({
                     color="success"
                     onClose={() => removeFilter('duration', duration)}
                   >
-                    {durations.find(d => d.id === duration)?.name}
+                    {DURATIONS.find(d => d.id === duration)?.name}
                   </Chip>
                 ))}
                 {selectedRatings.map(rating => (
@@ -287,7 +274,6 @@ export const SideBar: React.FC<SideBarProps> = ({
 
           <Divider className="sidebar__divider" />
           
-          {/* Price Range */}
           <div className="sidebar__section">
             <h4 className="sidebar__section-title">
               <span>Ціна за тур</span>
@@ -344,7 +330,6 @@ export const SideBar: React.FC<SideBarProps> = ({
 
           <Divider className="sidebar__divider" />
 
-          {/* Regions */}
           <div className="sidebar__section">
             <h4 className="sidebar__section-title">Регіон</h4>
             <CheckboxGroup
@@ -353,7 +338,7 @@ export const SideBar: React.FC<SideBarProps> = ({
               size="sm"
               className="sidebar__checkbox-group"
             >
-              {regions.map((region) => (
+              {REGIONS.map((region) => (
                 <Checkbox 
                   key={region.id} 
                   value={region.id}
@@ -367,7 +352,6 @@ export const SideBar: React.FC<SideBarProps> = ({
 
           <Divider className="sidebar__divider" />
 
-          {/* Duration */}
           <div className="sidebar__section">
             <h4 className="sidebar__section-title">Тривалість</h4>
             <CheckboxGroup
@@ -376,7 +360,7 @@ export const SideBar: React.FC<SideBarProps> = ({
               size="sm"
               className="sidebar__checkbox-group"
             >
-              {durations.map((duration) => (
+              {DURATIONS.map((duration) => (
                 <Checkbox 
                   key={duration.id} 
                   value={duration.id}
@@ -390,7 +374,6 @@ export const SideBar: React.FC<SideBarProps> = ({
 
           <Divider className="sidebar__divider" />
 
-          {/* Rating */}
           <div className="sidebar__section">
             <h4 className="sidebar__section-title">Рейтинг</h4>
             <CheckboxGroup
@@ -399,7 +382,7 @@ export const SideBar: React.FC<SideBarProps> = ({
               size="sm"
               className="sidebar__checkbox-group"
             >
-              {ratings.map((rating) => (
+              {RATINGS.map((rating) => (
                 <Checkbox 
                   key={rating.id} 
                   value={rating.id}
@@ -414,7 +397,6 @@ export const SideBar: React.FC<SideBarProps> = ({
             </CheckboxGroup>
           </div>
 
-          {/* Footer Actions */}
           <div className="sidebar__footer">
             <Button
               color="primary"

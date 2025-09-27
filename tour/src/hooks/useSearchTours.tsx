@@ -1,32 +1,27 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Tour, 
-  SearchResult, 
+  SearchTourResult, 
   Filters, 
   PriceRange, 
   DURATION_MAP, 
   API_BASE_URL 
 } from '../types/tours';
 
-// Функція для маппінгу duration фільтрів на серверні значення
 const mapDurationToServerValue = (durationIds: string[]): string | undefined => {
   if (durationIds.length === 0) return undefined;
-  
   const maxDuration = Math.max(...durationIds.map(id => DURATION_MAP[id] || 7));
   return maxDuration.toString();
 };
 
-// Функція для побудови URL пошуку
 const buildSearchUrl = (searchQuery: string, filters: Filters): string => {
   const params = new URLSearchParams();
   
-  // Додаємо пошуковий запит
   if (searchQuery.trim()) {
     params.append("title", searchQuery.trim());
   }
   
-  // Додаємо фільтри
   if (filters.minPrice !== undefined && filters.minPrice > 0) {
     params.append("minPrice", String(filters.minPrice));
   }
@@ -34,7 +29,6 @@ const buildSearchUrl = (searchQuery: string, filters: Filters): string => {
     params.append("maxPrice", String(filters.maxPrice));
   }
   
-  // Duration mapping
   if (filters.duration && filters.duration.length > 0) {
     const duration = mapDurationToServerValue(filters.duration);
     if (duration) {
@@ -42,18 +36,11 @@ const buildSearchUrl = (searchQuery: string, filters: Filters): string => {
     }
   }
   
-  // Rating mapping
   if (filters.rating && filters.rating.length > 0) {
     const minRating = Math.min(...filters.rating.map(r => parseInt(r)));
     params.append("minRating", String(minRating));
-    
-    const maxRating = Math.max(...filters.rating.map(r => parseInt(r)));
-    if (minRating !== maxRating) {
-      params.append("maxRating", String(maxRating));
-    }
   }
   
-  // Region mapping
   if (filters.region && filters.region.length > 0) {
     params.append("region", filters.region.join(","));
   }
@@ -62,11 +49,10 @@ const buildSearchUrl = (searchQuery: string, filters: Filters): string => {
 };
 
 export const useSearchTours = () => {
-  const [searchResults, setSearchResults] = useState<Tour[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [filters, setFilters] = useState<Filters>({});
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  // Завантаження всіх турів для fallback
   const { 
     data: allTours = [], 
     isPending: isLoadingAllTours, 
@@ -75,89 +61,99 @@ export const useSearchTours = () => {
   } = useQuery({
     queryKey: ["allTours"],
     queryFn: async (): Promise<Tour[]> => {
-      const response = await fetch(`${API_BASE_URL}/cards`);
-      if (!response.ok) {
-        throw new Error(`Помилка завантаження турів: ${response.status}`);
+      try {
+        const response = await fetch(`${API_BASE_URL}/cards`);
+        if (!response.ok) {
+          throw new Error(`Помилка завантаження турів: ${response.status}`);
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Помилка завантаження всіх турів:", error);
+        throw error;
       }
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
     },
-    retry: 3,
-    staleTime: 5 * 60 * 1000, // 5 хвилин
-    gcTime: 10 * 60 * 1000,  // 10 хвилин
+    retry: 2,
+    staleTime: 10 * 60 * 1000, 
+    gcTime: 15 * 60 * 1000, 
   });
 
-  // Функція пошуку турів
-  const searchTours = useCallback(async (searchQuery: string, filters: Filters) => {
-    const searchUrl = buildSearchUrl(searchQuery, filters);
-    const hasSearchParams = searchUrl.includes('?') && searchUrl.split('?')[1].length > 0;
-    
-    console.log("🔍 Пошук турів:", { searchQuery, filters, searchUrl, hasSearchParams });
+  const hasActiveSearch = useMemo(() => {
+    return !!(
+      searchQuery.trim() ||
+      (filters.minPrice !== undefined && filters.minPrice > 0) ||
+      (filters.maxPrice !== undefined) ||
+      (filters.duration && filters.duration.length > 0) ||
+      (filters.rating && filters.rating.length > 0) ||
+      (filters.region && filters.region.length > 0)
+    );
+  }, [searchQuery, filters]);
 
-    // Якщо немає параметрів пошуку - повертаємо всі тури
-    if (!hasSearchParams) {
-      setSearchResults([]);
-      setIsSearching(false);
-      setSearchError(null);
-      return allTours;
-    }
+  const searchUrl = useMemo(() => {
+    return hasActiveSearch ? buildSearchUrl(searchQuery, filters) : null;
+  }, [searchQuery, filters, hasActiveSearch]);
 
-    try {
-      setIsSearching(true);
-      setSearchError(null);
+  const { 
+    data: searchResults = [], 
+    isPending: isSearching,
+    error: searchQueryError
+  } = useQuery({
+    queryKey: ["searchTours", searchUrl],
+    queryFn: async (): Promise<Tour[]> => {
+      if (!searchUrl) return [];
       
-      // Виконуємо пошук
-      const searchResponse = await fetch(searchUrl);
-      if (!searchResponse.ok) {
-        throw new Error(`Помилка пошуку: ${searchResponse.status}`);
-      }
-      
-      const searchData: SearchResult[] = await searchResponse.json();
-      console.log("🔍 Результати пошуку (IDs):", searchData);
-
-      if (Array.isArray(searchData) && searchData.length > 0) {
-        // Отримуємо детальну інформацію про знайдені тури
-        const idsString = searchData.map(item => item.id).join(",");
-        const detailsResponse = await fetch(`${API_BASE_URL}/tours-search-by-ids?ids=${idsString}`);
+      try {
+        console.log("🔍 Виконуємо пошук:", searchUrl);
         
-        if (!detailsResponse.ok) {
-          throw new Error(`Помилка завантаження деталей: ${detailsResponse.status}`);
+        const response = await fetch(searchUrl);
+        if (!response.ok) {
+          throw new Error(`Помилка пошуку: ${response.status}`);
         }
         
-        const toursDetails: Tour[] = await detailsResponse.json();
-        console.log("📋 Деталі знайдених турів:", toursDetails);
-        
-        // Додаткова клієнтська фільтрація по ціні
-        let filteredTours = toursDetails;
-        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-          filteredTours = toursDetails.filter(tour => {
-            const price = tour.price || 0;
-            const matchesMin = filters.minPrice === undefined || price >= filters.minPrice;
-            const matchesMax = filters.maxPrice === undefined || price <= filters.maxPrice;
-            return matchesMin && matchesMax;
-          });
-        }
-        
-        console.log("🔍 Тури після клієнтської фільтрації:", filteredTours.length);
-        setSearchResults(filteredTours);
-        return filteredTours;
-      } else {
-        console.log("🔍 Нічого не знайдено");
-        setSearchResults([]);
-        return [];
-      }
-    } catch (error) {
-      console.error("❌ Помилка пошуку:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Невідома помилка пошуку';
-      setSearchError(errorMessage);
-      setSearchResults([]);
-      return [];
-    } finally {
-      setIsSearching(false);
-    }
-  }, [allTours]);
+        const searchData: SearchTourResult[] = await response.json();
+        console.log("🔍 Результати пошуку:", searchData.length, "турів");
 
-  // Обчислення діапазону цін з усіх турів
+        if (!Array.isArray(searchData)) {
+          console.warn("Отримано некоректні дані пошуку:", searchData);
+          return [];
+        }
+        const tours: Tour[] = searchData.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          rating: item.rating,
+          imageSrc: item.imageSrc,
+          description: '',
+          location: '',
+          duration: '',
+          participants: 0,
+          isPopular: item.rating >= 4.5,
+          discount: 0
+        }));
+        
+        return tours;
+      } catch (error) {
+        console.error("❌ Помилка пошуку:", error);
+        throw error;
+      }
+    },
+    enabled: !!searchUrl && hasActiveSearch,
+    retry: 1,
+    staleTime: 2 * 60 * 1000, 
+    gcTime: 5 * 60 * 1000,    
+  });
+
+
+  const updateSearch = useCallback((newQuery: string, newFilters: Filters) => {
+    setSearchQuery(newQuery);
+    setFilters(newFilters);
+    setSearchError(null);
+  }, []);
+
+  const getCurrentTours = useCallback((): Tour[] => {
+    return hasActiveSearch ? searchResults : allTours;
+  }, [hasActiveSearch, searchResults, allTours]);
+
   const priceRange = useMemo(() => {
     if (!allTours.length) return { min: 0, max: 100000 };
     
@@ -169,42 +165,34 @@ export const useSearchTours = () => {
     
     const min = Math.min(...prices);
     const max = Math.max(...prices);
-    
-    // Додаємо 20% запасу до максимальної ціни
     const maxWithBuffer = Math.ceil(max * 1.2);
     
     return { min: 0, max: maxWithBuffer };
   }, [allTours]);
 
-  // Функція для отримання поточних турів
-  const getCurrentTours = useCallback((searchQuery: string, filters: Filters): Tour[] => {
-    const hasActiveSearch = searchQuery.trim() || Object.keys(filters).length > 0;
-    return hasActiveSearch ? searchResults : allTours;
-  }, [searchResults, allTours]);
-
-  // Функція для очищення результатів пошуку
-  const clearSearchResults = useCallback(() => {
-    setSearchResults([]);
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    setFilters({});
     setSearchError(null);
-    setIsSearching(false);
   }, []);
 
+  const combinedError = allToursError || searchQueryError || searchError;
+
   return {
-    // Дані
     allTours,
     searchResults,
+    currentTours: getCurrentTours(),
     priceRange,
+    searchQuery,
+    filters,
+    hasActiveSearch,
     
-    // Стани
     isLoadingAllTours,
     isSearching,
-    searchError,
-    allToursError,
+    error: combinedError,
     
-    // Функції
-    searchTours,
-    getCurrentTours,
-    clearSearchResults,
+    updateSearch,
+    clearSearch,
     refetchAllTours,
   };
 };

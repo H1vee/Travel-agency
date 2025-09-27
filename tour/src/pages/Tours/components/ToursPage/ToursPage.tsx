@@ -27,30 +27,25 @@ import {
 import "./ToursPage.scss";
 
 export const ToursPage: React.FC = () => {
-  // State management
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filters, setFilters] = useState<Filters>({});
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
 
-  // Використовуємо наш хук для пошуку
   const {
-    allTours,
-    searchResults,
+    currentTours,
     priceRange,
+    searchQuery,
+    filters,
+    hasActiveSearch,
     isLoadingAllTours,
     isSearching,
-    searchError,
-    allToursError,
-    searchTours,
-    getCurrentTours,
-    clearSearchResults,
+    error,
+    updateSearch,
+    clearSearch,
     refetchAllTours,
   } = useSearchTours();
 
-  // Load preferences from localStorage
   useEffect(() => {
     try {
       const savedViewMode = localStorage.getItem('tours-view-mode') as ViewMode;
@@ -71,7 +66,6 @@ export const ToursPage: React.FC = () => {
     }
   }, []);
 
-  // Save preferences to localStorage
   const savePreference = useCallback((key: string, value: string) => {
     try {
       localStorage.setItem(key, value);
@@ -80,18 +74,6 @@ export const ToursPage: React.FC = () => {
     }
   }, []);
 
-  // Trigger search when query or filters change with debounce
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      searchTours(searchQuery, filters);
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, filters, searchTours]);
-
-  // Determine which tours to display
-  const currentTours = getCurrentTours(searchQuery, filters);  
-  // Sort tours on client side
   const sortedTours = useMemo(() => {
     const sorted = [...currentTours];
     
@@ -106,46 +88,53 @@ export const ToursPage: React.FC = () => {
         return sorted.sort((a, b) => b.id - a.id);
       case 'popular':
       default:
-        // Популярні - можна сортувати по рейтингу + ціні або залишити як є
         return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
   }, [currentTours, sortBy]);
 
-  // Pagination
   const totalPages = Math.ceil(sortedTours.length / itemsPerPage);
   const indexOfLastTour = currentPage * itemsPerPage;
   const indexOfFirstTour = indexOfLastTour - itemsPerPage;
   const displayedTours = sortedTours.slice(indexOfFirstTour, indexOfLastTour);
 
-  // Event handlers
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
   const handleSearch = useCallback((query: string) => {
     console.log("🔍 Новий пошуковий запит:", query);
-    setSearchQuery(query);
-    setCurrentPage(1);
-  }, []);
+    
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    const newTimeout = setTimeout(() => {
+      updateSearch(query, filters);
+      setCurrentPage(1);
+    }, 500);
+    
+    setSearchTimeout(newTimeout);
+  }, [filters, updateSearch, searchTimeout]);
 
   const handleSearchClear = useCallback(() => {
     console.log("🧹 Очищення пошуку");
-    setSearchQuery("");
-    clearSearchResults();
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    clearSearch();
     setCurrentPage(1);
-  }, [clearSearchResults]);
+  }, [clearSearch, searchTimeout]);
 
   const handleFiltersChange = useCallback((newFilters: Filters) => {
     console.log("🔧 Нові фільтри:", newFilters);
-    setFilters(newFilters);
+    updateSearch(searchQuery, newFilters);
     setCurrentPage(1);
-  }, []);
+  }, [searchQuery, updateSearch]);
 
   const handleFiltersReset = useCallback(() => {
     console.log("🔄 Скидання фільтрів");
-    setFilters({});
-    setSearchQuery("");
-    clearSearchResults();
+    clearSearch();
     setCurrentPage(1);
-  }, [clearSearchResults]);
+  }, [clearSearch]);
 
-  // Get active filters count
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.minPrice !== undefined && filters.minPrice > 0) count++;
@@ -157,17 +146,11 @@ export const ToursPage: React.FC = () => {
   }, [filters, priceRange.max]);
 
   const clearAllFilters = useCallback(() => {
-    setFilters({});
-    setSearchQuery("");
-    clearSearchResults();
+    clearSearch();
     setCurrentPage(1);
-  }, [clearSearchResults]);
+  }, [clearSearch]);
 
-  const popularSearches = ["Єгипет", "Дубай", "Бостон", "Мальдіви", "Тайвань"];
-  const hasSearchOrFilters = !!searchQuery.trim() || activeFiltersCount > 0;
-
-  // Визначаємо помилку для відображення
-  const displayError = allToursError || searchError;
+  const popularSearches = ["Єгипет", "Дубай", "Париж", "Японія", "Італія"];
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -195,70 +178,72 @@ export const ToursPage: React.FC = () => {
     savePreference('tours-view-mode', mode);
   }, [savePreference]);
 
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
+
+  const isLoading = isLoadingAllTours || (isSearching && currentTours.length === 0);
+
   return (
-    <>
-      <div className="tours-page">
-        <div className="tours-page__wrapper">
-          {/* Breadcrumbs */}
-          <div className="tours-page__breadcrumbs">
-            <Breadcrumbs>
-              <BreadcrumbItem href="/">Головна</BreadcrumbItem>
-              <BreadcrumbItem>Тури</BreadcrumbItem>
-            </Breadcrumbs>
-          </div>
+    <div className="tours-page">
+      <div className="tours-page__wrapper">
+        <div className="tours-page__breadcrumbs">
+          <Breadcrumbs>
+            <BreadcrumbItem href="/">Головна</BreadcrumbItem>
+            <BreadcrumbItem>Тури</BreadcrumbItem>
+          </Breadcrumbs>
+        </div>
 
-          {/* Header */}
-          <div className="tours-page__header">
-            <div className="page-title-section">
-              <h1 className="page-title">
-                Знайдіть свій ідеальний тур
-                {hasSearchOrFilters && searchQuery && (
-                  <span className="search-highlight"> для "{searchQuery}"</span>
-                )}
-              </h1>
-              <p className="page-subtitle">
-                Відкрийте світ незабутніх подорожей разом з нами
-              </p>
-            </div>
+        <div className="tours-page__header">
+          <div className="page-title-section">
+            <h1 className="page-title">
+              Знайдіть свій ідеальний тур
+              {hasActiveSearch && searchQuery && (
+                <span className="search-highlight"> для "{searchQuery}"</span>
+              )}
+            </h1>
+            <p className="page-subtitle">
+              Відкрийте світ незабутніх подорожей разом з нами
+            </p>
           </div>
+        </div>
 
-          {/* Search Bar */}
-          <div className="tours-page__search">
+          <div className="tours-page__search" style={{ position: 'relative', zIndex: 9998 }}>
             <SearchBar 
               searchQuery={searchQuery} 
               setSearchQuery={handleSearch} 
               onSearchClear={handleSearchClear}
-              isLoading={isLoadingAllTours || isSearching}
+              isLoading={isSearching}
               popularSearches={popularSearches}
             />
           </div>
 
-          {/* Main Content */}
-          <div className="tours-page__content">
-            {/* Sidebar */}
-            <div className="tours-page__sidebar">
-              <SideBar 
-                onApply={handleFiltersChange} 
-                onReset={handleFiltersReset}
-                isLoading={isLoadingAllTours || isSearching}
-                currentFilters={filters}
-                priceRange={priceRange} // Передаємо діапазон цін
-              />
-            </div>
+        <div className="tours-page__content">
+          <div className="tours-page__sidebar">
+            <SideBar 
+              onApply={handleFiltersChange} 
+              onReset={handleFiltersReset}
+              isLoading={isLoading}
+              currentFilters={filters}
+              priceRange={priceRange}
+            />
+          </div>
 
-            {/* Tours Content */}
-            <div className="tours-page__main">
-              {/* Results Header */}
+          <div className="tours-page__main">
+            {!isLoading && !error && (
               <div className="results-header">
                 <div className="results-info">
                   <div className="results-count">
                     <span className="count-number">{sortedTours.length}</span>
                     <span className="count-text">
-                      {hasSearchOrFilters ? 'результатів знайдено' : 'турів доступно'}
+                      {hasActiveSearch ? 'результатів знайдено' : 'турів доступно'}
                     </span>
                   </div>
                   
-                  {/* Active Filters */}
                   {(activeFiltersCount > 0 || searchQuery) && (
                     <div className="active-filters">
                       <div className="filters-header">
@@ -272,7 +257,6 @@ export const ToursPage: React.FC = () => {
                             variant="flat"
                             color="primary"
                             onClose={() => {
-                              setSearchQuery("");
                               handleSearchClear();
                             }}
                           >
@@ -295,7 +279,6 @@ export const ToursPage: React.FC = () => {
                 </div>
 
                 <div className="results-controls">
-                  {/* Sort Select */}
                   <Select
                     size="sm"
                     label="Сортування"
@@ -322,7 +305,6 @@ export const ToursPage: React.FC = () => {
                     </SelectItem>
                   </Select>
 
-                  {/* Items Per Page */}
                   <Select
                     size="sm"
                     label="На сторінці"
@@ -337,7 +319,6 @@ export const ToursPage: React.FC = () => {
                     <SelectItem key="48">48</SelectItem>
                   </Select>
 
-                  {/* View Mode Toggle */}
                   <div className="view-mode-toggle">
                     <Button
                       size="sm"
@@ -362,81 +343,87 @@ export const ToursPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Loading State */}
-              {(isLoadingAllTours || isSearching) && (
-                <div className="loading-state">
-                  <Spinner size="lg" color="primary" />
-                  <h3>{isSearching ? "Шукаємо тури..." : "Завантажуємо тури..."}</h3>
-                  <p>Зачекайте, будь ласка</p>
-                </div>
-              )}
+            {isLoading && (
+              <div className="loading-state">
+                <Spinner size="lg" color="primary" />
+                <h3>
+                  {isLoadingAllTours ? "Завантажуємо тури..." : "Шукаємо тури..."}
+                </h3>
+                <p>Будь ласка, зачекайте</p>
+              </div>
+            )}
 
-              {/* Error State */}
-              {displayError && !isLoadingAllTours && (
+            {error && !isLoading && (
+              <div className="error-state">
+                <h3>Помилка завантаження</h3>
+                <p>Не вдалося завантажити тури. Спробуйте ще раз.</p>
+                <Button 
+                  color="primary" 
+                  onClick={() => refetchAllTours()}
+                  startContent={<RefreshCw size={16} />}
+                >
+                  Оновити
+                </Button>
+              </div>
+            )}
+
+            {!isLoading && !error && sortedTours.length === 0 && hasActiveSearch && (
+              <div className="no-results-state">
                 <div className="error-state">
-                  <h3>Помилка завантаження</h3>
-                  <p>Не вдалося завантажити тури. Спробуйте ще раз.</p>
-                  <Button 
-                    color="primary" 
-                    onClick={() => refetchAllTours()}
-                    startContent={<RefreshCw size={16} />}
-                  >
-                    Оновити
-                  </Button>
-                </div>
-              )}
-
-              {/* No Results State */}
-              {!isLoadingAllTours && !isSearching && !displayError && sortedTours.length === 0 && hasSearchOrFilters && (
-                <div className="no-results-state">
-                  <h3>Нічого не знайдено</h3>
-                  <p>Спробуйте змінити параметри пошуку або фільтри</p>
-                  <Button 
-                    color="primary" 
-                    variant="bordered"
-                    onClick={clearAllFilters}
-                  >
-                    Скинути фільтри
-                  </Button>
-                </div>
-              )}
-
-              {/* Tours Cards */}
-              {!isLoadingAllTours && !isSearching && !displayError && sortedTours.length > 0 && (
-                <div className={`tours-content tours-content--${viewMode}`}>
-                  <Cards 
-                    tours={displayedTours} 
-                    loading={false}
-                    onRetry={refetchAllTours}
-                  />
-                </div>
-              )}
-
-              {/* Pagination */}
-              {!isLoadingAllTours && !isSearching && !displayError && totalPages > 1 && (
-                <div className="tours-page__pagination">
-                  <div className="pagination-info">
-                    <span>
-                      Показано {indexOfFirstTour + 1}-{Math.min(indexOfLastTour, sortedTours.length)} з {sortedTours.length} турів
-                    </span>
+                  <div className="error-state__content">
+                    <div className="error-state__icon">🔍</div>
+                    <h3 className="error-state__title">Нічого не знайдено</h3>
+                    <p className="error-state__description">
+                      Спробуйте змінити параметри пошуку або фільтри
+                    </p>
+                    <Button 
+                      color="primary" 
+                      variant="bordered"
+                      onClick={clearAllFilters}
+                      className="error-state__button"
+                    >
+                      Скинути фільтри
+                    </Button>
                   </div>
-                  <Pagination
-                    page={currentPage}
-                    total={totalPages}
-                    onChange={handlePageChange}
-                    showControls
-                    showShadow
-                    size="lg"
-                    className="pagination-component"
-                    color="primary"
-                  />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+
+            {!isLoading && !error && sortedTours.length > 0 && (
+              <div className={`tours-content tours-content--${viewMode}`}>
+                <Cards 
+                  tours={displayedTours} 
+                  loading={false}
+                  onRetry={refetchAllTours}
+                />
+              </div>
+            )}
+
+            {!isLoading && !error && totalPages > 1 && (
+              <div className="tours-page__pagination">
+                <div className="pagination-info">
+                  <span>
+                    Показано {indexOfFirstTour + 1}-{Math.min(indexOfLastTour, sortedTours.length)} з {sortedTours.length} турів
+                  </span>
+                </div>
+                <Pagination
+                  page={currentPage}
+                  total={totalPages}
+                  onChange={handlePageChange}
+                  showControls
+                  showShadow
+                  size="lg"
+                  className="pagination-component"
+                  color="primary"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };

@@ -69,7 +69,6 @@ export const Cards: React.FC<CardsProps> = ({
       e.stopPropagation();
       
       if (!isAuthenticated) {
-        // Показати toast або модальне окно з пропозицією увійти
         alert('Увійдіть у свій акаунт, щоб додавати тури в обране');
         return;
       }
@@ -91,8 +90,6 @@ export const Cards: React.FC<CardsProps> = ({
       </button>
     );
   };
-
-  // Loading state
   if (loading) {
     return (
       <div className="cards-container">
@@ -122,7 +119,6 @@ export const Cards: React.FC<CardsProps> = ({
     );
   }
 
-  // Error state
   if (!Array.isArray(tours)) {
     return (
       <div className="error-state">
@@ -146,7 +142,6 @@ export const Cards: React.FC<CardsProps> = ({
     );
   }
 
-  // Empty state
   if (tours.length === 0) {
     return (
       <div className="empty-state">
@@ -170,7 +165,6 @@ export const Cards: React.FC<CardsProps> = ({
     );
   }
 
-  // Tours grid
   return (
     <div className="cards-container">
       <div className="cards-grid">
@@ -183,19 +177,6 @@ export const Cards: React.FC<CardsProps> = ({
             <div key={tour.id} className="card-wrapper">
               <Card className="tour-card">
                 <div className="card-image-container">
-                  {/* Badges */}
-                  {tour.isPopular && (
-                    <Chip 
-                      size="sm" 
-                      color="warning" 
-                      variant="solid"
-                      className="card-badge card-badge--popular"
-                      startContent={<Star size={12} />}
-                    >
-                      Популярний
-                    </Chip>
-                  )}
-                  
                   {tour.discount && tour.discount > 0 && (
                     <Chip 
                       size="sm" 
@@ -207,10 +188,8 @@ export const Cards: React.FC<CardsProps> = ({
                     </Chip>
                   )}
 
-                  {/* Favorite button */}
                   <FavoriteButton tourId={tour.id} />
 
-                  {/* Image */}
                   {isImageFailed ? (
                     <div className="card-image-placeholder">
                       <MapPin size={32} />
@@ -237,7 +216,6 @@ export const Cards: React.FC<CardsProps> = ({
                     </>
                   )}
 
-                  {/* Overlay with view button */}
                   <Link to={`/TourDetails/${tour.id}`} className="card-overlay-link">
                     <div className="card-overlay">
                       <Button
@@ -260,12 +238,6 @@ export const Cards: React.FC<CardsProps> = ({
                     <div className="card-content">
                       <div className="card-header">
                         <h3 className="card-title">{tour.title}</h3>
-                        {tour.rating && tour.rating > 0 && (
-                          <div className="card-rating">
-                            <Star size={14} fill="currentColor" />
-                            <span>{tour.rating.toFixed(1)}</span>
-                          </div>
-                        )}
                       </div>
 
                       <div className="card-details">

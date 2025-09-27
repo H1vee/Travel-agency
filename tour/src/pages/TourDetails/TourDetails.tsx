@@ -1,4 +1,3 @@
-// tour/src/pages/TourDetails/TourDetails.tsx
 import { useParams } from 'react-router-dom';
 import { Navbar } from '../../components/Navbar/Navbar';
 import { TourSwiper } from './components/Swiper/TourSwiper';
@@ -25,8 +24,6 @@ export const TourDetails = () => {
             <InfoSide />
           </div>
         </section>
-
-        {/* Додаємо секцію коментарів */}
         {tourId > 0 && (
           <section className="tour-details__comments">
             <TourComments tourId={tourId} />

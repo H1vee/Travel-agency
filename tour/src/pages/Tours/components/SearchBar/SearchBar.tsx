@@ -32,13 +32,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   isLoading = false,
   popularSearches = []
 }) => {
+  const [localQuery, setLocalQuery] = useState(searchQuery);
   const [isFocused, setIsFocused] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setLocalQuery(searchQuery);
+  }, [searchQuery]);
 
-  // Load recent searches from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem('recent-searches');
@@ -50,7 +53,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
   }, []);
 
-  // Save search to recent searches
   const saveToRecentSearches = useCallback((query: string) => {
     if (!query.trim()) return;
     
@@ -58,7 +60,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       const updated = [
         query.trim(),
         ...recentSearches.filter(item => item !== query.trim())
-      ].slice(0, 5); // Keep only 5 recent searches
+      ].slice(0, 5);
       
       setRecentSearches(updated);
       localStorage.setItem('recent-searches', JSON.stringify(updated));
@@ -67,34 +69,33 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
   }, [recentSearches]);
 
-  // Handle search input change
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setSearchQuery(value);
-  }, [setSearchQuery]);
+    setLocalQuery(value);
+  }, []);
 
-  // Handle search submission
+
   const handleSearch = useCallback((query?: string) => {
-    const searchTerm = query || searchQuery;
+    const searchTerm = query || localQuery;
     if (searchTerm.trim()) {
       saveToRecentSearches(searchTerm.trim());
       setSearchQuery(searchTerm.trim());
       setShowSuggestions(false);
       inputRef.current?.blur();
     }
-  }, [searchQuery, setSearchQuery, saveToRecentSearches]);
+  }, [localQuery, setSearchQuery, saveToRecentSearches]);
 
-  // Handle clear search
   const handleClear = useCallback(() => {
+    setLocalQuery("");
     setSearchQuery("");
     onSearchClear();
     setShowSuggestions(false);
     inputRef.current?.focus();
   }, [setSearchQuery, onSearchClear]);
 
-  // Handle key press
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleSearch();
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
@@ -102,15 +103,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
   }, [handleSearch]);
 
-  // Handle focus
   const handleFocus = useCallback(() => {
     setIsFocused(true);
     setShowSuggestions(true);
   }, []);
 
-  // Handle blur
   const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Don't close suggestions if clicking inside suggestions
     if (suggestionsRef.current?.contains(e.relatedTarget as Node)) {
       return;
     }
@@ -118,12 +116,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     setTimeout(() => setShowSuggestions(false), 200);
   }, []);
 
-  // Handle suggestion click
   const handleSuggestionClick = useCallback((suggestion: string) => {
+    setLocalQuery(suggestion);
     handleSearch(suggestion);
   }, [handleSearch]);
 
-  // Remove from recent searches
   const removeFromRecentSearches = useCallback((query: string) => {
     try {
       const updated = recentSearches.filter(item => item !== query);
@@ -134,7 +131,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
   }, [recentSearches]);
 
-  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -157,7 +153,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <div className="search-bar__input-container">
           <Input
             ref={inputRef}
-            value={searchQuery}
+            value={localQuery}
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
             onFocus={handleFocus}
@@ -181,7 +177,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 {isLoading && (
                   <Spinner size="sm" className="search-spinner" />
                 )}
-                {searchQuery && !isLoading && (
+                {localQuery && !isLoading && (
                   <Button
                     isIconOnly
                     size="sm"
@@ -200,89 +196,87 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             }
           />
         </div>
-
-        {/* Search Suggestions */}
         {showSuggestions && (
-          <Card 
-            ref={suggestionsRef}
-            className="search-bar__suggestions"
-            shadow="lg"
-          >
-            <CardBody className="search-bar__suggestions-body">
-              {/* Recent Searches */}
-              {recentSearches.length > 0 && (
-                <div className="suggestions-section">
-                  <div className="suggestions-section__header">
-                    <Clock size={16} />
-                    <span>Останні пошуки</span>
-                  </div>
-                  <div className="suggestions-section__items">
-                    {recentSearches.map((search, index) => (
-                      <div
-                        key={`recent-${index}`}
-                        className="suggestion-item suggestion-item--recent"
-                        onClick={() => handleSuggestionClick(search)}
-                      >
-                        <Clock size={14} className="suggestion-icon" />
-                        <span className="suggestion-text">{search}</span>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeFromRecentSearches(search);
-                          }}
-                          className="suggestion-remove"
+          <div className="search-bar__suggestions-overlay">
+            <Card 
+              ref={suggestionsRef}
+              className="search-bar__suggestions"
+              shadow="lg"
+            >
+              <CardBody className="search-bar__suggestions-body">
+                {recentSearches.length > 0 && (
+                  <div className="suggestions-section">
+                    <div className="suggestions-section__header">
+                      <Clock size={16} />
+                      <span>Останні пошуки</span>
+                    </div>
+                    <div className="suggestions-section__items">
+                      {recentSearches.map((search, index) => (
+                        <div
+                          key={`recent-${index}`}
+                          className="suggestion-item suggestion-item--recent"
+                          onClick={() => handleSuggestionClick(search)}
                         >
-                          <X size={12} />
-                        </Button>
-                      </div>
-                    ))}
+                          <Clock size={14} className="suggestion-icon" />
+                          <span className="suggestion-text">{search}</span>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromRecentSearches(search);
+                            }}
+                            className="suggestion-remove"
+                          >
+                            <X size={12} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+                {popularSearches.length > 0 && (
+                  <div className="suggestions-section">
+                    <div className="suggestions-section__header">
+                      <TrendingUp size={16} />
+                      <span>Популярні напрямки</span>
+                    </div>
+                    <div className="suggestions-section__items">
+                      {popularSearches.map((search, index) => (
+                        <div
+                          key={`popular-${index}`}
+                          className="suggestion-item suggestion-item--popular"
+                          onClick={() => handleSuggestionClick(search)}
+                        >
+                          <MapPin size={14} className="suggestion-icon" />
+                          <span className="suggestion-text">{search}</span>
+                          <TrendingUp size={12} className="suggestion-trend" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {/* Popular Searches */}
-              {popularSearches.length > 0 && (
-                <div className="suggestions-section">
-                  <div className="suggestions-section__header">
-                    <TrendingUp size={16} />
-                    <span>Популярні напрямки</span>
-                  </div>
-                  <div className="suggestions-section__items">
-                    {popularSearches.map((search, index) => (
-                      <div
-                        key={`popular-${index}`}
-                        className="suggestion-item suggestion-item--popular"
-                        onClick={() => handleSuggestionClick(search)}
-                      >
-                        <MapPin size={14} className="suggestion-icon" />
-                        <span className="suggestion-text">{search}</span>
-                        <TrendingUp size={12} className="suggestion-trend" />
-                      </div>
-                    ))}
+                <div className="suggestions-section suggestions-section--tips">
+                  <div className="search-tips">
+                    <h4>
+                      <span>💡</span>
+                      Поради для пошуку:
+                    </h4>
+                    <ul>
+                      <li>Спробуйте назву країни або міста</li>
+                      <li>Використовуйте ключові слова типу "пляж", "гори"</li>
+                      <li>Поєднуйте пошук з фільтрами для кращих результатів</li>
+                    </ul>
                   </div>
                 </div>
-              )}
-
-              {/* Quick Tips */}
-              <div className="suggestions-section suggestions-section--tips">
-                <div className="search-tips">
-                  <h4>💡 Поради для пошуку:</h4>
-                  <ul>
-                    <li>Спробуйте назву країни або міста</li>
-                    <li>Використовуйте ключові слова типу "пляж", "гори"</li>
-                    <li>Поєднуйте пошук з фільтрами для кращих результатів</li>
-                  </ul>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          </div>
         )}
       </div>
 
-      {/* Search Results Count */}
       {searchQuery && (
         <div className="search-bar__info">
           <div className="search-info">

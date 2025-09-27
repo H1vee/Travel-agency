@@ -1,5 +1,3 @@
-
-
 export interface Tour {
   id: number;
   title: string;
@@ -19,6 +17,14 @@ export interface SearchResult {
   id: number;
 }
 
+export interface SearchTourResult {
+  id: number;
+  title: string;
+  price: number;
+  rating: number;
+  imageSrc: string;
+}
+
 export interface Filters {
   minPrice?: number;
   maxPrice?: number;
@@ -35,15 +41,13 @@ export interface PriceRange {
 export type SortOption = 'price-asc' | 'price-desc' | 'rating-desc' | 'popular' | 'newest';
 export type ViewMode = 'grid' | 'list';
 
-// Мапінг тривалості для сервера
 export const DURATION_MAP: Record<string, number> = {
-  "1": 3,   // 1-3 дні
-  "2": 7,   // 4-7 днів  
-  "3": 14,  // 8-14 днів
-  "4": 30,  // 15+ днів
+  "1": 3,
+  "2": 7,
+  "3": 14,
+  "4": 30,
 };
 
-// Опції фільтрів
 export const REGIONS = [
   { id: "1", name: "Україна" },
   { id: "2", name: "Європа" },
