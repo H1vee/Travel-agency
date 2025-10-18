@@ -6,16 +6,20 @@
 
   &__wrapper {
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
     &--focused {
       .search-bar__input-inner {
         border-color: #6366f1;
         box-shadow: 
-          0 0 0 4px rgba(99, 102, 241, 0.1),
-          0 10px 25px rgba(0, 0, 0, 0.1),
-          0 20px 40px rgba(99, 102, 241, 0.1);
+          0 0 0 4px rgba(99, 102, 241, 0.12),
+          0 8px 32px rgba(99, 102, 241, 0.15),
+          0 4px 16px rgba(0, 0, 0, 0.06);
         transform: translateY(-2px);
+
+        &::before {
+          opacity: 1;
+        }
       }
 
       .search-bar__start-content .search-icon {
@@ -34,14 +38,14 @@
       .search-bar__input-inner {
         background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
         border: 2px solid #e2e8f0;
-        border-radius: 20px;
-        height: 64px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 24px;
+        height: 68px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 
-          0 4px 6px rgba(0, 0, 0, 0.05),
-          0 10px 20px rgba(0, 0, 0, 0.04),
-          inset 0 1px 0 rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(10px);
+          0 2px 8px rgba(0, 0, 0, 0.04),
+          0 4px 20px rgba(0, 0, 0, 0.02),
+          inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
         position: relative;
         overflow: hidden;
 
@@ -51,28 +55,34 @@
           top: 0;
           left: 0;
           right: 0;
-          height: 50%;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.1) 100%);
-          pointer-events: none;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+          opacity: 0;
+          transition: opacity 0.4s ease;
         }
 
         &:hover {
           border-color: #c7d2fe;
           box-shadow: 
-            0 8px 15px rgba(0, 0, 0, 0.08),
-            0 15px 35px rgba(99, 102, 241, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            0 4px 12px rgba(0, 0, 0, 0.06),
+            0 8px 24px rgba(99, 102, 241, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
           transform: translateY(-1px);
+
+          &::before {
+            opacity: 0.6;
+          }
         }
 
         .search-bar__input {
-          font-size: 16px;
+          font-size: 17px;
           font-weight: 500;
           color: #1e293b;
-          padding: 0 20px;
+          padding: 0 24px;
           background: transparent;
           position: relative;
           z-index: 2;
+          height: 100%;
 
           &::placeholder {
             color: #94a3b8;
@@ -86,22 +96,22 @@
   &__start-content {
     display: flex;
     align-items: center;
-    padding-left: 20px;
+    padding-left: 24px;
     position: relative;
     z-index: 3;
 
     .search-icon {
       color: #64748b;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
     }
   }
 
   &__end-content {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding-right: 20px;
+    gap: 16px;
+    padding-right: 24px;
     position: relative;
     z-index: 3;
 
@@ -110,19 +120,23 @@
     }
 
     .clear-button {
-      min-width: 36px;
-      height: 36px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-      border: 1px solid rgba(255, 255, 255, 0.8);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      min-width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(12px);
+      box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.06),
+        0 1px 2px rgba(0, 0, 0, 0.04);
 
       &:hover {
-        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
         transform: scale(1.05);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        box-shadow: 
+          0 4px 8px rgba(0, 0, 0, 0.1),
+          0 2px 4px rgba(0, 0, 0, 0.06);
       }
 
       &:active {
@@ -140,11 +154,11 @@
     }
 
     .search-shortcut {
-      opacity: 0.7;
+      opacity: 0.6;
       transition: opacity 0.3s ease;
       
       .search-bar__wrapper--focused & {
-        opacity: 1;
+        opacity: 0.9;
       }
 
       @media (max-width: 768px) {
@@ -155,63 +169,69 @@
 
   &__suggestions {
     position: absolute;
-    top: calc(100% + 12px);
+    top: calc(100% + 16px);
     left: 0;
     right: 0;
-    z-index: 9999; 
-    border: 1px solid #e2e8f0;
-    border-radius: 20px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    z-index: 9999;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     box-shadow: 
-      0 20px 25px -5px rgba(0, 0, 0, 0.1),
-      0 10px 10px -5px rgba(0, 0, 0, 0.04),
-      0 0 0 1px rgba(255, 255, 255, 0.8),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      0 20px 40px rgba(0, 0, 0, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.04),
+      0 0 0 1px rgba(255, 255, 255, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
     overflow: hidden;
-    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    max-height: 500px;
+    animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-height: 480px;
     overflow-y: auto;
 
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 100%;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
-      pointer-events: none;
-      z-index: 1;
+    /* Кастомний скролбар */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.5);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.3);
+      border-radius: 3px;
+      
+      &:hover {
+        background: rgba(99, 102, 241, 0.5);
+      }
     }
   }
 
   &__suggestions-body {
-    padding: 24px;
+    padding: 32px;
     position: relative;
-    z-index: 2;
   }
 
   &__info {
-    margin-top: 16px;
+    margin-top: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.4s ease-out;
 
     .search-info {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
       font-size: 14px;
       color: #64748b;
-      background: linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.9) 100%);
-      padding: 12px 20px;
-      border-radius: 16px;
-      border: 1px solid #e2e8f0;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.95) 100%);
+      padding: 16px 24px;
+      border-radius: 20px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 
       svg {
         color: #6366f1;
@@ -220,102 +240,68 @@
       span {
         font-weight: 500;
       }
-
-      .search-query {
-        color: #1e293b;
-        font-weight: 600;
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
     }
   }
 }
 
 .suggestions-section {
   &:not(:last-child) {
-    margin-bottom: 24px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(241, 245, 249, 0.6);
   }
 
   &__header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    font-size: 14px;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    font-size: 15px;
     font-weight: 600;
     color: #475569;
 
+    > div:first-child {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     svg {
       color: #6366f1;
-      filter: drop-shadow(0 1px 2px rgba(99, 102, 241, 0.3));
+      filter: drop-shadow(0 1px 2px rgba(99, 102, 241, 0.2));
+    }
+
+    .clear-recent-btn {
+      font-size: 13px;
+      color: #64748b;
+      padding: 6px 12px;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      min-width: auto;
+      height: auto;
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+      }
     }
   }
 
   &__items {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-  }
-
-  &--tips {
-    .search-tips {
-      padding: 20px;
-      background: linear-gradient(135deg, rgba(239, 246, 255, 0.8) 0%, rgba(240, 249, 255, 0.8) 100%);
-      border-radius: 16px;
-      border: 1px solid rgba(191, 219, 254, 0.6);
-      backdrop-filter: blur(10px);
-
-      h4 {
-        margin: 0 0 12px 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: #1e40af;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      ul {
-        margin: 0;
-        padding-left: 0;
-        list-style: none;
-
-        li {
-          position: relative;
-          font-size: 13px;
-          color: #1e40af;
-          margin-bottom: 8px;
-          padding-left: 20px;
-          line-height: 1.5;
-
-          &:before {
-            content: "✨";
-            position: absolute;
-            left: 0;
-            font-size: 12px;
-          }
-
-          &:last-child {
-            margin-bottom: 0;
-          }
-        }
-      }
-    }
+    gap: 6px;
   }
 }
 
 .suggestion-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   padding: 16px 20px;
-  border-radius: 12px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: transparent;
   position: relative;
   overflow: hidden;
@@ -327,14 +313,15 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, rgba(139, 92, 246, 0.04) 100%);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: all 0.3s ease;
+    border-radius: 16px;
   }
 
   &:hover {
     transform: translateX(8px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
 
     &::before {
       opacity: 1;
@@ -342,7 +329,7 @@
 
     .suggestion-icon {
       color: #6366f1;
-      transform: scale(1.2);
+      transform: scale(1.15);
     }
 
     .suggestion-text {
@@ -356,66 +343,42 @@
       color: #8b5cf6;
     }
 
-    &:hover {
-      &::before {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
-      }
-    }
-  }
-
-  &--popular {
-    .suggestion-icon {
-      color: #059669;
-    }
-
-    .suggestion-trend {
-      color: #dc2626;
-      margin-left: auto;
-      transition: transform 0.2s ease;
-    }
-
-    &:hover {
-      &::before {
-        background: linear-gradient(135deg, rgba(5, 150, 105, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
-      }
-
-      .suggestion-trend {
-        transform: scale(1.2);
-      }
+    &:hover::before {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, rgba(168, 85, 247, 0.06) 100%);
     }
   }
 
   .suggestion-icon {
     flex-shrink: 0;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
     position: relative;
     z-index: 2;
   }
 
   .suggestion-text {
     flex: 1;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     color: #374151;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     position: relative;
     z-index: 2;
   }
 
   .suggestion-remove {
     opacity: 0;
-    transition: all 0.2s ease;
-    min-width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: rgba(239, 68, 68, 0.1);
+    transition: all 0.3s ease;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.08);
     position: relative;
     z-index: 3;
 
     &:hover {
-      background: rgba(239, 68, 68, 0.2);
-      transform: scale(1.1);
+      background: rgba(239, 68, 68, 0.15);
+      transform: scale(1.05);
       
       svg {
         color: #dc2626;
@@ -428,10 +391,57 @@
   }
 }
 
+.popular-destinations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+
+  .destination-chip {
+    justify-self: stretch;
+    padding: 12px 16px;
+    height: auto;
+    border-radius: 14px;
+    border: 1.5px solid #e2e8f0;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    color: #475569;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+    &:hover {
+      border-color: #6366f1;
+      background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+      color: #4338ca;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+
+      svg {
+        color: #6366f1;
+      }
+    }
+
+    svg {
+      color: #94a3b8;
+      transition: color 0.3s ease;
+    }
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 8px;
+
+    .destination-chip {
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+  }
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.95);
+    transform: translateY(-20px) scale(0.95);
   }
   to {
     opacity: 1;
@@ -455,66 +465,54 @@
     &__input-base {
       .search-bar__input-wrapper {
         .search-bar__input-inner {
-          height: 56px;
-          border-radius: 16px;
+          height: 60px;
+          border-radius: 20px;
 
           .search-bar__input {
             font-size: 16px;
-            padding: 0 16px;
+            padding: 0 20px;
           }
         }
       }
     }
 
     &__start-content {
-      padding-left: 16px;
+      padding-left: 20px;
     }
 
     &__end-content {
-      padding-right: 16px;
-      gap: 8px;
+      padding-right: 20px;
+      gap: 12px;
     }
 
     &__suggestions {
-      border-radius: 16px;
-      max-height: 400px;
+      border-radius: 20px;
+      max-height: 420px;
     }
 
     &__suggestions-body {
-      padding: 20px;
+      padding: 24px;
     }
   }
 
   .suggestions-section {
     &:not(:last-child) {
-      margin-bottom: 20px;
-      padding-bottom: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
     }
 
     &__header {
-      font-size: 13px;
-      margin-bottom: 12px;
-    }
-
-    &--tips .search-tips {
-      padding: 16px;
-
-      h4 {
-        font-size: 13px;
-      }
-
-      ul li {
-        font-size: 12px;
-      }
+      font-size: 14px;
+      margin-bottom: 16px;
     }
   }
 
   .suggestion-item {
     padding: 14px 16px;
-    gap: 10px;
+    gap: 12px;
 
     .suggestion-text {
-      font-size: 13px;
+      font-size: 14px;
     }
 
     &:hover {
@@ -526,25 +524,32 @@
 @media (max-width: 480px) {
   .search-bar {
     &__suggestions {
-      max-height: 350px;
+      max-height: 360px;
     }
 
     &__suggestions-body {
-      padding: 16px;
+      padding: 20px;
     }
+  }
+
+  .popular-destinations {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
+/* Фокус стилі для accessibility */
 .search-bar__input:focus {
   outline: none;
 }
 
-.suggestion-item:focus {
+.suggestion-item:focus,
+.destination-chip:focus {
   outline: 2px solid #6366f1;
   outline-offset: 2px;
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
+/* Висока контрастність */
 @media (prefers-contrast: high) {
   .search-bar {
     &__input-inner {
@@ -556,7 +561,8 @@
     }
   }
 
-  .suggestion-item {
+  .suggestion-item,
+  .destination-chip {
     border: 1px solid transparent;
 
     &:hover,

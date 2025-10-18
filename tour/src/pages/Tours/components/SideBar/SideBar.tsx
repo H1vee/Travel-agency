@@ -1,5 +1,5 @@
 import { CheckboxGroup, Checkbox, Slider, Input, Button, Badge, Divider, Chip } from "@heroui/react";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Filter, X, RotateCcw, Sparkles, Star } from "lucide-react";
 import { Filters, PriceRange, REGIONS, DURATIONS, RATINGS } from "../../../../types/tours";
 import "./SideBar.scss";
@@ -35,6 +35,10 @@ export const SideBar: React.FC<SideBarProps> = ({
     currentFilters.region || []
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Використовуємо ref для відстеження чи компонент змонтований
+  const isMountedRef = useRef(false);
+  const applyTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     setSliderValue([
@@ -73,6 +77,11 @@ export const SideBar: React.FC<SideBarProps> = ({
   }, [sliderValue, maxValue]);
   
   const applyFilters = useCallback(() => {
+    // Не застосовуємо фільтри під час першого рендеру
+    if (!isMountedRef.current) {
+      return;
+    }
+
     const filters: Filters = {};
     
     if (sliderValue[0] > minValue) filters.minPrice = sliderValue[0];
@@ -121,16 +130,22 @@ export const SideBar: React.FC<SideBarProps> = ({
       case 'duration':
         if (value) {
           setSelectedDurations(prev => prev.filter(d => d !== value));
+        } else {
+          setSelectedDurations([]);
         }
         break;
       case 'rating':
         if (value) {
           setSelectedRatings(prev => prev.filter(r => r !== value));
+        } else {
+          setSelectedRatings([]);
         }
         break;
       case 'region':
         if (value) {
           setSelectedRegions(prev => prev.filter(r => r !== value));
+        } else {
+          setSelectedRegions([]);
         }
         break;
     }
@@ -151,12 +166,31 @@ export const SideBar: React.FC<SideBarProps> = ({
     );
   };
 
+  // Позначаємо що компонент змонтований після першого рендеру
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    isMountedRef.current = true;
+  }, []);
+
+  // Застосовуємо фільтри тільки після монтування компонента і зі затримкою
+  useEffect(() => {
+    if (!isMountedRef.current) {
+      return;
+    }
+
+    // Очищуємо попередній таймер
+    if (applyTimeoutRef.current) {
+      clearTimeout(applyTimeoutRef.current);
+    }
+
+    applyTimeoutRef.current = setTimeout(() => {
       applyFilters();
     }, 300);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      if (applyTimeoutRef.current) {
+        clearTimeout(applyTimeoutRef.current);
+      }
+    };
   }, [applyFilters]);
 
   const formatPrice = (price: number) => {
@@ -246,17 +280,20 @@ export const SideBar: React.FC<SideBarProps> = ({
                     </Chip>
                   ) : null;
                 })}
-                {selectedDurations.map(duration => (
-                  <Chip
-                    key={duration}
-                    size="sm"
-                    variant="flat"
-                    color="success"
-                    onClose={() => removeFilter('duration', duration)}
-                  >
-                    {DURATIONS.find(d => d.id === duration)?.name}
-                  </Chip>
-                ))}
+                {selectedDurations.map(duration => {
+                  const durationObj = DURATIONS.find(d => d.id === duration);
+                  return durationObj ? (
+                    <Chip
+                      key={duration}
+                      size="sm"
+                      variant="flat"
+                      color="success"
+                      onClose={() => removeFilter('duration', duration)}
+                    >
+                      {durationObj.name}
+                    </Chip>
+                  ) : null;
+                })}
                 {selectedRatings.map(rating => (
                   <Chip
                     key={rating}

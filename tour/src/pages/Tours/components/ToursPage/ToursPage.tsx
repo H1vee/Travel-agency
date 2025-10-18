@@ -27,10 +27,7 @@ import {
 import "./ToursPage.scss";
 
 export const ToursPage: React.FC = () => {
-  const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
 
   const {
     currentTours,
@@ -38,28 +35,26 @@ export const ToursPage: React.FC = () => {
     searchQuery,
     filters,
     hasActiveSearch,
+    currentPage,
+    totalResults,
+    totalPages,
     isLoadingAllTours,
     isSearching,
     error,
     updateSearch,
     clearSearch,
     refetchAllTours,
+    setPage,
+    setSortBy,
+    setItemsPerPage,
   } = useSearchTours();
 
+  // Завантажуємо збережені налаштування
   useEffect(() => {
     try {
       const savedViewMode = localStorage.getItem('tours-view-mode') as ViewMode;
-      const savedItemsPerPage = localStorage.getItem('tours-items-per-page');
-      const savedSortBy = localStorage.getItem('tours-sort-by') as SortOption;
-
       if (savedViewMode && ['grid', 'list'].includes(savedViewMode)) {
         setViewMode(savedViewMode);
-      }
-      if (savedItemsPerPage && [12, 24, 48].includes(Number(savedItemsPerPage))) {
-        setItemsPerPage(Number(savedItemsPerPage));
-      }
-      if (savedSortBy && ['price-asc', 'price-desc', 'rating-desc', 'popular', 'newest'].includes(savedSortBy)) {
-        setSortBy(savedSortBy);
       }
     } catch (error) {
       console.warn('Failed to load user preferences:', error);
@@ -74,29 +69,6 @@ export const ToursPage: React.FC = () => {
     }
   }, []);
 
-  const sortedTours = useMemo(() => {
-    const sorted = [...currentTours];
-    
-    switch (sortBy) {
-      case 'price-asc':
-        return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
-      case 'price-desc':
-        return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
-      case 'rating-desc':
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      case 'newest':
-        return sorted.sort((a, b) => b.id - a.id);
-      case 'popular':
-      default:
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    }
-  }, [currentTours, sortBy]);
-
-  const totalPages = Math.ceil(sortedTours.length / itemsPerPage);
-  const indexOfLastTour = currentPage * itemsPerPage;
-  const indexOfFirstTour = indexOfLastTour - itemsPerPage;
-  const displayedTours = sortedTours.slice(indexOfFirstTour, indexOfLastTour);
-
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const handleSearch = useCallback((query: string) => {
@@ -108,7 +80,6 @@ export const ToursPage: React.FC = () => {
     
     const newTimeout = setTimeout(() => {
       updateSearch(query, filters);
-      setCurrentPage(1);
     }, 500);
     
     setSearchTimeout(newTimeout);
@@ -120,19 +91,21 @@ export const ToursPage: React.FC = () => {
       clearTimeout(searchTimeout);
     }
     clearSearch();
-    setCurrentPage(1);
   }, [clearSearch, searchTimeout]);
 
   const handleFiltersChange = useCallback((newFilters: Filters) => {
     console.log("🔧 Нові фільтри:", newFilters);
-    updateSearch(searchQuery, newFilters);
-    setCurrentPage(1);
-  }, [searchQuery, updateSearch]);
+    
+    const filtersChanged = JSON.stringify(newFilters) !== JSON.stringify(filters);
+    
+    if (filtersChanged) {
+      updateSearch(searchQuery, newFilters);
+    }
+  }, [searchQuery, updateSearch, filters]);
 
   const handleFiltersReset = useCallback(() => {
     console.log("🔄 Скидання фільтрів");
     clearSearch();
-    setCurrentPage(1);
   }, [clearSearch]);
 
   const activeFiltersCount = useMemo(() => {
@@ -147,31 +120,29 @@ export const ToursPage: React.FC = () => {
 
   const clearAllFilters = useCallback(() => {
     clearSearch();
-    setCurrentPage(1);
   }, [clearSearch]);
 
   const popularSearches = ["Єгипет", "Дубай", "Париж", "Японія", "Італія"];
 
   const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
+    console.log("📄 Зміна сторінки на:", page);
+    setPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [setPage]);
 
   const handleSortChange = useCallback((keys: any) => {
     const newSort = Array.from(keys)[0] as SortOption;
     console.log("🔀 Нове сортування:", newSort);
     setSortBy(newSort);
-    setCurrentPage(1);
     savePreference('tours-sort-by', newSort);
-  }, [savePreference]);
+  }, [setSortBy, savePreference]);
 
   const handleItemsPerPageChange = useCallback((keys: any) => {
     const newCount = Number(Array.from(keys)[0]);
     console.log("📄 Нова кількість на сторінці:", newCount);
     setItemsPerPage(newCount);
-    setCurrentPage(1);
     savePreference('tours-items-per-page', newCount.toString());
-  }, [savePreference]);
+  }, [setItemsPerPage, savePreference]);
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
@@ -212,15 +183,15 @@ export const ToursPage: React.FC = () => {
           </div>
         </div>
 
-          <div className="tours-page__search" style={{ position: 'relative', zIndex: 9998 }}>
-            <SearchBar 
-              searchQuery={searchQuery} 
-              setSearchQuery={handleSearch} 
-              onSearchClear={handleSearchClear}
-              isLoading={isSearching}
-              popularSearches={popularSearches}
-            />
-          </div>
+        <div className="tours-page__search" style={{ position: 'relative', zIndex: 9998 }}>
+          <SearchBar 
+            searchQuery={searchQuery} 
+            setSearchQuery={handleSearch} 
+            onSearchClear={handleSearchClear}
+            isLoading={isSearching}
+            popularSearches={popularSearches}
+          />
+        </div>
 
         <div className="tours-page__content">
           <div className="tours-page__sidebar">
@@ -238,7 +209,7 @@ export const ToursPage: React.FC = () => {
               <div className="results-header">
                 <div className="results-info">
                   <div className="results-count">
-                    <span className="count-number">{sortedTours.length}</span>
+                    <span className="count-number">{totalResults || currentTours.length}</span>
                     <span className="count-text">
                       {hasActiveSearch ? 'результатів знайдено' : 'турів доступно'}
                     </span>
@@ -282,7 +253,7 @@ export const ToursPage: React.FC = () => {
                   <Select
                     size="sm"
                     label="Сортування"
-                    selectedKeys={[sortBy]}
+                    selectedKeys={['popular']}
                     onSelectionChange={handleSortChange}
                     className="sort-select"
                     variant="bordered"
@@ -291,24 +262,27 @@ export const ToursPage: React.FC = () => {
                     <SelectItem key="popular" startContent={<TrendingUp size={14} />}>
                       Популярні
                     </SelectItem>
-                    <SelectItem key="price-asc" startContent="₴↑">
+                    <SelectItem key="price_asc" startContent="₴↑">
                       Ціна: за зростанням
                     </SelectItem>
-                    <SelectItem key="price-desc" startContent="₴↓">
+                    <SelectItem key="price_desc" startContent="₴↓">
                       Ціна: за спаданням
                     </SelectItem>
-                    <SelectItem key="rating-desc" startContent="⭐">
+                    <SelectItem key="rating_desc" startContent="⭐">
                       Найкращий рейтинг
                     </SelectItem>
                     <SelectItem key="newest" startContent="🆕">
                       Нові
+                    </SelectItem>
+                    <SelectItem key="title_asc" startContent="🔤">
+                      За алфавітом
                     </SelectItem>
                   </Select>
 
                   <Select
                     size="sm"
                     label="На сторінці"
-                    selectedKeys={[itemsPerPage.toString()]}
+                    selectedKeys={['12']}
                     onSelectionChange={handleItemsPerPageChange}
                     className="items-select"
                     variant="bordered"
@@ -369,7 +343,7 @@ export const ToursPage: React.FC = () => {
               </div>
             )}
 
-            {!isLoading && !error && sortedTours.length === 0 && hasActiveSearch && (
+            {!isLoading && !error && currentTours.length === 0 && hasActiveSearch && (
               <div className="no-results-state">
                 <div className="error-state">
                   <div className="error-state__content">
@@ -391,22 +365,22 @@ export const ToursPage: React.FC = () => {
               </div>
             )}
 
-
-            {!isLoading && !error && sortedTours.length > 0 && (
+            {!isLoading && !error && currentTours.length > 0 && (
               <div className={`tours-content tours-content--${viewMode}`}>
                 <Cards 
-                  tours={displayedTours} 
+                  tours={currentTours} 
                   loading={false}
                   onRetry={refetchAllTours}
                 />
               </div>
             )}
 
-            {!isLoading && !error && totalPages > 1 && (
+            {!isLoading && !error && totalPages && totalPages > 1 && (
               <div className="tours-page__pagination">
                 <div className="pagination-info">
                   <span>
-                    Показано {indexOfFirstTour + 1}-{Math.min(indexOfLastTour, sortedTours.length)} з {sortedTours.length} турів
+                    Показано {currentTours.length} з {totalResults || 0} турів 
+                    (сторінка {currentPage} з {totalPages})
                   </span>
                 </div>
                 <Pagination
@@ -419,6 +393,11 @@ export const ToursPage: React.FC = () => {
                   className="pagination-component"
                   color="primary"
                 />
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="pagination-debug">
+                    Debug: page={currentPage}, total={totalPages}, tours={currentTours.length}, totalResults={totalResults}
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -23,6 +23,29 @@ export interface SearchTourResult {
   price: number;
   rating: number;
   imageSrc: string;
+  duration?: number;
+  location?: string;
+  region?: string;
+}
+
+export interface SearchFilters {
+  title?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  maxRating?: number;
+  minDuration?: number;
+  maxDuration?: number;
+  regions?: string[];
+}
+
+export interface SearchResponse {
+  tours: SearchTourResult[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  appliedFilters: SearchFilters;
 }
 
 export interface Filters {
@@ -38,15 +61,15 @@ export interface PriceRange {
   max: number;
 }
 
-export type SortOption = 'price-asc' | 'price-desc' | 'rating-desc' | 'popular' | 'newest';
+export type SortOption = 'price_asc' | 'price_desc' | 'rating_desc' | 'popular' | 'newest' | 'title_asc';
 export type ViewMode = 'grid' | 'list';
 
-export const DURATION_MAP: Record<string, number> = {
-  "1": 3,
-  "2": 7,
-  "3": 14,
-  "4": 30,
-};
+export const DURATIONS = [
+  { id: "1", name: "1-3 дні", min: 1, max: 3 },
+  { id: "2", name: "4-7 днів", min: 4, max: 7 },
+  { id: "3", name: "8-14 днів", min: 8, max: 14 },
+  { id: "4", name: "15+ днів", min: 15, max: 30 }
+];
 
 export const REGIONS = [
   { id: "1", name: "Україна" },
@@ -55,13 +78,6 @@ export const REGIONS = [
   { id: "4", name: "Америка" },
   { id: "5", name: "Близький Схід" },
   { id: "6", name: "Океанія" }
-];
-
-export const DURATIONS = [
-  { id: "1", name: "1-3 дні" },
-  { id: "2", name: "4-7 днів" },
-  { id: "3", name: "8-14 днів" },
-  { id: "4", name: "15+ днів" }
 ];
 
 export const RATINGS = [
