@@ -65,4 +65,3 @@ func generateETag(path string) string {
 
 	return `"` + hex.EncodeToString(hash.Sum(nil)) + `"`
 }
-*/
