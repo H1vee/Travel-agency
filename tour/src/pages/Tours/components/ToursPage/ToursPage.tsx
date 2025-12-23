@@ -183,7 +183,7 @@ export const ToursPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="tours-page__search" style={{ position: 'relative', zIndex: 9998 }}>
+        <div className="tours-page__search" style={{ position: 'relative', zIndex: 10 }}>
           <SearchBar 
             searchQuery={searchQuery} 
             setSearchQuery={handleSearch} 
@@ -204,7 +204,7 @@ export const ToursPage: React.FC = () => {
             />
           </div>
 
-          <div className="tours-page__main">
+            <div className="tours-page__main" style={{ position: 'relative', zIndex: 1 }}>
             {!isLoading && !error && (
               <div className="results-header">
                 <div className="results-info">
