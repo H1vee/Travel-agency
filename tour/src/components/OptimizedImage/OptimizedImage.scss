@@ -1,0 +1,132 @@
+.optimized-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+
+  // Завантажене зображення
+  &--loaded {
+    object-fit: cover;
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  // Стан завантаження
+  &--loading {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  }
+
+  // Стан помилки
+  &--error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #94a3b8;
+    min-height: 200px;
+  }
+
+  // Контент помилки
+  &__error-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    text-align: center;
+
+    svg {
+      opacity: 0.5;
+      color: #cbd5e1;
+    }
+
+    span {
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748b;
+    }
+  }
+
+  // Skeleton loader
+  &__skeleton {
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  }
+
+  &__skeleton-shimmer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%
+    );
+    animation: shimmer 2s infinite;
+  }
+}
+
+// Анімація появи
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Анімація skeleton
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+// Адаптивність для маленьких зображень
+.optimized-image {
+  &--small {
+    min-height: 100px;
+    
+    .optimized-image__error-content {
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+      
+      span {
+        font-size: 12px;
+      }
+    }
+  }
+
+  // Для карток
+  &--card {
+    border-radius: 8px;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  // Для галереї
+  &--gallery {
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+
+  // Для аватарів
+  &--avatar {
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+}
