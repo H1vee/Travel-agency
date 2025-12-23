@@ -49,24 +49,28 @@ func main() {
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 
-	e.Static("/static", "static")
+	// ========================================
+	// MIDDLEWARE CONFIGURATION
+	// ========================================
 
-	// CORS middleware - це має бути перед усіма роутами
+	// 1. CORS - має бути ПЕРШИМ перед усіма роутами
 	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
 		AllowOrigins: []string{
-			"http://localhost:3000", 
+			"http://localhost:3000",
 			"http://127.0.0.1:3000",
-			"http://localhost:3006", 
+			"http://localhost:3006",
 			"http://127.0.0.1:3006",
-			"http://localhost:3001", 
+			"http://localhost:3001",
 			"http://127.0.0.1:3001",
+			"http://localhost:5173", // Vite dev server
+			"http://127.0.0.1:5173",
 		},
 		AllowMethods: []string{
-			http.MethodGet, 
-			http.MethodHead, 
-			http.MethodPut, 
-			http.MethodPatch, 
-			http.MethodPost, 
+			http.MethodGet,
+			http.MethodHead,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodPost,
 			http.MethodDelete,
 			http.MethodOptions,
 		},
@@ -78,17 +82,47 @@ func main() {
 			"X-Requested-With",
 		},
 		ExposeHeaders: []string{
-			"X-Total-Count", 
-			"X-Total-Pages", 
-			"X-Current-Page", 
+			"X-Total-Count",
+			"X-Total-Pages",
+			"X-Current-Page",
 			"X-Per-Page",
+			"Content-Type",
+			"Cache-Control",
+			"ETag",
 		},
 		AllowCredentials: true,
+		MaxAge:           86400, // 24 години
 	}))
 
+	// 2. Static Cache Middleware - для оптимізації статичних файлів
+	e.Use(middleware.StaticCacheMiddleware())
+
+	// 3. Compression (Gzip)
+	e.Use(echomiddleware.GzipWithConfig(echomiddleware.GzipConfig{
+		Level: 5, // Рівень компресії (1-9)
+	}))
+
+	// 4. Logger - тільки в режимі debug
 	if cfg.App.Debug {
 		e.Use(echomiddleware.Logger())
 	}
+
+	// 5. Recover middleware
+	e.Use(echomiddleware.Recover())
+
+	// 6. Security headers
+	e.Use(echomiddleware.SecureWithConfig(echomiddleware.SecureConfig{
+		XSSProtection:         "1; mode=block",
+		ContentTypeNosniff:    "nosniff",
+		XFrameOptions:         "SAMEORIGIN",
+		HSTSMaxAge:            31536000,
+		ContentSecurityPolicy: "default-src 'self'",
+	}))
+
+
+	e.Static("/static", "static")
+
+
 
 	// Root endpoint
 	e.GET("/", func(c echo.Context) error {
@@ -98,9 +132,10 @@ func main() {
 			"version": cfg.App.Version,
 			"env":     cfg.App.Environment,
 			"endpoints": map[string]string{
-				"search": "/search - Enhanced search with filters and pagination",
-				"cards":  "/cards - Get all tour cards",
-				"tours":  "/tours - Get all tours with details",
+				"search":   "/search - Enhanced search with filters and pagination",
+				"cards":    "/cards - Get all tour cards",
+				"tours":    "/tours - Get all tours with details",
+				"carousel": "/tour-carousel/:id - Get tour gallery images",
 			},
 		})
 	})
@@ -157,14 +192,9 @@ func main() {
 	protected.POST("/tour-comments", tourcomments.CreateComment(database.DB))
 	protected.PUT("/tour-comments/:id", tourcomments.UpdateComment(database.DB))
 	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB))
-	
+
 	serverAddr := cfg.Server.Host + ":" + cfg.Server.Port
-	log.Printf("Starting %s v%s", cfg.App.Name, cfg.App.Version)
-	log.Printf("Environment: %s", cfg.App.Environment)
-	log.Printf("Server running on: http://%s", serverAddr)
-	log.Printf("CORS enabled for: localhost:3000, localhost:3006, localhost:3001")
-	log.Printf("Enhanced search endpoint: GET /search")
-	log.Printf("Search supports: title, minPrice, maxPrice, minRating, maxRating, minDuration, maxDuration, region, page, limit, sortBy")
+
 
 	e.Logger.Fatal(e.Start(serverAddr))
 }
