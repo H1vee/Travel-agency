@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Card, CardFooter, Image, Button, Skeleton, Chip } from "@heroui/react";
 import { Link } from "react-router-dom";
 import { 
@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../../../context/AuthContext';
 import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
 import { Tour } from '../../../../types/tours';
+import { imageService } from '../../../../services/ImageService';
 import "./Cards.scss";
 
 interface CardsProps {
@@ -30,6 +31,30 @@ export const Cards: React.FC<CardsProps> = ({
   const { isAuthenticated } = useAuth();
   const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
+  const [cachedImageUrls, setCachedImageUrls] = useState<Map<number, string>>(new Map());
+
+  // 🚀 ОПТИМІЗАЦІЯ: Предзавантажуємо всі зображення при зміні турів
+  useEffect(() => {
+    if (!tours || tours.length === 0) return;
+
+    const preloadAllImages = async () => {
+      const imageSources = tours.map(tour => tour.imageSrc);
+      
+      // Використовуємо batch preload для ефективності
+      await imageService.preloadImages(imageSources);
+      
+      // Кешуємо URL-и для швидкого доступу
+      const urlMap = new Map<number, string>();
+      tours.forEach(tour => {
+        if (tour.imageSrc) {
+          urlMap.set(tour.id, imageService.getImageUrl(tour.imageSrc));
+        }
+      });
+      setCachedImageUrls(urlMap);
+    };
+
+    preloadAllImages().catch(console.error);
+  }, [tours]);
 
   const handleImageLoad = useCallback((tourId: number) => {
     setLoadingImages(prev => {
@@ -90,6 +115,7 @@ export const Cards: React.FC<CardsProps> = ({
       </button>
     );
   };
+
   if (loading) {
     return (
       <div className="cards-container">
@@ -172,6 +198,12 @@ export const Cards: React.FC<CardsProps> = ({
           const priceInfo = formatPrice(tour.price, tour.discount);
           const isImageFailed = failedImages.has(tour.id);
           const isImageLoading = loadingImages.has(tour.id);
+          
+          // 🚀 ОПТИМІЗАЦІЯ: Використовуємо закешований URL
+          const imageUrl = cachedImageUrls.get(tour.id) || imageService.getImageUrl(tour.imageSrc);
+          
+          // 🚀 ОПТИМІЗАЦІЯ: Перевіряємо чи зображення вже в кеші
+          const isImageCached = tour.imageSrc ? imageService.isCached(tour.imageSrc) : false;
 
           return (
             <div key={tour.id} className="card-wrapper">
@@ -197,7 +229,7 @@ export const Cards: React.FC<CardsProps> = ({
                     </div>
                   ) : (
                     <>
-                      {isImageLoading && (
+                      {(isImageLoading && !isImageCached) && (
                         <div className="card-image-loading">
                           <Skeleton className="w-full h-full" />
                         </div>
@@ -207,11 +239,12 @@ export const Cards: React.FC<CardsProps> = ({
                         width="100%"
                         height="100%"
                         alt={tour.title}
-                        src={`http://127.0.0.1:1323${tour.imageSrc}`}
+                        src={imageUrl}
                         className="card-image"
                         onLoad={() => handleImageLoad(tour.id)}
                         onError={() => handleImageError(tour.id)}
-                        loading="lazy"
+                        // 🚀 ОПТИМІЗАЦІЯ: Якщо зображення в кеші - eager, інакше lazy
+                        loading={isImageCached ? 'eager' : 'lazy'}
                       />
                     </>
                   )}

@@ -1,10 +1,12 @@
-// TourSwiper.tsx
+// TourSwiper.tsx - 🚀 OPTIMIZED VERSION
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, A11y, Navigation, Virtual, Autoplay, EffectFade, Keyboard } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
+import { imageService } from '../../../../services/ImageService';
+import { useBatchImagePreload } from '../../../../hooks/useOptimizedImage';
 
 // Import styles
 import 'swiper/css';
@@ -46,10 +48,11 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
 }) => {
   const { id } = useParams<{ id: string }>();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [imagesLoaded, setImagesLoaded] = useState<Record<number, boolean>>({});
   const [isAutoplayPaused, setIsAutoplayPaused] = useState(false);
   const [swiper, setSwiper] = useState<SwiperType | null>(null);
-  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  
+  // 🚀 ОПТИМІЗАЦІЯ: Кешування URL-ів зображень
+  const [cachedImageUrls, setCachedImageUrls] = useState<Map<number, string>>(new Map());
   
   const { 
     isPending, 
@@ -60,9 +63,8 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     queryKey: ['toursData', id],
     queryFn: async () => {
       try {
-        console.log('Fetching tour carousel for ID:', id);
+        console.log('🔍 Fetching tour carousel for ID:', id);
         
-        // Правильный URL для вашего Go сервера
         const response = await fetch(`http://127.0.0.1:1323/tour-carousel/${id}`, {
           headers: {
             'Accept': 'application/json',
@@ -75,7 +77,7 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
         }
         
         const data: Tour[] = await response.json();
-        console.log('Received carousel data:', data);
+        console.log('✅ Received carousel data:', data);
         
         if (!Array.isArray(data)) {
           throw new Error('Invalid response format: expected array');
@@ -83,64 +85,65 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
         
         return data.filter(tour => tour.image_src);
       } catch (err) {
-        console.error('Error fetching tour carousel:', err);
+        console.error('❌ Error fetching tour carousel:', err);
         throw err;
       }
     },
     staleTime: 5 * 60 * 1000, 
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-    enabled: !!id, // Добавим проверку наличия ID
+    enabled: !!id,
   });
   
   const displayTours = tours.slice(0, maxSlides);
   
-  const preloadImage = useCallback((src: string, index: number): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      // Убираем базовый URL, так как изображения уже содержат полный путь от сервера
-      const fullSrc = `http://127.0.0.1:1323${src}`;
-      
-      if (imageCache.current.has(fullSrc)) {
-        setImagesLoaded(prev => ({ ...prev, [index]: true }));
-        resolve();
-        return;
-      }
-      
-      const img = new Image();
-      img.onload = () => {
-        imageCache.current.set(fullSrc, img);
-        setImagesLoaded(prev => ({ ...prev, [index]: true }));
-        resolve();
-      };
-      img.onerror = () => {
-        console.warn(`Failed to load image: ${fullSrc}`);
-        reject(new Error(`Failed to load image: ${fullSrc}`));
-      };
-      img.src = fullSrc;
-    });
-  }, []);
-  
-  const handleImageLoaded = useCallback((index: number) => {
-    setImagesLoaded(prev => ({ ...prev, [index]: true }));
-  }, []);
-  
+  // 🚀 ОПТИМІЗАЦІЯ: Використовуємо batch preload hook
+  const { isLoading: imagesLoading, progress } = useBatchImagePreload(
+    displayTours.map(tour => tour.image_src),
+    {
+      priority: 'high', // Високий пріоритет для галереї
+      concurrency: 4    // Завантажуємо по 4 одночасно
+    }
+  );
+
+  // 🚀 ОПТИМІЗАЦІЯ: Предзавантажити та закешувати URL-и при зміні турів
   useEffect(() => {
-    setImagesLoaded({});
+    if (!displayTours || displayTours.length === 0) return;
+
+    const preloadAllImages = async () => {
+      console.log('🚀 Preloading', displayTours.length, 'carousel images...');
+      
+      // Batch завантаження через imageService
+      const imageSources = displayTours.map(tour => tour.image_src);
+      await imageService.preloadImages(imageSources, {
+        priority: 'high',
+        concurrency: 4
+      });
+      
+      // Кешуємо URL-и для швидкого доступу
+      const urlMap = new Map<number, string>();
+      displayTours.forEach(tour => {
+        if (tour.image_src) {
+          const url = imageService.getImageUrl(tour.image_src);
+          urlMap.set(tour.tourID, url);
+        }
+      });
+      
+      setCachedImageUrls(urlMap);
+      console.log('✅ All carousel images preloaded and cached');
+    };
+
+    preloadAllImages().catch(err => {
+      console.error('⚠️ Failed to preload some images:', err);
+    });
+  }, [displayTours]);
+
+  // 🚀 ОПТИМІЗАЦІЯ: Скидання при зміні турів
+  useEffect(() => {
     setActiveIndex(0);
   }, [tours]);
 
-  useEffect(() => {
-    if (displayTours.length) {
-      const preloadPromises = displayTours.map((tour, index) =>
-        preloadImage(tour.image_src, index).catch(() => {
-          console.warn(`Image ${index} failed to preload`);
-        })
-      );
-      
-      Promise.allSettled(preloadPromises);
-    }
-  }, [displayTours, preloadImage]);
-
+  // Autoplay control
   useEffect(() => {
     if (!swiper || !autoplay) return;
     
@@ -151,6 +154,7 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     }
   }, [swiper, isAutoplayPaused, autoplay]);
 
+  // Keyboard navigation
   useEffect(() => {
     if (!enableKeyboard || !swiper) return;
     
@@ -193,6 +197,7 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     setSwiper(swiperInstance);
   }, []);
 
+  // Loading state
   if (isPending) {
     return (
       <div className="tour-swiper" style={{ height }}>
@@ -204,6 +209,7 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="tour-swiper" style={{ height }}>
@@ -221,11 +227,29 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
     );
   }
 
+  // Empty state
   if (!displayTours.length) {
     return (
       <div className="tour-swiper" style={{ height }}>
         <div className="tour-swiper__empty" role="status">
           <p>No tour images available</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 🚀 ОПТИМІЗАЦІЯ: Показуємо прогрес завантаження зображень
+  if (imagesLoading && progress < 100) {
+    return (
+      <div className="tour-swiper" style={{ height }}>
+        <div className="tour-swiper__loading" role="status" aria-label="Loading tour images">
+          <div className="tour-swiper__loading-spinner" />
+          <div className="tour-swiper__loading-progress">
+            <div className="tour-swiper__loading-progress-bar" style={{ width: `${progress}%` }} />
+          </div>
+          <span className="tour-swiper__loading-text">
+            Loading images... {Math.round(progress)}%
+          </span>
         </div>
       </div>
     );
@@ -279,34 +303,37 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
           slideLabelMessage: 'Tour image {{index}} of {{slidesLength}}'
         }}
       >
-        {displayTours.map((tour, index) => (
-          <SwiperSlide 
-            key={`tour-${tour.tourID || index}-${index}`} 
-            virtualIndex={index}
-            className="tour-swiper__slide"
-          >
-            {!imagesLoaded[index] && (
-              <div className="tour-swiper__slide-loading" aria-hidden="true" />
-            )}
-            <div 
-              className="tour-swiper__slide-image"
-              style={{ 
-                backgroundImage: `url(http://127.0.0.1:1323${tour.image_src})`,
-                opacity: imagesLoaded[index] ? 1 : 0
-              }}
-              role="img"
-              aria-label={tour.title || `Tour image ${index + 1}`}
-              onLoad={() => handleImageLoaded(index)}
-            />
-            <div className="tour-swiper__slide-overlay" aria-hidden="true" />
-            {tour.title && (
-              <div className="tour-swiper__slide-title">
-                <h3>{tour.title}</h3>
-                {tour.description && <p>{tour.description}</p>}
-              </div>
-            )}
-          </SwiperSlide>
-        ))}
+        {displayTours.map((tour, index) => {
+          // 🚀 ОПТИМІЗАЦІЯ: Використовуємо закешований URL
+          const imageUrl = cachedImageUrls.get(tour.tourID) || imageService.getImageUrl(tour.image_src);
+          
+          // 🚀 ОПТИМІЗАЦІЯ: Перевіряємо чи зображення в кеші
+          const isCached = tour.image_src ? imageService.isCached(tour.image_src) : false;
+
+          return (
+            <SwiperSlide 
+              key={`tour-${tour.tourID || index}-${index}`} 
+              virtualIndex={index}
+              className="tour-swiper__slide"
+            >
+              <div 
+                className={`tour-swiper__slide-image ${isCached ? 'tour-swiper__slide-image--cached' : ''}`}
+                style={{ 
+                  backgroundImage: `url(${imageUrl})`,
+                }}
+                role="img"
+                aria-label={tour.title || `Tour image ${index + 1}`}
+              />
+              <div className="tour-swiper__slide-overlay" aria-hidden="true" />
+              {tour.title && (
+                <div className="tour-swiper__slide-title">
+                  <h3>{tour.title}</h3>
+                  {tour.description && <p>{tour.description}</p>}
+                </div>
+              )}
+            </SwiperSlide>
+          );
+        })}
       </Swiper>
       
       {showCounter && displayTours.length > 1 && (
@@ -321,23 +348,28 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
       
       {showThumbnails && displayTours.length > 1 && (
         <div className="tour-swiper__thumbnails" role="tablist">
-          {displayTours.map((image, index) => (
-            <button
-              key={`thumb-${image.tourID}-${index}`}
-              className={`tour-swiper__thumbnail ${activeIndex === index ? 'active' : ''}`}
-              onClick={() => swiper?.slideTo(index)}
-              role="tab"
-              aria-selected={activeIndex === index}
-              aria-label={`Show image ${index + 1}`}
-              type="button"
-            >
-              <img
-                src={`http://127.0.0.1:1323${image.image_src}`}
-                alt={`Tour thumbnail ${index + 1}`}
-                loading="lazy"
-              />
-            </button>
-          ))}
+          {displayTours.map((tour, index) => {
+            // 🚀 ОПТИМІЗАЦІЯ: Використовуємо закешовані URL для thumbnails
+            const thumbUrl = cachedImageUrls.get(tour.tourID) || imageService.getImageUrl(tour.image_src);
+            
+            return (
+              <button
+                key={`thumb-${tour.tourID}-${index}`}
+                className={`tour-swiper__thumbnail ${activeIndex === index ? 'active' : ''}`}
+                onClick={() => swiper?.slideTo(index)}
+                role="tab"
+                aria-selected={activeIndex === index}
+                aria-label={`Show image ${index + 1}`}
+                type="button"
+              >
+                <img
+                  src={thumbUrl}
+                  alt={`Tour thumbnail ${index + 1}`}
+                  loading="lazy"
+                />
+              </button>
+            );
+          })}
         </div>
       )}
       

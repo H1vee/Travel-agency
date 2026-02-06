@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { imageService } from '../../services/ImageService';
+import React, { useRef, useEffect } from 'react';
+import { useOptimizedImage } from '../../hooks/useOptimizedImage';
 import './OptimizedImage.scss';
 
 export interface OptimizedImageProps {
@@ -9,9 +9,14 @@ export interface OptimizedImageProps {
   onLoad?: () => void;
   onError?: () => void;
   loading?: 'lazy' | 'eager';
+  priority?: 'high' | 'medium' | 'low';
   placeholder?: React.ReactNode;
+  showLoadingIndicator?: boolean;
 }
 
+/**
+ * 🚀 ОПТИМІЗОВАНИЙ КОМПОНЕНТ: Зображення з автоматичним кешуванням та lazy loading
+ */
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
   alt,
@@ -19,69 +24,39 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   onLoad,
   onError,
   loading = 'lazy',
+  priority = 'medium',
   placeholder,
+  showLoadingIndicator = true,
 }) => {
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const imgRef = useRef<HTMLDivElement>(null);
+  
+  const { 
+    imageUrl, 
+    isLoading, 
+    hasError, 
+    isCached,
+    reload 
+  } = useOptimizedImage(src, {
+    priority,
+    loading,
+    onLoad,
+    onError
+  });
 
+  // 🚀 ОПТИМІЗАЦІЯ: Додаємо підказку браузеру про важливість зображення
   useEffect(() => {
-    // Якщо немає src - показуємо помилку
-    if (!src) {
-      setHasError(true);
-      setIsLoading(false);
-      return;
-    }
-
-    if (loading === 'lazy') {
-      // Використовуємо Intersection Observer для lazy loading
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              loadImage();
-              observerRef.current?.disconnect();
-            }
-          });
-        },
-        { 
-          rootMargin: '100px', // Починаємо завантажувати за 100px до появи
-          threshold: 0.01
-        }
-      );
-
-      if (imgRef.current) {
-        observerRef.current.observe(imgRef.current);
-      }
-
+    if (priority === 'high' && imgRef.current) {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = imageUrl;
+      document.head.appendChild(link);
+      
       return () => {
-        observerRef.current?.disconnect();
+        document.head.removeChild(link);
       };
-    } else {
-      // Eager loading - завантажуємо відразу
-      loadImage();
     }
-  }, [src, loading]);
-
-  const loadImage = async () => {
-    if (!src) return;
-
-    try {
-      setIsLoading(true);
-      setHasError(false);
-      const url = await imageService.preloadImage(src);
-      setImageUrl(url);
-      setIsLoading(false);
-      onLoad?.();
-    } catch (error) {
-      console.error('Image load error:', error);
-      setHasError(true);
-      setIsLoading(false);
-      onError?.();
-    }
-  };
+  }, [imageUrl, priority]);
 
   // Стан помилки
   if (hasError) {
@@ -89,6 +64,10 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       <div 
         ref={imgRef}
         className={`optimized-image optimized-image--error ${className}`}
+        onClick={reload}
+        role="button"
+        tabIndex={0}
+        aria-label="Перезавантажити зображення"
       >
         <div className="optimized-image__error-content">
           <svg 
@@ -104,13 +83,14 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
             <polyline points="21 15 16 10 5 21" />
           </svg>
           <span>Зображення недоступне</span>
+          <small>Клікніть для перезавантаження</small>
         </div>
       </div>
     );
   }
 
   // Стан завантаження
-  if (isLoading) {
+  if (isLoading && showLoadingIndicator) {
     return (
       <div 
         ref={imgRef}
@@ -125,18 +105,49 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     );
   }
 
-  // Завантажене зображення
+  // 🚀 ОПТИМІЗАЦІЯ: Завантажене зображення
   return (
     <img
-      ref={imgRef}
+      ref={imgRef as any}
       src={imageUrl}
       alt={alt}
-      className={`optimized-image optimized-image--loaded ${className}`}
+      className={`optimized-image optimized-image--loaded ${isCached ? 'optimized-image--cached' : ''} ${className}`}
       loading={loading}
+      // 🚀 ОПТИМІЗАЦІЯ: Додаємо декодування для кращої продуктивності
+      decoding={priority === 'high' ? 'sync' : 'async'}
+      // 🚀 ОПТИМІЗАЦІЯ: Використовуємо fetchpriority API
+      {...(priority === 'high' && { fetchpriority: 'high' } as any)}
       onError={() => {
-        setHasError(true);
         onError?.();
       }}
     />
+  );
+};
+
+/**
+ * 🚀 ОПТИМІЗОВАНИЙ КОМПОНЕНТ: Background Image з кешуванням
+ */
+export const OptimizedBackgroundImage: React.FC<{
+  src: string | null | undefined;
+  className?: string;
+  children?: React.ReactNode;
+  loading?: 'lazy' | 'eager';
+  priority?: 'high' | 'medium' | 'low';
+}> = ({ 
+  src, 
+  className = '', 
+  children,
+  loading = 'lazy',
+  priority = 'medium'
+}) => {
+  const { imageUrl, isLoading } = useOptimizedImage(src, { priority, loading });
+
+  return (
+    <div 
+      className={`optimized-bg-image ${isLoading ? 'optimized-bg-image--loading' : ''} ${className}`}
+      style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
+    >
+      {children}
+    </div>
   );
 };

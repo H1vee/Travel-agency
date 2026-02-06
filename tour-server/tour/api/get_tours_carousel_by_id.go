@@ -1,4 +1,5 @@
-// get_tours_carousel_by_id.go
+// get_tours_carousel_by_id.go - FIXED VERSION
+
 package api
 
 import (
@@ -9,48 +10,68 @@ import (
 	"gorm.io/gorm"
 )
 
-// TourCarousel represents the response structure for carousel images
-type TourCarousel struct {
-	TourID   uint   `json:"tourID"`
-	ImageSrc string `json:"image_src"`
+type CarouselImage struct {
+	TourID   int    `json:"tourID" gorm:"column:tour_id"`
+	ImageSrc string `json:"image_src" gorm:"column:image_src"`
 }
 
-// GetToursCarouselByID returns an Echo handler function that retrieves gallery images
-// for a specific tour by its ID
 func GetToursCarouselByID(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Extract the tour ID from the URL parameter
-		id := c.Param("id")
-		
-		log.Printf("🔍 Fetching carousel for tour ID: %s", id)
+		tourID := c.Param("id")
+		log.Printf("🔍 Fetching carousel for tour ID: %s", tourID)
 
-		// Check if database connection is valid
-		if db == nil {
-			log.Printf("❌ Database connection is nil")
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": "Database connection is nil"})
-		}
+		var images []CarouselImage
 
-		var carousel []TourCarousel
-
-		// Query the database for all gallery images associated with the specified tour
-		err := db.Debug().Table("tour_gallery_images").
+		result := db.Table("tour_gallery_images").
 			Select("tour_id as tourID, image_src").
-			Where("tour_id = ?", id).
-			Find(&carousel).Error
+			Where("tour_id = ?", tourID).
+			Find(&images)
 
-		if err != nil {
-			log.Printf("❌ Failed to fetch tour carousel: %v", err)
+		if result.Error != nil {
+			log.Printf("❌ Database error: %v", result.Error)
 			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": "Failed to fetch tour carousel"})
+				"error": "Failed to fetch carousel images",
+			})
 		}
 
-		log.Printf("✅ Found %d carousel images for tour ID %s", len(carousel), id)
-		for i, img := range carousel {
+		log.Printf("✅ Found %d carousel images for tour ID %s", len(images), tourID)
+		
+		for i, img := range images {
 			log.Printf("   Image %d: TourID=%d, ImageSrc=%s", i+1, img.TourID, img.ImageSrc)
 		}
 
-		// Return the gallery images as JSON with HTTP 200 OK status
-		return c.JSON(http.StatusOK, carousel)
+		if len(images) == 0 {
+			log.Printf("⚠️ No images found for tour %s", tourID)
+			return c.JSON(http.StatusOK, []CarouselImage{})
+		}
+
+		return c.JSON(http.StatusOK, images)
 	}
 }
+
+/* 
+АЛЬТЕРНАТИВНИЙ ВАРІАНТ (якщо перший не працює):
+
+func GetToursCarouselByID(db *gorm.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		tourID := c.Param("id")
+		
+		var images []CarouselImage
+		
+		// Використовуємо Raw SQL для точності
+		err := db.Raw(`
+			SELECT tour_id, image_src 
+			FROM tour_gallery_images 
+			WHERE tour_id = ?
+		`, tourID).Scan(&images).Error
+		
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": err.Error(),
+			})
+		}
+		
+		return c.JSON(http.StatusOK, images)
+	}
+}
+*/

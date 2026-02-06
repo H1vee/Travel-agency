@@ -5,6 +5,7 @@ import { Button } from "@heroui/react";
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Loader } from '../Loader/Loader';
+import { imageService } from '../../../../services/ImageService';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -22,6 +23,7 @@ interface Tour {
 
 export const Swiper: React.FC = () => {
   const [imgError, setImgError] = useState<{[key: number]: boolean}>({});
+  const [cachedImageUrls, setCachedImageUrls] = useState<Map<number, string>>(new Map());
   
   const { isPending, error, data } = useQuery({
     queryKey: ['toursData'],
@@ -47,19 +49,40 @@ export const Swiper: React.FC = () => {
       ...prev,
       [tourId]: true
     }));
-    console.error(`Failed to load image for tour ${tourId}`);
   };
   
-  // Preload images
+  const tours = data?.slice(0, 4) || [];
+  
+  // 🚀 ОПТИМІЗОВАНО: Легкий preload БЕЗ блокування
   useEffect(() => {
-    if (data) {
-      data.slice(0, 4).forEach(tour => {
-        const img = new Image();
-        img.src = `http://localhost:1323${tour.imageSrc}`;
-        img.onerror = () => handleImageError(tour.id);
+    if (tours.length === 0) return;
+
+    const lightPreload = async () => {
+      // Предзавантажуємо тільки перший слайд
+      if (tours[0]) {
+        imageService.preloadImage(tours[0].imageSrc, { priority: 'high' })
+          .catch(() => console.warn('First slide preload failed'));
+      }
+      
+      // Решту завантажуємо в фоні з затримкою
+      setTimeout(() => {
+        const remainingImages = tours.slice(1).map(t => t.imageSrc);
+        imageService.preloadImages(remainingImages, {
+          priority: 'low',
+          concurrency: 1 // Тільки 1 за раз
+        }).catch(() => console.warn('Background preload failed'));
+      }, 500); // Затримка 500ms
+
+      // Кешуємо URLs
+      const urlMap = new Map<number, string>();
+      tours.forEach(tour => {
+        urlMap.set(tour.id, imageService.getImageUrl(tour.imageSrc));
       });
-    }
-  }, [data]);
+      setCachedImageUrls(urlMap);
+    };
+
+    lightPreload();
+  }, [tours]);
   
   if (isPending) {
     return (
@@ -80,8 +103,6 @@ export const Swiper: React.FC = () => {
       </div>
     );
   }
-  
-  const tours = data.slice(0, 4);
   
   if (tours.length === 0) {
     return (
@@ -111,37 +132,41 @@ export const Swiper: React.FC = () => {
           disableOnInteraction: false
         }}
       >
-        {tours.map(tour => (
-          <SwiperSlide 
-            key={tour.id} 
-            className="swiper-slide"
-          >
-            <div 
-              className="swiper-slide-background" 
-              style={{
-                backgroundImage: imgError[tour.id] 
-                  ? 'url("/images/fallback-tour.jpg")' 
-                  : `url("http://localhost:1323${tour.imageSrc}")`
-              }}
-            ></div>
-            <div className="swiper-slide-overlay"></div>
-            <div className="swiper-slide-wrapper">
-              <h2 className="swiper-slide-title">{tour.title}</h2>
-              <p className="swiper-slide-description">{tour.description}</p>
-              <Link to={`/TourDetails/${tour.id}`} className="swiper-slide-link">
-                <Button
-                  className="swiper-slide-action"
-                  variant="shadow"
-                  color="secondary"
-                  radius="full"
-                  size="lg"
-                >
-                  {tour.callToAction}
-                </Button>
-              </Link>
-            </div>
-          </SwiperSlide>
-        ))}
+        {tours.map((tour, index) => {
+          const imageUrl = cachedImageUrls.get(tour.id) || imageService.getImageUrl(tour.imageSrc);
+          
+          return (
+            <SwiperSlide 
+              key={tour.id} 
+              className="swiper-slide"
+            >
+              <div 
+                className="swiper-slide-background" 
+                style={{
+                  backgroundImage: imgError[tour.id] 
+                    ? 'url("/images/fallback-tour.jpg")' 
+                    : `url(${imageUrl})`
+                }}
+              ></div>
+              <div className="swiper-slide-overlay"></div>
+              <div className="swiper-slide-wrapper">
+                <h2 className="swiper-slide-title">{tour.title}</h2>
+                <p className="swiper-slide-description">{tour.description}</p>
+                <Link to={`/TourDetails/${tour.id}`} className="swiper-slide-link">
+                  <Button
+                    className="swiper-slide-action"
+                    variant="shadow"
+                    color="secondary"
+                    radius="full"
+                    size="lg"
+                  >
+                    {tour.callToAction}
+                  </Button>
+                </Link>
+              </div>
+            </SwiperSlide>
+          );
+        })}
       </SwiperBase>
     </div>
   );
