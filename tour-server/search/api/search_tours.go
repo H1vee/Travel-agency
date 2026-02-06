@@ -1,3 +1,5 @@
+// tour-server/search/api/search_tours.go
+
 package api
 
 import (
@@ -13,25 +15,22 @@ import (
 
 func SearchTours(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		searchTitle := c.QueryParam("title")
+		searchTitle := strings.TrimSpace(c.QueryParam("title"))
 		minDurationStr := c.QueryParam("minDuration")
 		maxDurationStr := c.QueryParam("maxDuration")
 		minPriceStr := c.QueryParam("minPrice")
 		maxPriceStr := c.QueryParam("maxPrice")
-		minRatingStr := c.QueryParam("minRating")
-		maxRatingStr := c.QueryParam("maxRating")
+		ratingsStr := c.QueryParam("ratings")
 		regionStr := c.QueryParam("region")
 		pageStr := c.QueryParam("page")
 		limitStr := c.QueryParam("limit")
 		sortBy := c.QueryParam("sortBy")
 
 		var minPrice, maxPrice float64
-		var minRating, maxRating float64
 		var minDuration, maxDuration int
 		var page, limit int = 1, 20
 		var err error
 
-		// Парсинг параметрів
 		if pageStr != "" {
 			page, err = strconv.Atoi(pageStr)
 			if err != nil || page < 1 {
@@ -62,23 +61,6 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			}
 		}
 
-		if minRatingStr != "" {
-			minRating, err = strconv.ParseFloat(minRatingStr, 64)
-			if err != nil || minRating < 0 || minRating > 5 {
-				return c.JSON(http.StatusBadRequest, map[string]string{
-					"error": "Неправильний формат мінімального рейтингу (0-5)",
-				})
-			}
-		}
-		if maxRatingStr != "" {
-			maxRating, err = strconv.ParseFloat(maxRatingStr, 64)
-			if err != nil || maxRating < 0 || maxRating > 5 {
-				return c.JSON(http.StatusBadRequest, map[string]string{
-					"error": "Неправильний формат максимального рейтингу (0-5)",
-				})
-			}
-		}
-
 		if minDurationStr != "" {
 			minDuration, err = strconv.Atoi(minDurationStr)
 			if err != nil || minDuration < 1 {
@@ -96,15 +78,9 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			}
 		}
 
-		// Перевірка логічності діапазонів
 		if minPriceStr != "" && maxPriceStr != "" && minPrice > maxPrice {
 			return c.JSON(http.StatusBadRequest, map[string]string{
 				"error": "Мінімальна ціна не може бути більшою за максимальну",
-			})
-		}
-		if minRatingStr != "" && maxRatingStr != "" && minRating > maxRating {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "Мінімальний рейтинг не може бути більшим за максимальний",
 			})
 		}
 		if minDurationStr != "" && maxDurationStr != "" && minDuration > maxDuration {
@@ -113,22 +89,24 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		var tours []dto.SearchTourResult
+		var allTours []dto.SearchTourResult
 		var totalCount int64
 
-		// Базовий запит
 		baseQuery := db.Table("tours").
-			Select(`DISTINCT tours.id, tours.title, tours.price, tours.rating, 
-				COALESCE(tour_card_images.image_src, '/static/images/no-image.jpg') AS image_src,
-				EXTRACT(DAY FROM tour_dates.duration) AS duration,
-				CONCAT(to_loc.name, ', ', to_loc.country) AS location,
-				to_loc.country AS region`).
-			Joins("LEFT JOIN tour_card_images ON tours.id = tour_card_images.tour_id").
-			Joins("LEFT JOIN tour_dates ON tour_dates.tour_id = tours.id").
-			Joins("LEFT JOIN locations to_loc ON tour_dates.to_location_id = to_loc.id").
+			Select(`tours.id, 
+				tours.title, 
+				tours.price, 
+				tours.rating, 
+				COALESCE((SELECT image_src FROM tour_card_images WHERE tour_id = tours.id LIMIT 1), '/static/images/no-image.jpg') AS image_src,
+				(SELECT EXTRACT(DAY FROM duration) FROM tour_dates WHERE tour_id = tours.id LIMIT 1) AS duration,
+				(SELECT CONCAT(l.name, ', ', l.country) FROM tour_dates td 
+					JOIN locations l ON td.to_location_id = l.id 
+					WHERE td.tour_id = tours.id LIMIT 1) AS location,
+				(SELECT country FROM tour_dates td 
+					JOIN locations l ON td.to_location_id = l.id 
+					WHERE td.tour_id = tours.id LIMIT 1) AS region`).
 			Where("tours.status_id = (SELECT id FROM statuses WHERE name = 'active')")
 
-		// Застосування фільтрів
 		if searchTitle != "" {
 			baseQuery = baseQuery.Where("tours.title ILIKE ? OR tours.description ILIKE ?", 
 				"%"+searchTitle+"%", "%"+searchTitle+"%")
@@ -142,21 +120,45 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			baseQuery = baseQuery.Where("tours.price <= ?", maxPrice)
 		}
 
-		if minRatingStr != "" && maxRatingStr != "" {
-			baseQuery = baseQuery.Where("tours.rating BETWEEN ? AND ?", minRating, maxRating)
-		} else if minRatingStr != "" {
-			baseQuery = baseQuery.Where("tours.rating >= ?", minRating)
-		} else if maxRatingStr != "" {
-			baseQuery = baseQuery.Where("tours.rating <= ?", maxRating)
+		if ratingsStr != "" {
+			ratingsList := strings.Split(ratingsStr, ",")
+			if len(ratingsList) > 0 {
+				var ratingConditions []string
+				var ratingValues []interface{}
+				
+				for _, ratingStr := range ratingsList {
+					rating, err := strconv.Atoi(strings.TrimSpace(ratingStr))
+					if err != nil || rating < 1 || rating > 5 {
+						continue
+					}
+					
+					if rating == 5 {
+						ratingConditions = append(ratingConditions, "tours.rating >= ?")
+						ratingValues = append(ratingValues, 5.0)
+					} else {
+						ratingConditions = append(ratingConditions, "(tours.rating >= ? AND tours.rating < ?)")
+						ratingValues = append(ratingValues, float64(rating), float64(rating+1))
+					}
+				}
+				
+				if len(ratingConditions) > 0 {
+					baseQuery = baseQuery.Where("("+strings.Join(ratingConditions, " OR ")+")", ratingValues...)
+				}
+			}
 		}
 
 		if minDurationStr != "" && maxDurationStr != "" {
-			baseQuery = baseQuery.Where("EXTRACT(DAY FROM tour_dates.duration) BETWEEN ? AND ?", 
+			baseQuery = baseQuery.Where(
+				"EXISTS (SELECT 1 FROM tour_dates WHERE tour_id = tours.id AND EXTRACT(DAY FROM duration) BETWEEN ? AND ?)",
 				minDuration, maxDuration)
 		} else if minDurationStr != "" {
-			baseQuery = baseQuery.Where("EXTRACT(DAY FROM tour_dates.duration) >= ?", minDuration)
+			baseQuery = baseQuery.Where(
+				"EXISTS (SELECT 1 FROM tour_dates WHERE tour_id = tours.id AND EXTRACT(DAY FROM duration) >= ?)",
+				minDuration)
 		} else if maxDurationStr != "" {
-			baseQuery = baseQuery.Where("EXTRACT(DAY FROM tour_dates.duration) <= ?", maxDuration)
+			baseQuery = baseQuery.Where(
+				"EXISTS (SELECT 1 FROM tour_dates WHERE tour_id = tours.id AND EXTRACT(DAY FROM duration) <= ?)",
+				maxDuration)
 		}
 
 		if regionStr != "" {
@@ -184,11 +186,12 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			}
 			
 			if len(regionNames) > 0 {
-				baseQuery = baseQuery.Where("to_loc.country IN ?", regionNames)
+				baseQuery = baseQuery.Where(
+					"EXISTS (SELECT 1 FROM tour_dates td JOIN locations l ON td.to_location_id = l.id WHERE td.tour_id = tours.id AND l.country IN ?)",
+					regionNames)
 			}
 		}
 
-		// Підрахунок загальної кількості
 		countQuery := baseQuery
 		err = countQuery.Count(&totalCount).Error
 		if err != nil {
@@ -198,7 +201,6 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		// Сортування
 		switch sortBy {
 		case "price_asc":
 			baseQuery = baseQuery.Order("tours.price ASC")
@@ -214,12 +216,10 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			baseQuery = baseQuery.Order("tours.rating DESC, tours.price ASC")
 		}
 
-		// Пагінація
 		offset := (page - 1) * limit
 		baseQuery = baseQuery.Offset(offset).Limit(limit)
 
-		// Виконання запиту
-		err = baseQuery.Find(&tours).Error
+		err = baseQuery.Find(&allTours).Error
 		if err != nil {
 			log.Printf("Помилка пошуку: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -227,41 +227,58 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		// Формування відповіді
-		totalPages := int((totalCount + int64(limit) - 1) / int64(limit))
+		// Видаляємо дублікати
+		seen := make(map[uint]bool)
+		tours := make([]dto.SearchTourResult, 0, len(allTours))
 		
-		response := dto.SearchResponse{
-			Tours: tours,
-			Total: int(totalCount),
-			Page:  page,
-			Limit: limit,
-			TotalPages: totalPages,
-			Filters: dto.SearchFilters{
-				Title:       searchTitle,
-				MinPrice:    parseFloatPtr(minPriceStr),
-				MaxPrice:    parseFloatPtr(maxPriceStr),
-				MinRating:   parseFloatPtr(minRatingStr),
-				MaxRating:   parseFloatPtr(maxRatingStr),
-				MinDuration: parseIntPtr(minDurationStr),
-				MaxDuration: parseIntPtr(maxDurationStr),
-				Regions:     strings.Split(regionStr, ","),
-			},
+		for _, tour := range allTours {
+			if !seen[tour.ID] {
+				seen[tour.ID] = true
+				tours = append(tours, tour)
+			}
 		}
 
-		// Метадані в заголовках (правильний метод для Echo)
+		log.Printf("Знайдено: %d рядків, унікальних: %d", len(allTours), len(tours))
+		for i, tour := range tours {
+			log.Printf("  %d. %s (ID: %d, Price: %.2f)", i+1, tour.Title, tour.ID, tour.Price)
+		}
+
+		totalPages := int((totalCount + int64(limit) - 1) / int64(limit))
+		
+		appliedFilters := dto.SearchFilters{
+			Title:       searchTitle,
+			MinPrice:    parseFloatPtr(minPriceStr),
+			MaxPrice:    parseFloatPtr(maxPriceStr),
+			MinDuration: parseIntPtr(minDurationStr),
+			MaxDuration: parseIntPtr(maxDurationStr),
+		}
+		
+		if regionStr != "" {
+			appliedFilters.Regions = strings.Split(regionStr, ",")
+		}
+		
+		if ratingsStr != "" {
+			appliedFilters.Ratings = strings.Split(ratingsStr, ",")
+		}
+		
+		response := dto.SearchResponse{
+			Tours:      tours,
+			Total:      int(totalCount),
+			Page:       page,
+			Limit:      limit,
+			TotalPages: totalPages,
+			Filters:    appliedFilters,
+		}
+
 		c.Response().Header().Set("X-Total-Count", strconv.Itoa(int(totalCount)))
 		c.Response().Header().Set("X-Total-Pages", strconv.Itoa(totalPages))
 		c.Response().Header().Set("X-Current-Page", strconv.Itoa(page))
 		c.Response().Header().Set("X-Per-Page", strconv.Itoa(limit))
 
-		log.Printf("Пошук виконано: знайдено %d з %d турів (сторінка %d/%d)", 
-			len(tours), totalCount, page, totalPages)
-
 		return c.JSON(http.StatusOK, response)
 	}
 }
 
-// Допоміжні функції
 func parseFloatPtr(s string) *float64 {
 	if s == "" {
 		return nil

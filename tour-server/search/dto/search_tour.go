@@ -19,11 +19,10 @@ type SearchFilters struct {
 	Title       string   `json:"title,omitempty"`
 	MinPrice    *float64 `json:"minPrice,omitempty"`
 	MaxPrice    *float64 `json:"maxPrice,omitempty"`
-	MinRating   *float64 `json:"minRating,omitempty"`
-	MaxRating   *float64 `json:"maxRating,omitempty"`
 	MinDuration *int     `json:"minDuration,omitempty"`
 	MaxDuration *int     `json:"maxDuration,omitempty"`
 	Regions     []string `json:"regions,omitempty"`
+	Ratings     []string `json:"ratings,omitempty"`
 }
 
 type SearchResponse struct {
