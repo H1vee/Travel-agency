@@ -32,11 +32,10 @@ export interface SearchFilters {
   title?: string;
   minPrice?: number;
   maxPrice?: number;
-  minRating?: number;
-  maxRating?: number;
   minDuration?: number;
   maxDuration?: number;
   regions?: string[];
+  ratings?: string[];
 }
 
 export interface SearchResponse {
@@ -81,11 +80,11 @@ export const REGIONS = [
 ];
 
 export const RATINGS = [
-  { id: "5", stars: 5, label: "5 зірок" },
-  { id: "4", stars: 4, label: "4+ зірки" },
-  { id: "3", stars: 3, label: "3+ зірки" },
-  { id: "2", stars: 2, label: "2+ зірки" },
-  { id: "1", stars: 1, label: "1+ зірка" }
+  { id: "5", stars: 5, label: "5 зірок", min: 5.0, max: 5.0 },
+  { id: "4", stars: 4, label: "4-4.9 зірки", min: 4.0, max: 4.99 },
+  { id: "3", stars: 3, label: "3-3.9 зірки", min: 3.0, max: 3.99 },
+  { id: "2", stars: 2, label: "2-2.9 зірки", min: 2.0, max: 2.99 },
+  { id: "1", stars: 1, label: "1-1.9 зірка", min: 1.0, max: 1.99 }
 ];
 
 export const API_BASE_URL = "http://127.0.0.1:1323";

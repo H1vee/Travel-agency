@@ -1,5 +1,5 @@
 import { CheckboxGroup, Checkbox, Slider, Input, Button, Badge, Divider, Chip } from "@heroui/react";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Filter, X, RotateCcw, Sparkles, Star } from "lucide-react";
 import { Filters, PriceRange, REGIONS, DURATIONS, RATINGS } from "../../../../types/tours";
 import "./SideBar.scss";
@@ -36,10 +36,6 @@ export const SideBar: React.FC<SideBarProps> = ({
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Використовуємо ref для відстеження чи компонент змонтований
-  const isMountedRef = useRef(false);
-  const applyTimeoutRef = useRef<NodeJS.Timeout>();
-
   useEffect(() => {
     setSliderValue([
       currentFilters.minPrice || minValue,
@@ -52,12 +48,12 @@ export const SideBar: React.FC<SideBarProps> = ({
 
   useEffect(() => {
     if (priceRange.min !== minValue || priceRange.max !== maxValue) {
-      setSliderValue([
-        Math.max(sliderValue[0], minValue),
-        Math.min(sliderValue[1], maxValue)
+      setSliderValue(prev => [
+        Math.max(prev[0], minValue),
+        Math.min(prev[1], maxValue)
       ]);
     }
-  }, [priceRange, minValue, maxValue]);
+  }, [priceRange]);
   
   const handleSliderChange = useCallback((newValue: number | number[]) => {
     const values = Array.isArray(newValue) ? newValue : [newValue, newValue];
@@ -77,11 +73,6 @@ export const SideBar: React.FC<SideBarProps> = ({
   }, [sliderValue, maxValue]);
   
   const applyFilters = useCallback(() => {
-    // Не застосовуємо фільтри під час першого рендеру
-    if (!isMountedRef.current) {
-      return;
-    }
-
     const filters: Filters = {};
     
     if (sliderValue[0] > minValue) filters.minPrice = sliderValue[0];
@@ -90,12 +81,10 @@ export const SideBar: React.FC<SideBarProps> = ({
     if (selectedRatings.length > 0) filters.rating = selectedRatings;
     if (selectedRegions.length > 0) filters.region = selectedRegions;
     
-    console.log("🔧 SideBar: Застосовуємо фільтри:", filters);
     onApply(filters);
   }, [sliderValue, selectedDurations, selectedRatings, selectedRegions, minValue, maxValue, onApply]);
   
   const resetFilters = useCallback(() => {
-    console.log("🔄 SideBar: Скидання фільтрів");
     setSliderValue([minValue, maxValue]);
     setSelectedDurations([]);
     setSelectedRatings([]);
@@ -103,6 +92,16 @@ export const SideBar: React.FC<SideBarProps> = ({
     onReset();
   }, [minValue, maxValue, onReset]);
   
+  const hasLocalChanges = useCallback(() => {
+    return (
+      sliderValue[0] !== (currentFilters.minPrice || minValue) ||
+      sliderValue[1] !== (currentFilters.maxPrice || maxValue) ||
+      JSON.stringify(selectedDurations.sort()) !== JSON.stringify((currentFilters.duration || []).sort()) ||
+      JSON.stringify(selectedRatings.sort()) !== JSON.stringify((currentFilters.rating || []).sort()) ||
+      JSON.stringify(selectedRegions.sort()) !== JSON.stringify((currentFilters.region || []).sort())
+    );
+  }, [sliderValue, selectedDurations, selectedRatings, selectedRegions, currentFilters, minValue, maxValue]);
+
   const hasActiveFilters = useCallback(() => {
     return (
       sliderValue[0] > minValue ||
@@ -165,33 +164,6 @@ export const SideBar: React.FC<SideBarProps> = ({
       </div>
     );
   };
-
-  // Позначаємо що компонент змонтований після першого рендеру
-  useEffect(() => {
-    isMountedRef.current = true;
-  }, []);
-
-  // Застосовуємо фільтри тільки після монтування компонента і зі затримкою
-  useEffect(() => {
-    if (!isMountedRef.current) {
-      return;
-    }
-
-    // Очищуємо попередній таймер
-    if (applyTimeoutRef.current) {
-      clearTimeout(applyTimeoutRef.current);
-    }
-
-    applyTimeoutRef.current = setTimeout(() => {
-      applyFilters();
-    }, 300);
-
-    return () => {
-      if (applyTimeoutRef.current) {
-        clearTimeout(applyTimeoutRef.current);
-      }
-    };
-  }, [applyFilters]);
 
   const formatPrice = (price: number) => {
     if (price >= 1000000) {
@@ -438,11 +410,11 @@ export const SideBar: React.FC<SideBarProps> = ({
             <Button
               color="primary"
               onClick={applyFilters}
-              isDisabled={isLoading}
+              isDisabled={isLoading || !hasLocalChanges()}
               className="sidebar__apply-btn"
               fullWidth
             >
-              {isLoading ? "Застосовується..." : "Застосувати фільтри"}
+              {isLoading ? "Застосовується..." : hasLocalChanges() ? "Застосувати фільтри" : "Фільтри застосовані"}
             </Button>
             
             {hasActiveFilters() && (

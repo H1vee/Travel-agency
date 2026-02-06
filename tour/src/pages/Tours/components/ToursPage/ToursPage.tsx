@@ -21,13 +21,20 @@ import {
   Filter,
   ArrowUpDown,
   Users,
-  TrendingUp,
   RefreshCw
 } from "lucide-react";
 import "./ToursPage.scss";
 
 export const ToursPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortBy, setSortByLocal] = useState<SortOption>(() => {
+    const saved = localStorage.getItem('tours-sort-by') as SortOption;
+    return saved || 'price_asc';
+  });
+  const [itemsPerPage, setItemsPerPageLocal] = useState<number>(() => {
+    const saved = localStorage.getItem('tours-items-per-page');
+    return saved ? parseInt(saved) : 12;
+  });
 
   const {
     currentTours,
@@ -49,7 +56,6 @@ export const ToursPage: React.FC = () => {
     setItemsPerPage,
   } = useSearchTours();
 
-  // Завантажуємо збережені налаштування
   useEffect(() => {
     try {
       const savedViewMode = localStorage.getItem('tours-view-mode') as ViewMode;
@@ -61,6 +67,11 @@ export const ToursPage: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    setSortBy(sortBy);
+    setItemsPerPage(itemsPerPage);
+  }, []);
+
   const savePreference = useCallback((key: string, value: string) => {
     try {
       localStorage.setItem(key, value);
@@ -69,42 +80,19 @@ export const ToursPage: React.FC = () => {
     }
   }, []);
 
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-
   const handleSearch = useCallback((query: string) => {
-    console.log("🔍 Новий пошуковий запит:", query);
-    
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-    
-    const newTimeout = setTimeout(() => {
-      updateSearch(query, filters);
-    }, 500);
-    
-    setSearchTimeout(newTimeout);
-  }, [filters, updateSearch, searchTimeout]);
+    updateSearch(query, filters);
+  }, [filters, updateSearch]);
 
   const handleSearchClear = useCallback(() => {
-    console.log("🧹 Очищення пошуку");
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
     clearSearch();
-  }, [clearSearch, searchTimeout]);
+  }, [clearSearch]);
 
   const handleFiltersChange = useCallback((newFilters: Filters) => {
-    console.log("🔧 Нові фільтри:", newFilters);
-    
-    const filtersChanged = JSON.stringify(newFilters) !== JSON.stringify(filters);
-    
-    if (filtersChanged) {
-      updateSearch(searchQuery, newFilters);
-    }
-  }, [searchQuery, updateSearch, filters]);
+    updateSearch(searchQuery, newFilters);
+  }, [searchQuery, updateSearch]);
 
   const handleFiltersReset = useCallback(() => {
-    console.log("🔄 Скидання фільтрів");
     clearSearch();
   }, [clearSearch]);
 
@@ -125,21 +113,20 @@ export const ToursPage: React.FC = () => {
   const popularSearches = ["Єгипет", "Дубай", "Париж", "Японія", "Італія"];
 
   const handlePageChange = useCallback((page: number) => {
-    console.log("📄 Зміна сторінки на:", page);
     setPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPage]);
 
   const handleSortChange = useCallback((keys: any) => {
     const newSort = Array.from(keys)[0] as SortOption;
-    console.log("🔀 Нове сортування:", newSort);
+    setSortByLocal(newSort);
     setSortBy(newSort);
     savePreference('tours-sort-by', newSort);
   }, [setSortBy, savePreference]);
 
   const handleItemsPerPageChange = useCallback((keys: any) => {
     const newCount = Number(Array.from(keys)[0]);
-    console.log("📄 Нова кількість на сторінці:", newCount);
+    setItemsPerPageLocal(newCount);
     setItemsPerPage(newCount);
     savePreference('tours-items-per-page', newCount.toString());
   }, [setItemsPerPage, savePreference]);
@@ -148,14 +135,6 @@ export const ToursPage: React.FC = () => {
     setViewMode(mode);
     savePreference('tours-view-mode', mode);
   }, [savePreference]);
-
-  useEffect(() => {
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-    };
-  }, [searchTimeout]);
 
   const isLoading = isLoadingAllTours || (isSearching && currentTours.length === 0);
 
@@ -198,13 +177,13 @@ export const ToursPage: React.FC = () => {
             <SideBar 
               onApply={handleFiltersChange} 
               onReset={handleFiltersReset}
-              isLoading={isLoading}
+              isLoading={false}
               currentFilters={filters}
               priceRange={priceRange}
             />
           </div>
 
-            <div className="tours-page__main" style={{ position: 'relative', zIndex: 1 }}>
+          <div className="tours-page__main" style={{ position: 'relative', zIndex: 1 }}>
             {!isLoading && !error && (
               <div className="results-header">
                 <div className="results-info">
@@ -253,36 +232,24 @@ export const ToursPage: React.FC = () => {
                   <Select
                     size="sm"
                     label="Сортування"
-                    selectedKeys={['popular']}
+                    selectedKeys={new Set([sortBy])}
                     onSelectionChange={handleSortChange}
                     className="sort-select"
                     variant="bordered"
                     startContent={<ArrowUpDown size={14} />}
                   >
-                    <SelectItem key="popular" startContent={<TrendingUp size={14} />}>
-                      Популярні
-                    </SelectItem>
                     <SelectItem key="price_asc" startContent="₴↑">
                       Ціна: за зростанням
                     </SelectItem>
                     <SelectItem key="price_desc" startContent="₴↓">
                       Ціна: за спаданням
                     </SelectItem>
-                    <SelectItem key="rating_desc" startContent="⭐">
-                      Найкращий рейтинг
-                    </SelectItem>
-                    <SelectItem key="newest" startContent="🆕">
-                      Нові
-                    </SelectItem>
-                    <SelectItem key="title_asc" startContent="🔤">
-                      За алфавітом
-                    </SelectItem>
                   </Select>
 
                   <Select
                     size="sm"
                     label="На сторінці"
-                    selectedKeys={['12']}
+                    selectedKeys={new Set([itemsPerPage.toString()])}
                     onSelectionChange={handleItemsPerPageChange}
                     className="items-select"
                     variant="bordered"
@@ -393,11 +360,6 @@ export const ToursPage: React.FC = () => {
                   className="pagination-component"
                   color="primary"
                 />
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="pagination-debug">
-                    Debug: page={currentPage}, total={totalPages}, tours={currentTours.length}, totalResults={totalResults}
-                  </div>
-                )}
               </div>
             )}
           </div>

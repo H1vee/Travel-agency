@@ -32,30 +32,19 @@ interface SearchHookReturn {
   setItemsPerPage: (count: number) => void;
 }
 
-const mapDurationToServerParams = (durationIds: string[]): { minDuration?: string; maxDuration?: string } => {
+const mapDurationToServerParams = (durationIds: string[]): { minDuration?: number; maxDuration?: number } => {
   if (durationIds.length === 0) return {};
   
-  const selectedRanges = durationIds.map(id => {
-    const duration = DURATIONS.find(d => d.id === id);
-    return duration ? { min: duration.min, max: duration.max } : null;
-  }).filter(Boolean);
+  const selectedRanges = durationIds
+    .map(id => DURATIONS.find(d => d.id === id))
+    .filter((d): d is typeof DURATIONS[0] => d !== undefined);
   
   if (selectedRanges.length === 0) return {};
   
-  const globalMin = Math.min(...selectedRanges.map(r => r!.min));
-  const globalMax = Math.max(...selectedRanges.map(r => r!.max));
+  const globalMin = Math.min(...selectedRanges.map(r => r.min));
+  const globalMax = Math.max(...selectedRanges.map(r => r.max));
   
-  console.log("🕒 Duration mapping:", { 
-    durationIds, 
-    selectedRanges, 
-    globalMin, 
-    globalMax 
-  });
-  
-  return {
-    minDuration: globalMin.toString(),
-    maxDuration: globalMax.toString()
-  };
+  return { minDuration: globalMin, maxDuration: globalMax };
 };
 
 const buildSearchUrl = (
@@ -72,38 +61,35 @@ const buildSearchUrl = (
   }
   
   if (filters.minPrice !== undefined && filters.minPrice > 0) {
-    params.append("minPrice", String(filters.minPrice));
+    params.append("minPrice", filters.minPrice.toString());
   }
-  if (filters.maxPrice !== undefined) {
-    params.append("maxPrice", String(filters.maxPrice));
+  if (filters.maxPrice !== undefined && filters.maxPrice > 0) {
+    params.append("maxPrice", filters.maxPrice.toString());
   }
   
   if (filters.duration && filters.duration.length > 0) {
-    const durationParams = mapDurationToServerParams(filters.duration);
-    if (durationParams.minDuration) {
-      params.append("minDuration", durationParams.minDuration);
+    const { minDuration, maxDuration } = mapDurationToServerParams(filters.duration);
+    if (minDuration !== undefined) {
+      params.append("minDuration", minDuration.toString());
     }
-    if (durationParams.maxDuration) {
-      params.append("maxDuration", durationParams.maxDuration);
+    if (maxDuration !== undefined) {
+      params.append("maxDuration", maxDuration.toString());
     }
   }
   
   if (filters.rating && filters.rating.length > 0) {
-    const minRating = Math.min(...filters.rating.map(r => parseInt(r)));
-    params.append("minRating", String(minRating));
+    params.append("ratings", filters.rating.join(","));
   }
   
   if (filters.region && filters.region.length > 0) {
     params.append("region", filters.region.join(","));
   }
 
-  params.append("page", String(page));
-  params.append("limit", String(limit));
+  params.append("page", page.toString());
+  params.append("limit", limit.toString());
   params.append("sortBy", sortBy);
 
-  const url = `${API_BASE_URL}/search?${params.toString()}`;
-  console.log("🔗 Search URL:", url);
-  return url;
+  return `${API_BASE_URL}/search?${params.toString()}`;
 };
 
 export const useSearchTours = (): SearchHookReturn => {
@@ -112,7 +98,6 @@ export const useSearchTours = (): SearchHookReturn => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
-  const [searchError, setSearchError] = useState<string | null>(null);
 
   const { 
     data: allTours = [], 
@@ -122,28 +107,23 @@ export const useSearchTours = (): SearchHookReturn => {
   } = useQuery({
     queryKey: ["allTours"],
     queryFn: async (): Promise<Tour[]> => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/cards`);
-        if (!response.ok) {
-          throw new Error(`Помилка завантаження турів: ${response.status}`);
-        }
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
-      } catch (error) {
-        console.error("Помилка завантаження всіх турів:", error);
-        throw error;
+      const response = await fetch(`${API_BASE_URL}/cards`);
+      if (!response.ok) {
+        throw new Error(`Failed to load tours: ${response.status}`);
       }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
     retry: 2,
-    staleTime: 10 * 60 * 1000, 
-    gcTime: 15 * 60 * 1000, 
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   const hasActiveSearch = useMemo(() => {
     return !!(
       searchQuery.trim() ||
       (filters.minPrice !== undefined && filters.minPrice > 0) ||
-      (filters.maxPrice !== undefined) ||
+      (filters.maxPrice !== undefined && filters.maxPrice > 0) ||
       (filters.duration && filters.duration.length > 0) ||
       (filters.rating && filters.rating.length > 0) ||
       (filters.region && filters.region.length > 0)
@@ -151,7 +131,8 @@ export const useSearchTours = (): SearchHookReturn => {
   }, [searchQuery, filters]);
 
   const searchUrl = useMemo(() => {
-    return hasActiveSearch ? buildSearchUrl(searchQuery, filters, currentPage, itemsPerPage, sortBy) : null;
+    if (!hasActiveSearch) return null;
+    return buildSearchUrl(searchQuery, filters, currentPage, itemsPerPage, sortBy);
   }, [searchQuery, filters, hasActiveSearch, currentPage, itemsPerPage, sortBy]);
 
   const { 
@@ -161,44 +142,48 @@ export const useSearchTours = (): SearchHookReturn => {
   } = useQuery({
     queryKey: ["searchTours", searchUrl],
     queryFn: async (): Promise<SearchResponse> => {
-      if (!searchUrl) return { tours: [], total: 0, page: 1, limit: itemsPerPage, totalPages: 0, appliedFilters: {} };
-      
-      try {
-        console.log("🔍 Виконуємо пошук:", searchUrl);
-        
-        const response = await fetch(searchUrl);
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Server error response:", errorText);
-          throw new Error(`Помилка пошуку: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log("🔍 Результати пошуку:", data.tours?.length || 0, "з", data.total || 0, "турів");
-        
-        // Переконуємося що дані корректні
-        if (!data.tours || !Array.isArray(data.tours)) {
-          console.warn("Некоректний формат даних з сервера:", data);
-          return { tours: [], total: 0, page: 1, limit: itemsPerPage, totalPages: 0, appliedFilters: {} };
-        }
-        
-        return data as SearchResponse;
-      } catch (error) {
-        console.error("❌ Помилка пошуку:", error);
-        throw error;
+      if (!searchUrl) {
+        return { 
+          tours: [], 
+          total: 0, 
+          page: 1, 
+          limit: itemsPerPage, 
+          totalPages: 0, 
+          appliedFilters: {} 
+        };
       }
+      
+      const response = await fetch(searchUrl);
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.tours || !Array.isArray(data.tours)) {
+        return { 
+          tours: [], 
+          total: 0, 
+          page: 1, 
+          limit: itemsPerPage, 
+          totalPages: 0, 
+          appliedFilters: {} 
+        };
+      }
+      
+      return data as SearchResponse;
     },
     enabled: !!searchUrl && hasActiveSearch,
     retry: 1,
-    staleTime: 2 * 60 * 1000, 
-    gcTime: 5 * 60 * 1000,    
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const searchResults = useMemo(() => {
     if (!searchResponse?.tours) return [];
     
-    console.log("🔄 Обробка результатів пошуку:", searchResponse.tours.length, "турів");
-    
+    console.log('Search response tours:', searchResponse.tours);
+
     return searchResponse.tours.map(item => ({
       id: item.id,
       title: item.title,
@@ -215,17 +200,13 @@ export const useSearchTours = (): SearchHookReturn => {
   }, [searchResponse]);
 
   const updateSearch = useCallback((newQuery: string, newFilters: Filters) => {
-    console.log("🔄 Update search:", { newQuery, newFilters });
     setSearchQuery(newQuery);
     setFilters(newFilters);
     setCurrentPage(1);
-    setSearchError(null);
   }, []);
 
-  const getCurrentTours = useCallback((): Tour[] => {
-    const tours = hasActiveSearch ? searchResults : allTours;
-    console.log("📊 Current tours:", tours.length, "hasActiveSearch:", hasActiveSearch);
-    return tours;
+  const currentTours = useMemo((): Tour[] => {
+    return hasActiveSearch ? searchResults : allTours;
   }, [hasActiveSearch, searchResults, allTours]);
 
   const priceRange = useMemo(() => {
@@ -245,36 +226,31 @@ export const useSearchTours = (): SearchHookReturn => {
   }, [allTours]);
 
   const clearSearch = useCallback(() => {
-    console.log("🧹 Clear search");
     setSearchQuery("");
     setFilters({});
     setCurrentPage(1);
-    setSearchError(null);
   }, []);
 
   const setPage = useCallback((page: number) => {
-    console.log("📄 Set page:", page);
     setCurrentPage(page);
   }, []);
 
   const handleSetSortBy = useCallback((newSortBy: SortOption) => {
-    console.log("🔀 Set sort:", newSortBy);
     setSortBy(newSortBy);
     setCurrentPage(1);
   }, []);
 
   const handleSetItemsPerPage = useCallback((count: number) => {
-    console.log("📊 Set items per page:", count);
     setItemsPerPage(count);
     setCurrentPage(1);
   }, []);
 
-  const combinedError = allToursError || searchQueryError || (searchError ? new Error(searchError) : null);
+  const combinedError = allToursError || searchQueryError;
 
   return {
     allTours,
     searchResults,
-    currentTours: getCurrentTours(),
+    currentTours,
     priceRange,
     searchQuery,
     filters,
@@ -284,7 +260,7 @@ export const useSearchTours = (): SearchHookReturn => {
     totalPages: searchResponse?.totalPages,
     isLoadingAllTours,
     isSearching,
-    error: combinedError,
+    error: combinedError as Error | null,
     updateSearch,
     clearSearch,
     refetchAllTours,
