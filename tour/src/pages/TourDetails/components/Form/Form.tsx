@@ -13,24 +13,20 @@ import {
   Divider,
   Spinner,
   Avatar,
-  Tooltip,
 } from "@heroui/react";
 import { addToast, ToastProvider } from "@heroui/react";
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from "react-router-dom";
 import { useState, ChangeEvent, useEffect } from "react";
-import { useAuth } from '../../../../context/AuthContext'; 
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Users, 
-  CreditCard, 
+import { useAuth } from '../../../../context/AuthContext';
+import {
+  User,
+  Mail,
+  Phone,
+  Users,
+  CreditCard,
   CheckCircle,
   AlertCircle,
-  MapPin,
-  Calendar,
-  Clock
 } from 'lucide-react';
 import "./Form.scss";
 
@@ -48,37 +44,36 @@ interface FormErrorsType {
   seats: string;
 }
 
-interface TourData {
+interface TourSeatData {
+  id: number;
+  tour_date_id: number;
   available_seats: number;
   price: number;
-  [key: string]: any; 
 }
 
 export const Form = () => {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { id } = useParams();
-  const { isAuthenticated, user } = useAuth(); 
+  const { isAuthenticated, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Form state
+
   const [formData, setFormData] = useState<FormDataType>({
     name: "",
     email: "",
     phone: "+380",
-    seats: "1"
+    seats: "1",
   });
-  
+
   const [formErrors, setFormErrors] = useState<FormErrorsType>({
     name: "",
     email: "",
     phone: "",
-    seats: ""
+    seats: "",
   });
 
-  // Update form with user data when authenticated
   useEffect(() => {
     if (isAuthenticated && user && isOpen) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         name: user.name || "",
         email: user.email || "",
@@ -87,30 +82,34 @@ export const Form = () => {
     }
   }, [isAuthenticated, user, isOpen]);
 
-  const { isPending, error, data: tourData } = useQuery({
+  const { isPending, error, data: tourSeats } = useQuery({
     queryKey: ["tourSeats", id],
-    queryFn: async () => {
+    queryFn: async (): Promise<TourSeatData[]> => {
       const response = await fetch(`http://127.0.0.1:1323/tour-seats/${id}`);
       if (!response.ok) throw new Error("Tour not found");
-      const data = await response.json();
-      return data as TourData[];
+      return response.json();
     },
     enabled: !!id,
   });
 
-  const availableSeats = tourData?.[0]?.available_seats ?? 1;
-  const tourPrice = tourData?.[0]?.price ?? 0;
+  // Use first available seat record — it contains tour_date_id needed for booking
+  const seatData = tourSeats?.[0];
+  const availableSeats = seatData?.available_seats ?? 0;
+  const tourPrice = seatData?.price ?? 0;
+  // ✅ Fix: use tour_date_id from seats data, NOT the tour id from the URL
+  const tourDateId = seatData?.tour_date_id ?? 0;
+
   const totalPrice = tourPrice * parseInt(formData.seats || "1", 10);
-  const pricePerSeat = tourPrice;
 
   const updateFormData = (field: keyof FormDataType, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const validateName = (name: string): string => {
     if (!name.trim()) return "Ім'я є обов'язковим";
     if (name.trim().length < 2) return "Ім'я повинно містити принаймні 2 символи";
-    if (!/^[a-zA-Zа-яА-ЯіІєЄґҐїЇ'' -]*$/.test(name)) return "Ім'я може містити тільки літери, пробіли та дефіси";
+    if (!/^[a-zA-Zа-яА-ЯіІєЄґҐїЇ'' -]*$/.test(name))
+      return "Ім'я може містити тільки літери, пробіли та дефіси";
     return "";
   };
 
@@ -139,37 +138,29 @@ export const Form = () => {
 
   const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormErrors(prev => ({ ...prev, name: validateName(value) }));
+    setFormErrors((prev) => ({ ...prev, name: validateName(value) }));
     updateFormData("name", value);
   };
 
   const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormErrors(prev => ({ ...prev, email: validateEmail(value) }));
+    setFormErrors((prev) => ({ ...prev, email: validateEmail(value) }));
     updateFormData("email", value);
   };
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
-    
-    // Ensure it starts with +380
-    if (!value.startsWith("+380")) {
-      value = "+380";
-    }
-
-    // Format the phone number
+    if (!value.startsWith("+380")) value = "+380";
     const digitsOnly = value.replace(/\D/g, "").slice(3);
     const formattedPhone = "+380" + digitsOnly.slice(0, 9);
-    
-    setFormErrors(prev => ({ ...prev, phone: validatePhone(formattedPhone) }));
+    setFormErrors((prev) => ({ ...prev, phone: validatePhone(formattedPhone) }));
     updateFormData("phone", formattedPhone);
   };
 
   const handleSeatsChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "");
     const intSeats = parseInt(value, 10) || 1;
-    
-    setFormErrors(prev => ({ ...prev, seats: validateSeats(intSeats.toString()) }));
+    setFormErrors((prev) => ({ ...prev, seats: validateSeats(intSeats.toString()) }));
     updateFormData("seats", intSeats.toString());
   };
 
@@ -178,24 +169,18 @@ export const Form = () => {
       name: isAuthenticated ? user?.name || "" : "",
       email: isAuthenticated ? user?.email || "" : "",
       phone: isAuthenticated ? user?.phone || "+380" : "+380",
-      seats: "1"
+      seats: "1",
     });
     setFormErrors({ name: "", email: "", phone: "", seats: "" });
   };
 
   const handleConfirm = async (onClose: () => void) => {
-    // Final validation
     const nameError = validateName(formData.name);
     const emailError = validateEmail(formData.email);
     const phoneError = validatePhone(formData.phone);
     const seatsError = validateSeats(formData.seats);
 
-    setFormErrors({
-      name: nameError,
-      email: emailError,
-      phone: phoneError,
-      seats: seatsError,
-    });
+    setFormErrors({ name: nameError, email: emailError, phone: phoneError, seats: seatsError });
 
     if (nameError || phoneError || seatsError) {
       addToast({
@@ -206,10 +191,19 @@ export const Form = () => {
       return;
     }
 
+    if (!tourDateId) {
+      addToast({
+        title: "Помилка",
+        description: "Не вдалося визначити дату туру. Спробуйте перезавантажити сторінку.",
+        color: "danger",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     const bookingData = {
-      tour_date_id: Number(id),
+      tour_date_id: tourDateId, // ✅ correct field from seats response
       customer_name: formData.name.trim(),
       customer_email: formData.email.trim(),
       customer_phone: formData.phone.trim(),
@@ -218,14 +212,9 @@ export const Form = () => {
     };
 
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
       const token = localStorage.getItem('tour_auth_token');
-      if (token && isAuthenticated) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+      if (token && isAuthenticated) headers.Authorization = `Bearer ${token}`;
 
       const response = await fetch("http://127.0.0.1:1323/tour/bookings", {
         method: "POST",
@@ -238,27 +227,21 @@ export const Form = () => {
         throw new Error(errorData.error || "Booking failed");
       }
 
-      const result = await response.json();
-
       addToast({
         title: "🎉 Бронювання підтверджено!",
-        description: isAuthenticated 
-          ? "Ваше замовлення збережено в особистому кабінеті" 
+        description: isAuthenticated
+          ? "Ваше замовлення збережено в особистому кабінеті"
           : "Ваше замовлення прийнято. Менеджер зв'яжеться з вами найближчим часом",
         color: "success",
         variant: "solid",
       });
-      
-      console.log("Booking result:", result);
+
       onClose();
       resetForm();
-
-    } catch (error) {
-      console.error("Booking error:", error);
-      
+    } catch (err) {
       addToast({
         title: "❌ Бронювання не вдалося",
-        description: error instanceof Error ? error.message : "Виникла проблема з вашим бронюванням",
+        description: err instanceof Error ? err.message : "Виникла проблема з вашим бронюванням",
         color: "danger",
       });
     } finally {
@@ -268,62 +251,69 @@ export const Form = () => {
 
   const isFormValid = (): boolean => {
     const { name, phone, seats } = formData;
-    const hasErrors = Object.values(formErrors).some(error => !!error);
-    const hasRequiredFields = !!(name.trim() && phone.trim() && seats.trim()); 
+    const hasErrors = Object.values(formErrors).some((e) => !!e);
+    const hasRequiredFields = !!(name.trim() && phone.trim() && seats.trim());
     return hasRequiredFields && !hasErrors && parseInt(seats, 10) >= 1;
   };
 
-  const getAvatarUrl = (user: any) => {
-    if (user?.avatar_url) return user.avatar_url;
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || '')}&background=2c7be5&color=fff&size=128`;
-  };
+  const getAvatarUrl = (u: any) =>
+    u?.avatar_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.name || '')}&background=2c7be5&color=fff&size=128`;
 
-  if (isPending) return (
-    <div className="booking-form__loading">
-      <Spinner size="lg" />
-      <p>Завантаження даних туру...</p>
-    </div>
-  );
-  
-  if (error) return (
-    <div className="booking-form__error">
-      <AlertCircle size={48} />
-      <p>Помилка: {(error as Error).message}</p>
-    </div>
-  );
-  
-  if (!tourData) return (
-    <div className="booking-form__not-found">
-      <AlertCircle size={48} />
-      <p>Тур не знайдено</p>
-    </div>
-  );
+  if (isPending)
+    return (
+      <div className="booking-form__loading">
+        <Spinner size="lg" />
+        <p>Завантаження даних туру...</p>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="booking-form__error">
+        <AlertCircle size={48} />
+        <p>Помилка: {(error as Error).message}</p>
+      </div>
+    );
+
+  if (!tourSeats || tourSeats.length === 0)
+    return (
+      <div className="booking-form__not-found">
+        <AlertCircle size={48} />
+        <p>Дані про місця відсутні</p>
+      </div>
+    );
 
   return (
     <div className="booking-form">
       <ToastProvider placement="top-center" />
-      
+
       <div className="booking-form__button-container">
-        <Button 
-          color="primary" 
-          variant="shadow" 
-          onPress={onOpen} 
+        <Button
+          color="primary"
+          variant="shadow"
+          onPress={onOpen}
           className="booking-form__purchase-button"
           size="lg"
           startContent={<CreditCard size={20} />}
+          isDisabled={availableSeats === 0}
         >
-          {isAuthenticated ? "Забронювати тур" : "Забронювати як гість"}
+          {availableSeats === 0
+            ? "Місць немає"
+            : isAuthenticated
+            ? "Забронювати тур"
+            : "Забронювати як гість"}
         </Button>
-        
-        <Modal 
-          isOpen={isOpen} 
+
+        <Modal
+          isOpen={isOpen}
           placement="center"
           size="2xl"
           scrollBehavior="inside"
           classNames={{
             wrapper: "booking-modal-wrapper",
             base: "booking-modal-base",
-            backdrop: "booking-modal-backdrop"
+            backdrop: "booking-modal-backdrop",
           }}
           onOpenChange={(open: boolean) => {
             if (!open) resetForm();
@@ -339,12 +329,11 @@ export const Form = () => {
                       <h2 className="booking-form__title">
                         {isAuthenticated ? "Бронювання туру" : "Гостьове бронювання"}
                       </h2>
-                      
                       {isAuthenticated ? (
                         <div className="booking-form__auth-status">
-                          <Chip 
-                            color="success" 
-                            variant="flat" 
+                          <Chip
+                            color="success"
+                            variant="flat"
                             size="sm"
                             startContent={<CheckCircle size={14} />}
                           >
@@ -353,9 +342,9 @@ export const Form = () => {
                         </div>
                       ) : (
                         <div className="booking-form__guest-notice">
-                          <Chip 
-                            color="warning" 
-                            variant="flat" 
+                          <Chip
+                            color="warning"
+                            variant="flat"
                             size="sm"
                             startContent={<AlertCircle size={14} />}
                           >
@@ -364,36 +353,31 @@ export const Form = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     {isAuthenticated && user && (
                       <div className="booking-form__user-info">
                         <Avatar
                           src={getAvatarUrl(user)}
                           name={user.name}
                           size="sm"
-                          className="booking-form__user-avatar"
                         />
                         <div className="booking-form__user-details">
-                          <span className="booking-form__user-name" style={{
-                            color: '#1e293b',
-                            fontWeight: '700',
-                            fontSize: '1rem',
-                            lineHeight: '1.4'
-                          }}>
+                          <span
+                            className="booking-form__user-name"
+                            style={{ color: '#1e293b', fontWeight: '700', fontSize: '1rem' }}
+                          >
                             {user.name}
                           </span>
-                          <span className="booking-form__user-email" style={{
-                            color: '#64748b',
-                            fontWeight: '500',
-                            fontSize: '0.875rem',
-                            lineHeight: '1.3'
-                          }}>
+                          <span
+                            className="booking-form__user-email"
+                            style={{ color: '#64748b', fontWeight: '500', fontSize: '0.875rem' }}
+                          >
                             {user.email}
                           </span>
                         </div>
                       </div>
                     )}
-                    
+
                     {!isAuthenticated && (
                       <p className="booking-form__guest-description">
                         💡 Увійдіть у акаунт, щоб автоматично заповнити дані та відстежувати бронювання
@@ -401,11 +385,10 @@ export const Form = () => {
                     )}
                   </div>
                 </ModalHeader>
-                
+
                 <Divider />
-                
+
                 <ModalBody className="booking-form__modal-body">
-                  {/* Booking Summary Card */}
                   <Card className="booking-form__summary-card">
                     <CardBody>
                       <div className="booking-form__summary-header">
@@ -417,51 +400,50 @@ export const Form = () => {
                           </div>
                           <div className="booking-form__stat">
                             <CreditCard size={16} />
-                            <span>{pricePerSeat.toFixed(2)} UAH/особа</span>
+                            <span>{tourPrice.toFixed(2)} UAH/особа</span>
                           </div>
                         </div>
                       </div>
                     </CardBody>
                   </Card>
-                  
-                  {/* Form Fields */}
+
                   <div className="booking-form__fields">
                     <div className="booking-form__field-group">
                       <h4 className="booking-form__section-title">
                         <User size={18} />
                         Контактна інформація
                       </h4>
-                      
-                      <Input 
-                        isRequired 
-                        placeholder="Введіть ваше повне ім'я" 
-                        label="Повне ім'я" 
+
+                      <Input
+                        isRequired
+                        placeholder="Введіть ваше повне ім'я"
+                        label="Повне ім'я"
                         value={formData.name}
                         onChange={handleNameChange}
-                        isInvalid={!!formErrors.name}  
+                        isInvalid={!!formErrors.name}
                         errorMessage={formErrors.name}
                         className="booking-form__input"
                         variant="bordered"
                         startContent={<User size={18} className="text-default-400" />}
                       />
-                      
+
                       <Input
                         isRequired
                         label="Номер телефону"
                         placeholder="+380XXXXXXXXX"
                         value={formData.phone}
                         onChange={handlePhoneChange}
-                        isInvalid={!!formErrors.phone}  
+                        isInvalid={!!formErrors.phone}
                         errorMessage={formErrors.phone}
                         className="booking-form__input"
                         variant="bordered"
                         startContent={<Phone size={18} className="text-default-400" />}
                       />
-                      
-                      <Input 
-                        label="Email (необов'язково)" 
-                        placeholder="example@email.com" 
-                        variant="bordered" 
+
+                      <Input
+                        label="Email (необов'язково)"
+                        placeholder="example@email.com"
+                        variant="bordered"
                         value={formData.email}
                         onChange={handleEmailChange}
                         isInvalid={!!formErrors.email}
@@ -470,22 +452,22 @@ export const Form = () => {
                         startContent={<Mail size={18} className="text-default-400" />}
                       />
                     </div>
-                    
+
                     <Divider className="booking-form__section-divider" />
-                    
+
                     <div className="booking-form__field-group">
                       <h4 className="booking-form__section-title">
                         <Users size={18} />
                         Деталі бронювання
                       </h4>
-                      
+
                       <Input
                         isRequired
                         label="Кількість місць"
                         placeholder="1"
                         value={formData.seats}
                         onChange={handleSeatsChange}
-                        isInvalid={!!formErrors.seats}  
+                        isInvalid={!!formErrors.seats}
                         errorMessage={formErrors.seats}
                         className="booking-form__input"
                         variant="bordered"
@@ -494,14 +476,13 @@ export const Form = () => {
                       />
                     </div>
                   </div>
-                  
-                  {/* Price Summary */}
+
                   <Card className="booking-form__price-card">
                     <CardBody>
                       <div className="booking-form__price-breakdown">
                         <div className="booking-form__price-row">
                           <span>Ціна за 1 місце:</span>
-                          <span>{pricePerSeat.toFixed(2)} UAH</span>
+                          <span>{tourPrice.toFixed(2)} UAH</span>
                         </div>
                         <div className="booking-form__price-row">
                           <span>Кількість місць:</span>
@@ -518,22 +499,22 @@ export const Form = () => {
                     </CardBody>
                   </Card>
                 </ModalBody>
-                
+
                 <Divider />
-                
+
                 <ModalFooter className="booking-form__modal-footer">
-                  <Button 
-                    color="danger" 
-                    variant="light" 
+                  <Button
+                    color="danger"
+                    variant="light"
                     onPress={onClose}
                     className="booking-form__cancel-button"
                     isDisabled={isSubmitting}
                   >
                     Скасувати
                   </Button>
-                  
-                  <Button 
-                    color="primary" 
+
+                  <Button
+                    color="primary"
                     onPress={() => handleConfirm(onClose)}
                     isDisabled={!isFormValid() || isSubmitting}
                     isLoading={isSubmitting}
