@@ -35,7 +35,6 @@ func GetTourById(db *gorm.DB) echo.HandlerFunc {
 			Where("tours.id = ?", id).
 			Scan(&tour).Error
 
-		// Handle database errors
 		if err != nil {
 			log.Printf("Failed to fetch tour: %v\n", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -43,7 +42,12 @@ func GetTourById(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		// Return the tour data as JSON with HTTP 200 OK status
+		if tour.ID == 0 {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"error": "Tour not found",
+			})
+		}
+
 		return c.JSON(http.StatusOK, tour)
 	}
 }

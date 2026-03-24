@@ -20,9 +20,10 @@ func GetToursForCards(db *gorm.DB) echo.HandlerFunc {
 
 		// Query the database for all tours with their card images
 		var toursWithImages []dto.TourCard
-		err := db.Debug().Table("tours").
+			err := db.Debug().Table("tours").
 			Select("tours.id, tours.title, tours.price, COALESCE(tour_card_images.image_src, 'no-image.jpg') AS image_src").
 			Joins("LEFT JOIN tour_card_images ON tours.id = tour_card_images.tour_id").
+			Where("tours.status_id = (SELECT id FROM statuses WHERE name = 'active')").
 			Find(&toursWithImages).Error
 
 		// Log the executed SQL query and results for debugging

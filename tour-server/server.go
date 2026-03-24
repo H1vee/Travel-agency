@@ -7,6 +7,7 @@ import (
 	"tour-server/database"
 	"tour-server/middleware"
 
+	adminAPI "tour-server/admin/api"
 	bookings "tour-server/bookings/api"
 	search "tour-server/search/api"
 	"tour-server/tour/api"
@@ -53,7 +54,6 @@ func main() {
 	// MIDDLEWARE CONFIGURATION
 	// ========================================
 
-	// 1. CORS - має бути ПЕРШИМ перед усіма роутами
 	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
 		AllowOrigins: []string{
 			"http://localhost:3000",
@@ -62,7 +62,7 @@ func main() {
 			"http://127.0.0.1:3006",
 			"http://localhost:3001",
 			"http://127.0.0.1:3001",
-			"http://localhost:5173", // Vite dev server
+			"http://localhost:5173",
 			"http://127.0.0.1:5173",
 		},
 		AllowMethods: []string{
@@ -91,26 +91,21 @@ func main() {
 			"ETag",
 		},
 		AllowCredentials: true,
-		MaxAge:           86400, // 24 години
+		MaxAge:           86400,
 	}))
 
-	// 2. Static Cache Middleware - для оптимізації статичних файлів
 	e.Use(middleware.StaticCacheMiddleware())
 
-	// 3. Compression (Gzip)
 	e.Use(echomiddleware.GzipWithConfig(echomiddleware.GzipConfig{
-		Level: 5, // Рівень компресії (1-9)
+		Level: 5,
 	}))
 
-	// 4. Logger - тільки в режимі debug
 	if cfg.App.Debug {
 		e.Use(echomiddleware.Logger())
 	}
 
-	// 5. Recover middleware
 	e.Use(echomiddleware.Recover())
 
-	// 6. Security headers
 	e.Use(echomiddleware.SecureWithConfig(echomiddleware.SecureConfig{
 		XSSProtection:         "1; mode=block",
 		ContentTypeNosniff:    "nosniff",
@@ -119,12 +114,11 @@ func main() {
 		ContentSecurityPolicy: "default-src 'self'",
 	}))
 
-
 	e.Static("/static", "static")
 
-
-
-	// Root endpoint
+	// ========================================
+	// ROOT
+	// ========================================
 	e.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"message": "Welcome to Tour Server API",
@@ -140,11 +134,15 @@ func main() {
 		})
 	})
 
-	// Authentication endpoints
+	// ========================================
+	// AUTHENTICATION
+	// ========================================
 	e.POST("/auth/register", tourusers.RegisterUser(database.DB))
 	e.POST("/auth/login", tourusers.LoginUser(database.DB))
 
-	// Public tour endpoints
+	// ========================================
+	// PUBLIC ENDPOINTS
+	// ========================================
 	e.GET("/cards", api.GetToursForCards(database.DB))
 	e.GET("/tours", api.GetTours(database.DB))
 	e.GET("/tours/:id", api.GetTourById(database.DB))
@@ -153,14 +151,12 @@ func main() {
 	e.GET("/tour-seats/:id", tourseats.GetTourSeatsByTourID(database.DB))
 	e.GET("/tour-carousel/:id", api.GetToursCarouselByID(database.DB))
 	e.GET("/tours-search-by-ids", api.GetToursForCardsByID(database.DB))
-
-	// Enhanced search endpoint
 	e.GET("/search", search.SearchTours(database.DB))
-
-	// Reviews
 	e.GET("/tour-reviews/:id", tourreviews.GetReviewsByTourID(database.DB))
 
-	// Optional authentication for bookings and comments
+	// ========================================
+	// OPTIONAL AUTH (guests allowed)
+	// ========================================
 	bookingRoute := e.Group("")
 	bookingRoute.Use(middleware.OptionalJWTMiddleware())
 	bookingRoute.POST("/tour/bookings", bookings.PostBookings(database.DB))
@@ -169,32 +165,57 @@ func main() {
 	commentRoute.Use(middleware.OptionalJWTMiddleware())
 	commentRoute.GET("/tour-comments/:id", tourcomments.GetTourComments(database.DB))
 
-	// Protected endpoints (authentication required)
+	// ========================================
+	// PROTECTED ENDPOINTS (auth required)
+	// ========================================
 	protected := e.Group("")
 	protected.Use(middleware.JWTMiddleware())
 
-	// User profile
 	protected.GET("/profile", tourusers.GetProfile(database.DB))
 	protected.PUT("/profile", tourusers.UpdateProfile(database.DB))
-
-	// User bookings
 	protected.GET("/user-bookings", bookings.GetUserBookings(database.DB))
-
-	// User reviews
 	protected.POST("/tour-reviews", tourreviews.CreateTourReview(database.DB))
-
-	// User favorites
 	protected.POST("/user-favorites", userfavorites.AddFavorite(database.DB))
 	protected.GET("/user-favorites", userfavorites.GetUserFavorites(database.DB))
 	protected.DELETE("/user-favorites/:tour_id", userfavorites.RemoveFavorite(database.DB))
-
-	// Comments
 	protected.POST("/tour-comments", tourcomments.CreateComment(database.DB))
 	protected.PUT("/tour-comments/:id", tourcomments.UpdateComment(database.DB))
 	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB))
 
+	// ========================================
+	// ADMIN ENDPOINTS (auth + admin role)
+	// ========================================
+	admin := e.Group("/admin")
+	admin.Use(middleware.JWTMiddleware())
+	admin.Use(middleware.AdminMiddleware())
+
+	// Analytics
+	admin.GET("/analytics/overview", adminAPI.GetAnalyticsOverview(database.DB))
+	admin.GET("/analytics/bookings-by-month", adminAPI.GetBookingsByMonth(database.DB))
+	admin.GET("/analytics/revenue-by-month", adminAPI.GetRevenueByMonth(database.DB))
+	admin.GET("/analytics/popular-tours", adminAPI.GetPopularTours(database.DB))
+
+	// Bookings management
+	admin.GET("/bookings", adminAPI.GetAdminBookings(database.DB))
+	admin.PUT("/bookings/:id/status", adminAPI.UpdateBookingStatus(database.DB))
+	admin.GET("/bookings/export", adminAPI.ExportBookingsCSV(database.DB))
+
+	// Users management
+	admin.GET("/users", adminAPI.GetAdminUsers(database.DB))
+	admin.GET("/users/:id", adminAPI.GetAdminUserDetail(database.DB))
+
+	// Tours management
+	admin.GET("/tours", adminAPI.GetAdminTours(database.DB))
+	admin.GET("/tours/:id", adminAPI.GetAdminTourDetail(database.DB))
+	admin.POST("/tours", adminAPI.CreateTour(database.DB))
+	admin.PUT("/tours/:id", adminAPI.UpdateTour(database.DB))
+	admin.DELETE("/tours/:id", adminAPI.DeleteTour(database.DB))
+
+	admin.GET("/locations", adminAPI.GetLocations(database.DB))
+	admin.POST("/upload", adminAPI.UploadImage)
+	// ========================================
+	// START SERVER
+	// ========================================
 	serverAddr := cfg.Server.Host + ":" + cfg.Server.Port
-
-
 	e.Logger.Fatal(e.Start(serverAddr))
 }

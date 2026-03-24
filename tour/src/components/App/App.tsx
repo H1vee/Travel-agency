@@ -14,6 +14,7 @@ import { TourDetails } from '../../pages/TourDetails/TourDetails';
 import { UserProfile } from '../../pages/Profile/UserProfile';
 import { UserBookings } from '../../pages/Bookings/UserBookings';
 import { UserFavorites } from '../../pages/Favorites/UserFavorites';
+import { AdminLayout, Dashboard, AdminBookings, AdminTours, AdminUsers } from '../../pages/Admin';
 import {
   QueryClient,
   QueryClientProvider,
@@ -72,6 +73,15 @@ function App() {
                   <Route path="/bookings" element={<UserBookings />} />
                   <Route path="/favorites" element={<UserFavorites />} />
                   <Route path="/settings" element={<UserSettings />} />
+
+                  {/* Admin routes */}
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="bookings" element={<AdminBookings />} />
+                    <Route path="tours" element={<AdminTours />} />
+                    <Route path="users" element={<AdminUsers />} />
+                  </Route>
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

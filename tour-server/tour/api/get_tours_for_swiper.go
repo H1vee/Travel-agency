@@ -20,9 +20,10 @@ func GetToursForSwiper(db *gorm.DB) echo.HandlerFunc {
 		// Query the database for all tours with relevant swiper display information
 		var TourSwiper []dto.TourSwiper
 		err := db.Debug().Table("tours").
-			Select("tours.id, tours.title, tours.description, tours.call_to_action, COALESCE(tour_card_images.image_src, 'no-image.jpg') AS image_src").
-			Joins("LEFT JOIN tour_card_images ON tours.id = tour_card_images.tour_id").
-			Find(&TourSwiper).Error
+		Select("tours.id, tours.title, tours.description, tours.call_to_action, COALESCE(tour_card_images.image_src, 'no-image.jpg') AS image_src").
+		Joins("LEFT JOIN tour_card_images ON tours.id = tour_card_images.tour_id").
+		Where("tours.status_id = (SELECT id FROM statuses WHERE name = 'active')").
+		Find(&TourSwiper).Error
 
 		// Handle database errors
 		if err != nil {

@@ -20,8 +20,9 @@ func GetTours(db *gorm.DB) echo.HandlerFunc {
 		// Query the database for all tours
 		var tours []models.Tour
 		err := db.Table("tours").
-			Select("*").
-			Find(&tours).Error
+		Select("*").
+		Where("status_id = (SELECT id FROM statuses WHERE name = 'active')").
+		Find(&tours).Error
 
 		// Handle database errors
 		if err != nil {

@@ -65,10 +65,9 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
       try {
         console.log('🔍 Fetching tour carousel for ID:', id);
         
-        const response = await fetch(`http://127.0.0.1:1323/tour-carousel/${id}`, {
+const response = await fetch(`http://127.0.0.1:1323/tour-carousel/${id}`, {
           headers: {
             'Accept': 'application/json',
-            'Cache-Control': 'max-age=300'
           }
         });
         
@@ -97,23 +96,21 @@ export const TourSwiper: React.FC<TourSwiperProps> = ({
   
   const displayTours = tours.slice(0, maxSlides);
   
-  // 🚀 ОПТИМІЗАЦІЯ: Використовуємо batch preload hook
   const { isLoading: imagesLoading, progress } = useBatchImagePreload(
     displayTours.map(tour => tour.image_src),
     {
-      priority: 'high', // Високий пріоритет для галереї
-      concurrency: 4    // Завантажуємо по 4 одночасно
+      priority: 'high', 
+      concurrency: 4  
     }
   );
 
-  // 🚀 ОПТИМІЗАЦІЯ: Предзавантажити та закешувати URL-и при зміні турів
   useEffect(() => {
     if (!displayTours || displayTours.length === 0) return;
 
     const preloadAllImages = async () => {
       console.log('🚀 Preloading', displayTours.length, 'carousel images...');
       
-      // Batch завантаження через imageService
+
       const imageSources = displayTours.map(tour => tour.image_src);
       await imageService.preloadImages(imageSources, {
         priority: 'high',

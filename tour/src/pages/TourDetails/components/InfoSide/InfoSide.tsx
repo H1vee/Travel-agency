@@ -138,14 +138,17 @@ export const InfoSide = () => {
     );
   }
 
-  if (!data) {
+if (!data) {
     return (
       <div className="info-side">
         <Card className="info-side__card not-found-state">
           <CardBody className="not-found-content">
             <XCircle size={48} className="not-found-icon" />
-            <h3>Тур не знайдено</h3>
-            <p>Можливо, тур був видалений або не існує</p>
+            <h3>Тур недоступний</h3>
+            <p>Цей тур більше не доступний або був видалений</p>
+            <Button color="primary" onClick={() => window.location.href = '/Tours'}>
+              Переглянути інші тури
+            </Button>
           </CardBody>
         </Card>
       </div>

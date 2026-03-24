@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './UserProfile.scss';
 import {
   Card,
@@ -25,14 +25,16 @@ import {
   Phone, 
   Calendar, 
   Shield, 
-  Settings, 
   Edit,
-  Camera
+  Camera,
+  Trash2,
+  Upload
 } from 'lucide-react';
 
 export const UserProfile: React.FC = () => {
   const { user, logout, updateUser } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -41,6 +43,12 @@ export const UserProfile: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Стан для модального вікна фото
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
 
   if (!user) {
     return (
@@ -93,6 +101,98 @@ export const UserProfile: React.FC = () => {
     });
     setIsEditing(false);
     setError('');
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Перевірка типу файлу
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Будь ласка, виберіть файл зображення');
+      return;
+    }
+
+    // Перевірка розміру файлу (максимум 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError('Розмір файлу не повинен перевищувати 5MB');
+      return;
+    }
+
+    setAvatarError('');
+    setSelectedFile(file);
+
+    // Створення попереднього перегляду
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadAvatar = async () => {
+    if (!selectedFile) return;
+
+    setIsUploadingAvatar(true);
+    setAvatarError('');
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64String = reader.result as string;
+          
+          const { authService } = await import('../../services/AuthService');
+          const updatedUser = await authService.updateProfile({
+            name: user.name,
+            phone: user.phone,
+            avatar_url: base64String,
+          });
+          
+          updateUser(updatedUser);
+          handleCloseAvatarModal();
+        } catch (err) {
+          setAvatarError(err instanceof Error ? err.message : 'Помилка завантаження фото');
+        } finally {
+          setIsUploadingAvatar(false);
+        }
+      };
+      reader.readAsDataURL(selectedFile);
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : 'Помилка обробки файлу');
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setIsUploadingAvatar(true);
+    setAvatarError('');
+
+    try {
+      const { authService } = await import('../../services/AuthService');
+      const updatedUser = await authService.updateProfile({
+        name: user.name,
+        phone: user.phone,
+        avatar_url: '',
+      });
+      
+      updateUser(updatedUser);
+      handleCloseAvatarModal();
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : 'Помилка видалення фото');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleCloseAvatarModal = () => {
+    setAvatarPreview(null);
+    setSelectedFile(null);
+    setAvatarError('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    onClose();
   };
 
   const formatDate = (dateString: string | undefined) => {
@@ -295,26 +395,6 @@ export const UserProfile: React.FC = () => {
                       <span className="user-profile__actions-card-button-title">Обране</span>
                       <span className="user-profile__actions-card-button-subtitle">Збережені тури</span>
                     </Button>
-                    
-                    <Button
-                      variant="bordered"
-                      startContent={<Settings size={16} />}
-                      onClick={() => window.location.href = '/settings'}
-                      className="user-profile__actions-card-button"
-                    >
-                      <span className="user-profile__actions-card-button-title">Налаштування</span>
-                      <span className="user-profile__actions-card-button-subtitle">Персоналізація</span>
-                    </Button>
-                    
-                    <Button
-                      variant="bordered"
-                      startContent={<Shield size={16} />}
-                      className="user-profile__actions-card-button"
-                      disabled
-                    >
-                      <span className="user-profile__actions-card-button-title">Безпека</span>
-                      <span className="user-profile__actions-card-button-subtitle">Скоро</span>
-                    </Button>
                   </div>
                 </CardBody>
               </Card>
@@ -322,30 +402,74 @@ export const UserProfile: React.FC = () => {
           </div>
         </div>
       </div>
-      <Modal isOpen={isOpen} onClose={onClose} size="sm" className="user-profile__modal">
+      
+      {/* Модальне вікно для зміни фото профілю */}
+      <Modal 
+        isOpen={isOpen} 
+        onClose={handleCloseAvatarModal} 
+        size="md" 
+        className="user-profile__modal"
+      >
         <ModalContent className="modal-content">
           <ModalHeader className="modal-header">
-            <h3>Змінити фото профілю</h3>
+            <h3>Фото профілю</h3>
           </ModalHeader>
           <ModalBody className="modal-body">
             <div>
               <Avatar
-                src={user.avatar_url}
+                src={avatarPreview || user.avatar_url}
                 name={user.name}
                 size="lg"
                 className="modal-avatar w-32 h-32 text-large"
               />
+              
               <p className="modal-description">
-                Завантажте нове фото профілю
+                {avatarPreview 
+                  ? 'Попередній перегляд нового фото' 
+                  : 'Завантажте нове фото профілю'}
               </p>
-              <Input
+
+              {avatarError && (
+                <div className="user-profile__error mb-4">
+                  {avatarError}
+                </div>
+              )}
+
+              <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                variant="bordered"
-                disabled
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
               />
-              <p className="modal-note">
-                Функція завантаження фото буде доступна незабаром
+
+              <div className="flex flex-col gap-3">
+                <Button
+                  color="primary"
+                  variant="flat"
+                  startContent={<Upload size={18} />}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full"
+                >
+                  Вибрати нове фото
+                </Button>
+
+                {user.avatar_url && (
+                  <Button
+                    color="danger"
+                    variant="light"
+                    startContent={<Trash2 size={18} />}
+                    onClick={handleRemoveAvatar}
+                    isLoading={isUploadingAvatar}
+                    className="w-full"
+                  >
+                    Видалити поточне фото
+                  </Button>
+                )}
+              </div>
+
+              <p className="modal-note mt-3">
+                Підтримуються формати: JPG, PNG, GIF (до 5MB)
               </p>
             </div>
           </ModalBody>
@@ -353,22 +477,26 @@ export const UserProfile: React.FC = () => {
             <Button 
               color="default" 
               variant="light" 
-              onClick={onClose}
+              onClick={handleCloseAvatarModal}
               className="btn-close"
+              isDisabled={isUploadingAvatar}
             >
-              Закрити
+              Скасувати
             </Button>
             <Button 
               color="primary" 
-              disabled
+              onClick={handleUploadAvatar}
+              isDisabled={!selectedFile}
+              isLoading={isUploadingAvatar}
               className="btn-save"
             >
-              Зберегти
+              {isUploadingAvatar ? 'Збереження...' : 'Зберегти'}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-            <Footer/>
+      
+      <Footer/>
     </>
   );
 };

@@ -27,7 +27,8 @@ import {
   UserIcon, 
   Cog6ToothIcon, 
   ArrowRightOnRectangleIcon,
-  CalendarDaysIcon 
+  CalendarDaysIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
 export const Navbar = () => {
@@ -80,6 +81,32 @@ export const Navbar = () => {
     setIsMenuOpen(false);
   };
 
+  const getDropdownItems = () => {
+    const items = [
+      { key: 'profile', label: 'Мій профіль', desc: 'Переглянути та редагувати профіль', icon: UserIcon },
+      { key: 'bookings', label: 'Мої бронювання', desc: 'Переглянути мої бронювання', icon: CalendarDaysIcon },
+      { key: 'favorites', label: 'Обране', desc: 'Обрані тури та місця', icon: HeartIcon },
+    ];
+
+    if (user?.role === 'admin') {
+      items.push({ key: 'admin', label: 'Адмін-панель', desc: 'Панель адміністратора', icon: ShieldCheckIcon });
+    }
+
+    items.push({ key: 'settings', label: 'Налаштування', desc: 'Налаштування акаунту', icon: Cog6ToothIcon });
+    items.push({ key: 'logout', label: 'Вийти', desc: '', icon: ArrowRightOnRectangleIcon });
+
+    return items;
+  };
+
+  const handleDropdownAction = (key: any) => {
+    if (key === 'profile') handleNavigation('/profile');
+    else if (key === 'bookings') handleNavigation('/bookings');
+    else if (key === 'favorites') handleNavigation('/favorites');
+    else if (key === 'admin') handleNavigation('/admin');
+    else if (key === 'settings') handleNavigation('/settings');
+    else if (key === 'logout') handleLogout();
+  };
+
   const renderUserSection = () => {
     if (isLoading) {
       return (
@@ -123,54 +150,20 @@ export const Navbar = () => {
             aria-label="User Actions" 
             variant="flat" 
             className="w-56"
-            onAction={(key) => {
-              if (key === 'profile') handleNavigation('/profile');
-              else if (key === 'bookings') handleNavigation('/bookings');
-              else if (key === 'favorites') handleNavigation('/favorites');
-              else if (key === 'settings') handleNavigation('/settings');
-              else if (key === 'logout') handleLogout();
-            }}
+            items={getDropdownItems()}
+            onAction={handleDropdownAction}
           >
-            <DropdownItem
-              key="profile"
-              className="navbar-dropdown-item"
-              startContent={<UserIcon className="w-4 h-4" />}
-              description="Переглянути та редагувати профіль"
-            >
-              <span className="font-medium">Мій профіль</span>
-            </DropdownItem>
-            <DropdownItem
-              key="bookings"
-              className="navbar-dropdown-item"
-              startContent={<CalendarDaysIcon className="w-4 h-4" />}
-              description="Переглянути мої бронювання"
-            >
-              <span className="font-medium">Мої бронювання</span>
-            </DropdownItem>
-            <DropdownItem
-              key="favorites"
-              className="navbar-dropdown-item"
-              startContent={<HeartIcon className="w-4 h-4" />}
-              description="Обрані тури та місця"
-            >
-              <span className="font-medium">Обране</span>
-            </DropdownItem>
-            <DropdownItem
-              key="settings"
-              className="navbar-dropdown-item"
-              startContent={<Cog6ToothIcon className="w-4 h-4" />}
-              description="Налаштування акаунту"
-            >
-              <span className="font-medium">Налаштування</span>
-            </DropdownItem>
-            <DropdownItem
-              key="logout"
-              className="navbar-dropdown-item navbar-logout"
-              color="danger"
-              startContent={<ArrowRightOnRectangleIcon className="w-4 h-4" />}
-            >
-              <span className="font-medium">Вийти</span>
-            </DropdownItem>
+            {(item: any) => (
+              <DropdownItem
+                key={item.key}
+                className={`navbar-dropdown-item ${item.key === 'logout' ? 'navbar-logout' : ''}`}
+                color={item.key === 'logout' ? 'danger' : 'default'}
+                startContent={<item.icon className="w-4 h-4" />}
+                description={item.desc || undefined}
+              >
+                <span className="font-medium">{item.label}</span>
+              </DropdownItem>
+            )}
           </DropdownMenu>
         </Dropdown>
       );
@@ -251,6 +244,17 @@ export const Navbar = () => {
               Обране
             </div>
           </NavbarMenuItem>
+          {user?.role === 'admin' && (
+            <NavbarMenuItem>
+              <div 
+                className="navbar-mobile-link flex items-center gap-2 cursor-pointer"
+                onClick={() => handleNavigation('/admin')}
+              >
+                <ShieldCheckIcon className="w-5 h-5" />
+                Адмін-панель
+              </div>
+            </NavbarMenuItem>
+          )}
           <NavbarMenuItem>
             <div 
               className="navbar-mobile-link flex items-center gap-2 cursor-pointer"
