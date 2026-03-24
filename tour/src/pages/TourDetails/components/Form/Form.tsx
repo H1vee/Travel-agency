@@ -15,7 +15,7 @@ import {
   Avatar,
 } from "@heroui/react";
 import { addToast, ToastProvider } from "@heroui/react";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from "react-router-dom";
 import { useState, ChangeEvent, useEffect } from "react";
 import { useAuth } from '../../../../context/AuthContext';
@@ -56,6 +56,7 @@ export const Form = () => {
   const { id } = useParams();
   const { isAuthenticated, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState<FormDataType>({
     name: "",
@@ -90,15 +91,14 @@ export const Form = () => {
       return response.json();
     },
     enabled: !!id,
+    // Always fetch fresh data — don't use stale seat counts
+    staleTime: 0,
   });
 
-  // Use first available seat record — it contains tour_date_id needed for booking
   const seatData = tourSeats?.[0];
   const availableSeats = seatData?.available_seats ?? 0;
   const tourPrice = seatData?.price ?? 0;
-  // ✅ Fix: use tour_date_id from seats data, NOT the tour id from the URL
   const tourDateId = seatData?.tour_date_id ?? 0;
-
   const totalPrice = tourPrice * parseInt(formData.seats || "1", 10);
 
   const updateFormData = (field: keyof FormDataType, value: string) => {
@@ -203,7 +203,7 @@ export const Form = () => {
     setIsSubmitting(true);
 
     const bookingData = {
-      tour_date_id: tourDateId, // ✅ correct field from seats response
+      tour_date_id: tourDateId,
       customer_name: formData.name.trim(),
       customer_email: formData.email.trim(),
       customer_phone: formData.phone.trim(),
@@ -226,6 +226,11 @@ export const Form = () => {
         const errorData = await response.json();
         throw new Error(errorData.error || "Booking failed");
       }
+
+      // Invalidate seat data so InfoSide re-fetches updated available_seats immediately
+      await queryClient.invalidateQueries({ queryKey: ["tourSeats", id] });
+      // Also invalidate the tour detail query used by InfoSide for the progress bar
+      await queryClient.invalidateQueries({ queryKey: ["tourData", id] });
 
       addToast({
         title: "🎉 Бронювання підтверджено!",
@@ -356,11 +361,7 @@ export const Form = () => {
 
                     {isAuthenticated && user && (
                       <div className="booking-form__user-info">
-                        <Avatar
-                          src={getAvatarUrl(user)}
-                          name={user.name}
-                          size="sm"
-                        />
+                        <Avatar src={getAvatarUrl(user)} name={user.name} size="sm" />
                         <div className="booking-form__user-details">
                           <span
                             className="booking-form__user-name"

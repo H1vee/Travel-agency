@@ -175,6 +175,7 @@ func main() {
 	protected.PUT("/profile", tourusers.UpdateProfile(database.DB))
 	protected.GET("/user-bookings", bookings.GetUserBookings(database.DB))
 	protected.POST("/tour-reviews", tourreviews.CreateTourReview(database.DB))
+	protected.PUT("/bookings/:id/cancel", bookings.CancelBooking(database.DB)) 
 	protected.POST("/user-favorites", userfavorites.AddFavorite(database.DB))
 	protected.GET("/user-favorites", userfavorites.GetUserFavorites(database.DB))
 	protected.DELETE("/user-favorites/:tour_id", userfavorites.RemoveFavorite(database.DB))

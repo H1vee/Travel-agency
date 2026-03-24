@@ -40,8 +40,11 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		var availableSeats uint
-		err := db.Raw("SELECT available_seats FROM tour_seats WHERE tour_date_id = ?", req.TourDateID).
-			Scan(&availableSeats).Error
+		err := db.Raw(
+			"SELECT available_seats FROM tour_seats WHERE tour_date_id = ?",
+			req.TourDateID,
+		).Scan(&availableSeats).Error
+
 		log.Printf("🔹 Available seats for tour_date_id %d: %d\n", req.TourDateID, availableSeats)
 
 		if err != nil {

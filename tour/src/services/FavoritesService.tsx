@@ -7,6 +7,7 @@ export interface TourCard {
   id: number;
   title: string;
   price: number;
+  rating: number;
   imageSrc?: string;
 }
 

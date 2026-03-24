@@ -1,9 +1,9 @@
 import React from "react";
-import { 
-  Card, 
-  CardBody, 
-  CardHeader, 
-  Button, 
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
   Skeleton,
   Chip,
   Progress,
@@ -17,7 +17,7 @@ import {
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { 
+import {
   Calendar,
   Clock,
   Users,
@@ -43,15 +43,15 @@ interface TourData {
   location?: string;
   rating: number;
   status: string;
-  date_from: Date;
-  date_to: Date;
+  date_from: Date | undefined;
+  date_to: Date | undefined;
   duration: number;
   availableSeats: number;
   totalSeats: number;
   detailedDescription: string;
-  datefrom: string;
-  dateto: string;
-  price?: number;
+  datefrom: string | undefined;
+  dateto: string | undefined;
+  price: number;
   difficulty?: string;
   minAge?: number;
 }
@@ -71,16 +71,20 @@ export const InfoSide = () => {
       const fetched = await fetch(`http://127.0.0.1:1323/tours/${id}`);
       if (!fetched.ok) throw new Error("Tour not found");
       const rawTour: any = await fetched.json();
-      console.log("Raw tour data:", rawTour);
+
+      // Parse dates safely — they may be missing if tour has no dates configured
+      const parsedDateFrom = rawTour.datefrom ? new Date(Date.parse(rawTour.datefrom)) : undefined;
+      const parsedDateTo = rawTour.dateto ? new Date(Date.parse(rawTour.dateto)) : undefined;
+
       return {
         ...rawTour,
-        date_from: new Date(Date.parse(rawTour.datefrom)),
-        date_to: new Date(Date.parse(rawTour.dateto)),
+        date_from: parsedDateFrom,
+        date_to: parsedDateTo,
         country: rawTour.location || rawTour.country || "Україна",
         location: rawTour.location || "Не вказано",
         price: rawTour.price || 0,
         difficulty: rawTour.difficulty || "Середня",
-        minAge: rawTour.minAge || 18
+        minAge: rawTour.minAge || 18,
       } as TourData;
     },
     enabled: !!id,
@@ -92,10 +96,7 @@ export const InfoSide = () => {
       alert('Увійдіть у свій акаунт, щоб додавати тури в обране');
       return;
     }
-
-    if (tourId > 0) {
-      toggleFavorite(tourId);
-    }
+    if (tourId > 0) toggleFavorite(tourId);
   };
 
   if (isPending) {
@@ -138,7 +139,7 @@ export const InfoSide = () => {
     );
   }
 
-if (!data || !data.id || data.status === 'inactive') {
+  if (!data || !data.id || data.status === 'inactive') {
     return (
       <div className="info-side">
         <Card className="info-side__card not-found-state">
@@ -155,7 +156,9 @@ if (!data || !data.id || data.status === 'inactive') {
     );
   }
 
-  const seatsPercentage = Math.round(((data.totalSeats - data.availableSeats) / data.totalSeats) * 100);
+  const seatsPercentage = data.totalSeats > 0
+    ? Math.round(((data.totalSeats - data.availableSeats) / data.totalSeats) * 100)
+    : 0;
   const isAlmostFull = data.availableSeats <= 3 && data.availableSeats > 0;
   const isFull = data.availableSeats === 0;
 
@@ -181,7 +184,6 @@ if (!data || !data.id || data.status === 'inactive') {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
-
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
         stars.push(<Star key={i} size={16} fill="currentColor" className="star star--filled" />);
@@ -191,26 +193,23 @@ if (!data || !data.id || data.status === 'inactive') {
         stars.push(<Star key={i} size={16} className="star star--empty" />);
       }
     }
-
     return <div className="rating-stars">{stars}</div>;
   };
 
-  const formatDates = (dateFrom: Date, dateTo: Date) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
+  // Safe date formatting — returns placeholder if dates are missing
+  const formatDates = (dateFrom: Date | undefined, dateTo: Date | undefined): string => {
+    if (!dateFrom || !dateTo) return 'Дати уточнюються';
+    const options: Intl.DateTimeFormatOptions = {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
     };
     return `${dateFrom.toLocaleDateString("uk-UA", options)} - ${dateTo.toLocaleDateString("uk-UA", options)}`;
   };
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({
-        title: data.title,
-        text: `Подивіться на цей чудовий тур: ${data.title}`,
-        url: window.location.href,
-      });
+      navigator.share({ title: data.title, text: `Подивіться на цей тур: ${data.title}`, url: window.location.href });
     } else {
       navigator.clipboard.writeText(window.location.href);
     }
@@ -243,12 +242,7 @@ if (!data || !data.id || data.status === 'inactive') {
                 </Button>
               </Tooltip>
               <Tooltip content="Поділитися">
-                <Button
-                  isIconOnly
-                  variant="light"
-                  size="sm"
-                  onClick={handleShare}
-                >
+                <Button isIconOnly variant="light" size="sm" onClick={handleShare}>
                   <Share2 size={18} />
                 </Button>
               </Tooltip>
@@ -257,10 +251,9 @@ if (!data || !data.id || data.status === 'inactive') {
         </CardHeader>
 
         <CardBody className="info-side__body">
+          {/* Rating */}
           <div className="info-item">
-            <div className="info-item__icon">
-              <Star size={20} />
-            </div>
+            <div className="info-item__icon"><Star size={20} /></div>
             <div className="info-item__content">
               <div className="info-label">Рейтинг</div>
               <div className="info-value rating-value">
@@ -272,16 +265,15 @@ if (!data || !data.id || data.status === 'inactive') {
 
           <Divider className="info-divider" />
 
+          {/* Status */}
           <div className="info-item">
-            <div className="info-item__icon">
-              <statusConfig.icon size={20} />
-            </div>
+            <div className="info-item__icon"><statusConfig.icon size={20} /></div>
             <div className="info-item__content">
               <div className="info-label">Статус</div>
               <div className="info-value">
-                <Chip 
-                  color={statusConfig.color} 
-                  variant="flat" 
+                <Chip
+                  color={statusConfig.color}
+                  variant="flat"
                   size="sm"
                   startContent={<statusConfig.icon size={14} />}
                 >
@@ -293,10 +285,9 @@ if (!data || !data.id || data.status === 'inactive') {
 
           <Divider className="info-divider" />
 
+          {/* Dates */}
           <div className="info-item">
-            <div className="info-item__icon">
-              <Calendar size={20} />
-            </div>
+            <div className="info-item__icon"><Calendar size={20} /></div>
             <div className="info-item__content">
               <div className="info-label">Дати подорожі</div>
               <div className="info-value dates-value">
@@ -307,24 +298,25 @@ if (!data || !data.id || data.status === 'inactive') {
 
           <Divider className="info-divider" />
 
+          {/* Duration */}
           <div className="info-item">
-            <div className="info-item__icon">
-              <Clock size={20} />
-            </div>
+            <div className="info-item__icon"><Clock size={20} /></div>
             <div className="info-item__content">
               <div className="info-label">Тривалість</div>
               <div className="info-value">
-                <span className="duration-value">{data.duration} днів</span>
+                {data.duration > 0
+                  ? <span className="duration-value">{data.duration} днів</span>
+                  : <span style={{ color: '#94a3b8' }}>Уточнюється</span>
+                }
               </div>
             </div>
           </div>
 
           <Divider className="info-divider" />
 
+          {/* Seats */}
           <div className="info-item">
-            <div className="info-item__icon">
-              <Users size={20} />
-            </div>
+            <div className="info-item__icon"><Users size={20} /></div>
             <div className="info-item__content">
               <div className="info-label">Місця</div>
               <div className="info-value seats-value">
@@ -335,18 +327,14 @@ if (!data || !data.id || data.status === 'inactive') {
                     <span className="total">{data.totalSeats}</span>
                   </div>
                   {isAlmostFull && (
-                    <Chip color="warning" size="sm" variant="flat">
-                      Залишилось мало місць!
-                    </Chip>
+                    <Chip color="warning" size="sm" variant="flat">Залишилось мало місць!</Chip>
                   )}
                   {isFull && (
-                    <Chip color="danger" size="sm" variant="flat">
-                      Місць немає
-                    </Chip>
+                    <Chip color="danger" size="sm" variant="flat">Місць немає</Chip>
                   )}
                 </div>
-                <Progress 
-                  value={seatsPercentage} 
+                <Progress
+                  value={seatsPercentage}
                   color={isFull ? "danger" : isAlmostFull ? "warning" : "success"}
                   size="sm"
                   className="seats-progress"
@@ -357,7 +345,8 @@ if (!data || !data.id || data.status === 'inactive') {
 
           <Divider className="info-divider" />
 
-          {data.price && (
+          {/* Price */}
+          {data.price > 0 && (
             <>
               <div className="info-item">
                 <div className="info-item__content price-content">
@@ -371,12 +360,13 @@ if (!data || !data.id || data.status === 'inactive') {
             </>
           )}
 
+          {/* Description */}
           <div className="description-section">
             <div className="description-header">
               <h4>Опис туру</h4>
-              <Button 
-                size="sm" 
-                variant="light" 
+              <Button
+                size="sm"
+                variant="light"
                 color="primary"
                 onClick={onOpen}
                 endContent={<Info size={14} />}
@@ -389,12 +379,14 @@ if (!data || !data.id || data.status === 'inactive') {
             </div>
           </div>
 
+          {/* Booking form */}
           <div className="form-section">
             <Form />
           </div>
         </CardBody>
       </Card>
 
+      {/* Full description modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
@@ -405,7 +397,6 @@ if (!data || !data.id || data.status === 'inactive') {
             <div className="modal-content">
               <h4>Повний опис</h4>
               <p>{data.detailedDescription}</p>
-              
               <div className="additional-info">
                 <div className="info-grid">
                   {data.difficulty && (
