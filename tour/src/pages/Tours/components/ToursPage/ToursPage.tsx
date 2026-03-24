@@ -1,40 +1,47 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Cards } from "../Cards/Cards";
-import { SearchBar } from "../SearchBar/SearchBar";
-import { SideBar } from "../SideBar/SideBar";
 import { useSearchTours } from "../../../../hooks/useSearchTours";
-import { Filters, SortOption, ViewMode } from "../../../../types/tours";
-
-import { 
-  Pagination, 
-  Select, 
-  SelectItem, 
-  Button, 
+import { Filters, SortOption, REGIONS, DURATIONS, RATINGS } from "../../../../types/tours";
+import {
+  Pagination,
+  Select,
+  SelectItem,
+  Button,
   Chip,
   Breadcrumbs,
   BreadcrumbItem,
-  Spinner
+  Spinner,
+  Input,
+  Checkbox,
+  Slider,
 } from "@heroui/react";
-import { 
-  Grid, 
-  List, 
-  Filter,
+import {
+  Search,
+  X,
+  SlidersHorizontal,
+  ChevronDown,
+  Star,
+  RotateCcw,
   ArrowUpDown,
-  Users,
-  RefreshCw
 } from "lucide-react";
 import "./ToursPage.scss";
 
 export const ToursPage: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortBy, setSortByLocal] = useState<SortOption>(() => {
-    const saved = localStorage.getItem('tours-sort-by') as SortOption;
-    return saved || 'price_asc';
+    return (localStorage.getItem('tours-sort-by') as SortOption) || 'price_asc';
   });
   const [itemsPerPage, setItemsPerPageLocal] = useState<number>(() => {
     const saved = localStorage.getItem('tours-items-per-page');
     return saved ? parseInt(saved) : 12;
   });
+
+  // Filter panel state
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [localFilters, setLocalFilters] = useState<Filters>({});
+  const [priceInputs, setPriceInputs] = useState<[number, number]>([0, 100000]);
+
+  // Search input (local — only applied on Enter or button click)
+  const [inputValue, setInputValue] = useState('');
 
   const {
     currentTours,
@@ -56,14 +63,20 @@ export const ToursPage: React.FC = () => {
     setItemsPerPage,
   } = useSearchTours();
 
+  // Sync price range from data
   useEffect(() => {
-    try {
-      const savedViewMode = localStorage.getItem('tours-view-mode') as ViewMode;
-      if (savedViewMode && ['grid', 'list'].includes(savedViewMode)) {
-        setViewMode(savedViewMode);
-      }
-    } catch (error) {
-      console.warn('Failed to load user preferences:', error);
+    setPriceInputs([priceRange.min, priceRange.max]);
+    setLocalFilters(prev => ({ ...prev }));
+  }, [priceRange.min, priceRange.max]);
+
+  // Sync external filters to local
+  useEffect(() => {
+    setLocalFilters(filters);
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+      setPriceInputs([
+        filters.minPrice ?? priceRange.min,
+        filters.maxPrice ?? priceRange.max,
+      ]);
     }
   }, []);
 
@@ -72,298 +85,349 @@ export const ToursPage: React.FC = () => {
     setItemsPerPage(itemsPerPage);
   }, []);
 
-  const savePreference = useCallback((key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      console.warn(`Failed to save preference ${key}:`, error);
+  const handleSearch = useCallback(() => {
+    if (inputValue.trim()) {
+      updateSearch(inputValue.trim(), localFilters);
     }
-  }, []);
+  }, [inputValue, localFilters, updateSearch]);
 
-  const handleSearch = useCallback((query: string) => {
-    updateSearch(query, filters);
-  }, [filters, updateSearch]);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch();
+  };
 
-  const handleSearchClear = useCallback(() => {
+  const handleClear = () => {
+    setInputValue('');
     clearSearch();
-  }, [clearSearch]);
+    setLocalFilters({});
+    setPriceInputs([priceRange.min, priceRange.max]);
+  };
 
-  const handleFiltersChange = useCallback((newFilters: Filters) => {
-    updateSearch(searchQuery, newFilters);
-  }, [searchQuery, updateSearch]);
+  const applyFilters = useCallback(() => {
+    const f: Filters = { ...localFilters };
+    if (priceInputs[0] > priceRange.min) f.minPrice = priceInputs[0];
+    if (priceInputs[1] < priceRange.max) f.maxPrice = priceInputs[1];
+    updateSearch(inputValue.trim() || searchQuery, f);
+    setFiltersOpen(false);
+  }, [localFilters, priceInputs, priceRange, inputValue, searchQuery, updateSearch]);
 
-  const handleFiltersReset = useCallback(() => {
+  const resetFilters = () => {
+    setLocalFilters({});
+    setPriceInputs([priceRange.min, priceRange.max]);
     clearSearch();
-  }, [clearSearch]);
+    setInputValue('');
+    setFiltersOpen(false);
+  };
+
+  const toggleArrayFilter = (key: 'duration' | 'rating' | 'region', value: string) => {
+    setLocalFilters(prev => {
+      const current = prev[key] || [];
+      const updated = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      return { ...prev, [key]: updated.length ? updated : undefined };
+    });
+  };
 
   const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (filters.minPrice !== undefined && filters.minPrice > 0) count++;
-    if (filters.maxPrice !== undefined && filters.maxPrice < priceRange.max) count++;
-    if (filters.duration && filters.duration.length > 0) count++;
-    if (filters.rating && filters.rating.length > 0) count++;
-    if (filters.region && filters.region.length > 0) count++;
-    return count;
-  }, [filters, priceRange.max]);
-
-  const clearAllFilters = useCallback(() => {
-    clearSearch();
-  }, [clearSearch]);
-
-  const popularSearches = ["Єгипет", "Дубай", "Париж", "Японія", "Італія"];
-
-  const handlePageChange = useCallback((page: number) => {
-    setPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPage]);
-
-  const handleSortChange = useCallback((keys: any) => {
-    const newSort = Array.from(keys)[0] as SortOption;
-    setSortByLocal(newSort);
-    setSortBy(newSort);
-    savePreference('tours-sort-by', newSort);
-  }, [setSortBy, savePreference]);
-
-  const handleItemsPerPageChange = useCallback((keys: any) => {
-    const newCount = Number(Array.from(keys)[0]);
-    setItemsPerPageLocal(newCount);
-    setItemsPerPage(newCount);
-    savePreference('tours-items-per-page', newCount.toString());
-  }, [setItemsPerPage, savePreference]);
-
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    setViewMode(mode);
-    savePreference('tours-view-mode', mode);
-  }, [savePreference]);
+    let n = 0;
+    if (searchQuery) n++;
+    if (filters.minPrice || filters.maxPrice) n++;
+    if (filters.duration?.length) n++;
+    if (filters.rating?.length) n++;
+    if (filters.region?.length) n++;
+    return n;
+  }, [filters, searchQuery]);
 
   const isLoading = isLoadingAllTours || (isSearching && currentTours.length === 0);
 
+  const formatPrice = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}К` : `${v}`;
+
   return (
-    <div className="tours-page">
-      <div className="tours-page__wrapper">
-        <div className="tours-page__breadcrumbs">
-          <Breadcrumbs>
-            <BreadcrumbItem href="/">Головна</BreadcrumbItem>
-            <BreadcrumbItem>Тури</BreadcrumbItem>
-          </Breadcrumbs>
-        </div>
+    <div className="tp">
+      {/* ── Breadcrumbs ── */}
+      <div className="tp__breadcrumbs">
+        <Breadcrumbs>
+          <BreadcrumbItem href="/">Головна</BreadcrumbItem>
+          <BreadcrumbItem>Тури</BreadcrumbItem>
+        </Breadcrumbs>
+      </div>
 
-        <div className="tours-page__header">
-          <div className="page-title-section">
-            <h1 className="page-title">
-              Знайдіть свій ідеальний тур
-              {hasActiveSearch && searchQuery && (
-                <span className="search-highlight"> для "{searchQuery}"</span>
-              )}
-            </h1>
-            <p className="page-subtitle">
-              Відкрийте світ незабутніх подорожей разом з нами
-            </p>
-          </div>
-        </div>
+      {/* ── Hero search bar ── */}
+      <div className="tp__hero">
+        <h1 className="tp__hero-title">Знайдіть свій тур</h1>
 
-        <div className="tours-page__search" style={{ position: 'relative', zIndex: 10 }}>
-          <SearchBar 
-            searchQuery={searchQuery} 
-            setSearchQuery={handleSearch} 
-            onSearchClear={handleSearchClear}
-            isLoading={isSearching}
-            popularSearches={popularSearches}
-          />
-        </div>
-
-        <div className="tours-page__content">
-          <div className="tours-page__sidebar">
-            <SideBar 
-              onApply={handleFiltersChange} 
-              onReset={handleFiltersReset}
-              isLoading={false}
-              currentFilters={filters}
-              priceRange={priceRange}
+        <div className="tp__search-row">
+          {/* Text search */}
+          <div className="tp__search-input-wrap">
+            <Search size={18} className="tp__search-icon" />
+            <input
+              className="tp__search-input"
+              placeholder="Назва туру, країна, місто..."
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
+            {inputValue && (
+              <button className="tp__search-clear" onClick={() => setInputValue('')}>
+                <X size={16} />
+              </button>
+            )}
           </div>
 
-          <div className="tours-page__main" style={{ position: 'relative', zIndex: 1 }}>
-            {!isLoading && !error && (
-              <div className="results-header">
-                <div className="results-info">
-                  <div className="results-count">
-                    <span className="count-number">{totalResults || currentTours.length}</span>
-                    <span className="count-text">
-                      {hasActiveSearch ? 'результатів знайдено' : 'турів доступно'}
-                    </span>
-                  </div>
-                  
-                  {(activeFiltersCount > 0 || searchQuery) && (
-                    <div className="active-filters">
-                      <div className="filters-header">
-                        <Filter size={14} />
-                        <span>Активні фільтри:</span>
-                      </div>
-                      <div className="filters-chips">
-                        {searchQuery && (
-                          <Chip
-                            size="sm"
-                            variant="flat"
-                            color="primary"
-                            onClose={() => {
-                              handleSearchClear();
-                            }}
-                          >
-                            Пошук: "{searchQuery}"
-                          </Chip>
-                        )}
-                        {activeFiltersCount > 0 && (
-                          <Chip
-                            size="sm"
-                            variant="flat"
-                            color="secondary"
-                            onClose={clearAllFilters}
-                          >
-                            {activeFiltersCount} фільтрів
-                          </Chip>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="results-controls">
-                  <Select
-                    size="sm"
-                    label="Сортування"
-                    selectedKeys={new Set([sortBy])}
-                    onSelectionChange={handleSortChange}
-                    className="sort-select"
-                    variant="bordered"
-                    startContent={<ArrowUpDown size={14} />}
-                  >
-                    <SelectItem key="price_asc" startContent="₴↑">
-                      Ціна: за зростанням
-                    </SelectItem>
-                    <SelectItem key="price_desc" startContent="₴↓">
-                      Ціна: за спаданням
-                    </SelectItem>
-                  </Select>
-
-                  <Select
-                    size="sm"
-                    label="На сторінці"
-                    selectedKeys={new Set([itemsPerPage.toString()])}
-                    onSelectionChange={handleItemsPerPageChange}
-                    className="items-select"
-                    variant="bordered"
-                    startContent={<Users size={14} />}
-                  >
-                    <SelectItem key="12">12</SelectItem>
-                    <SelectItem key="24">24</SelectItem>
-                    <SelectItem key="48">48</SelectItem>
-                  </Select>
-
-                  <div className="view-mode-toggle">
-                    <Button
-                      size="sm"
-                      variant={viewMode === 'grid' ? 'solid' : 'bordered'}
-                      color={viewMode === 'grid' ? 'primary' : 'default'}
-                      isIconOnly
-                      onClick={() => handleViewModeChange('grid')}
-                      aria-label="Grid view"
-                    >
-                      <Grid size={16} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={viewMode === 'list' ? 'solid' : 'bordered'}
-                      color={viewMode === 'list' ? 'primary' : 'default'}
-                      isIconOnly
-                      onClick={() => handleViewModeChange('list')}
-                      aria-label="List view"
-                    >
-                      <List size={16} />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+          {/* Filters toggle */}
+          <button
+            className={`tp__filter-btn ${filtersOpen ? 'tp__filter-btn--open' : ''} ${activeFiltersCount > 0 ? 'tp__filter-btn--active' : ''}`}
+            onClick={() => setFiltersOpen(v => !v)}
+          >
+            <SlidersHorizontal size={16} />
+            <span>Фільтри</span>
+            {activeFiltersCount > 0 && (
+              <span className="tp__filter-badge">{activeFiltersCount}</span>
             )}
+            <ChevronDown size={14} className={`tp__filter-chevron ${filtersOpen ? 'tp__filter-chevron--up' : ''}`} />
+          </button>
 
-            {isLoading && (
-              <div className="loading-state">
-                <Spinner size="lg" color="primary" />
-                <h3>
-                  {isLoadingAllTours ? "Завантажуємо тури..." : "Шукаємо тури..."}
-                </h3>
-                <p>Будь ласка, зачекайте</p>
-              </div>
-            )}
+          {/* Search button */}
+          <button className="tp__search-btn" onClick={handleSearch}>
+            <Search size={16} />
+            <span>Шукати</span>
+          </button>
+        </div>
 
-            {error && !isLoading && (
-              <div className="error-state">
-                <h3>Помилка завантаження</h3>
-                <p>Не вдалося завантажити тури. Спробуйте ще раз.</p>
-                <Button 
-                  color="primary" 
-                  onClick={() => refetchAllTours()}
-                  startContent={<RefreshCw size={16} />}
-                >
-                  Оновити
-                </Button>
-              </div>
-            )}
+        {/* ── Inline filter panel ── */}
+        {filtersOpen && (
+          <div className="tp__filter-panel">
+            <div className="tp__filter-grid">
 
-            {!isLoading && !error && currentTours.length === 0 && hasActiveSearch && (
-              <div className="no-results-state">
-                <div className="error-state">
-                  <div className="error-state__content">
-                    <div className="error-state__icon">🔍</div>
-                    <h3 className="error-state__title">Нічого не знайдено</h3>
-                    <p className="error-state__description">
-                      Спробуйте змінити параметри пошуку або фільтри
-                    </p>
-                    <Button 
-                      color="primary" 
-                      variant="bordered"
-                      onClick={clearAllFilters}
-                      className="error-state__button"
-                    >
-                      Скинути фільтри
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!isLoading && !error && currentTours.length > 0 && (
-              <div className={`tours-content tours-content--${viewMode}`}>
-                <Cards 
-                  tours={currentTours} 
-                  loading={false}
-                  onRetry={refetchAllTours}
-                />
-              </div>
-            )}
-
-            {!isLoading && !error && totalPages && totalPages > 1 && (
-              <div className="tours-page__pagination">
-                <div className="pagination-info">
-                  <span>
-                    Показано {currentTours.length} з {totalResults || 0} турів 
-                    (сторінка {currentPage} з {totalPages})
+              {/* Price */}
+              <div className="tp__filter-section">
+                <div className="tp__filter-label">
+                  Ціна
+                  <span className="tp__filter-range">
+                    ₴{formatPrice(priceInputs[0])} – ₴{formatPrice(priceInputs[1])}
                   </span>
                 </div>
-                <Pagination
-                  page={currentPage}
-                  total={totalPages}
-                  onChange={handlePageChange}
-                  showControls
-                  showShadow
-                  size="lg"
-                  className="pagination-component"
+                <Slider
+                  minValue={priceRange.min}
+                  maxValue={priceRange.max}
+                  step={Math.max(500, Math.floor((priceRange.max - priceRange.min) / 100))}
+                  value={priceInputs}
+                  onChange={v => setPriceInputs(v as [number, number])}
+                  size="sm"
                   color="primary"
+                  className="tp__slider"
                 />
+                <div className="tp__price-inputs">
+                  <Input
+                    size="sm"
+                    type="number"
+                    variant="bordered"
+                    label="Від"
+                    value={priceInputs[0].toString()}
+                    onChange={e => setPriceInputs([Number(e.target.value), priceInputs[1]])}
+                    startContent={<span style={{ fontSize: 12, color: '#64748b' }}>₴</span>}
+                  />
+                  <Input
+                    size="sm"
+                    type="number"
+                    variant="bordered"
+                    label="До"
+                    value={priceInputs[1].toString()}
+                    onChange={e => setPriceInputs([priceInputs[0], Number(e.target.value)])}
+                    startContent={<span style={{ fontSize: 12, color: '#64748b' }}>₴</span>}
+                  />
+                </div>
               </div>
-            )}
+
+              {/* Region */}
+              <div className="tp__filter-section">
+                <div className="tp__filter-label">Регіон</div>
+                <div className="tp__check-list">
+                  {REGIONS.map(r => (
+                    <label key={r.id} className="tp__check-item">
+                      <input
+                        type="checkbox"
+                        checked={(localFilters.region || []).includes(r.id)}
+                        onChange={() => toggleArrayFilter('region', r.id)}
+                      />
+                      <span>{r.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div className="tp__filter-section">
+                <div className="tp__filter-label">Тривалість</div>
+                <div className="tp__check-list">
+                  {DURATIONS.map(d => (
+                    <label key={d.id} className="tp__check-item">
+                      <input
+                        type="checkbox"
+                        checked={(localFilters.duration || []).includes(d.id)}
+                        onChange={() => toggleArrayFilter('duration', d.id)}
+                      />
+                      <span>{d.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rating */}
+              <div className="tp__filter-section">
+                <div className="tp__filter-label">Рейтинг</div>
+                <div className="tp__check-list">
+                  {RATINGS.map(r => (
+                    <label key={r.id} className="tp__check-item">
+                      <input
+                        type="checkbox"
+                        checked={(localFilters.rating || []).includes(r.id)}
+                        onChange={() => toggleArrayFilter('rating', r.id)}
+                      />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {Array.from({ length: r.stars }).map((_, i) => (
+                          <Star key={i} size={12} fill="#fbbf24" color="#fbbf24" />
+                        ))}
+                        <span style={{ color: '#64748b', fontSize: 12 }}>{r.label}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="tp__filter-actions">
+              <button className="tp__filter-reset" onClick={resetFilters}>
+                <RotateCcw size={14} />
+                Скинути
+              </button>
+              <button className="tp__filter-apply" onClick={applyFilters}>
+                Застосувати фільтри
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Active filter chips */}
+        {activeFiltersCount > 0 && (
+          <div className="tp__active-chips">
+            {searchQuery && (
+              <Chip size="sm" variant="flat" color="primary" onClose={handleClear}>
+                "{searchQuery}"
+              </Chip>
+            )}
+            {(filters.minPrice || filters.maxPrice) && (
+              <Chip size="sm" variant="flat" color="secondary"
+                onClose={() => { setLocalFilters(p => ({ ...p, minPrice: undefined, maxPrice: undefined })); applyFilters(); }}>
+                ₴{formatPrice(filters.minPrice ?? 0)} – ₴{formatPrice(filters.maxPrice ?? priceRange.max)}
+              </Chip>
+            )}
+            {(filters.region || []).map(id => {
+              const r = REGIONS.find(x => x.id === id);
+              return r ? (
+                <Chip key={id} size="sm" variant="flat" color="default"
+                  onClose={() => { toggleArrayFilter('region', id); applyFilters(); }}>
+                  {r.name}
+                </Chip>
+              ) : null;
+            })}
+            {(filters.duration || []).map(id => {
+              const d = DURATIONS.find(x => x.id === id);
+              return d ? (
+                <Chip key={id} size="sm" variant="flat" color="default"
+                  onClose={() => { toggleArrayFilter('duration', id); applyFilters(); }}>
+                  {d.name}
+                </Chip>
+              ) : null;
+            })}
+            {(filters.rating || []).map(id => (
+              <Chip key={id} size="sm" variant="flat" color="warning"
+                onClose={() => { toggleArrayFilter('rating', id); applyFilters(); }}>
+                {id}+ ★
+              </Chip>
+            ))}
+            <button className="tp__clear-all" onClick={handleClear}>
+              Очистити все
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Results ── */}
+      <div className="tp__results">
+        {/* Results header */}
+        {!isLoading && !error && (
+          <div className="tp__results-header">
+            <span className="tp__results-count">
+              <strong>{totalResults ?? currentTours.length}</strong>
+              {' '}{hasActiveSearch ? 'результатів' : 'турів'}
+            </span>
+
+            <div className="tp__results-controls">
+              <Select
+                size="sm"
+                variant="bordered"
+                label="Сортування"
+                selectedKeys={new Set([sortBy])}
+                onSelectionChange={keys => {
+                  const v = Array.from(keys)[0] as SortOption;
+                  setSortByLocal(v);
+                  setSortBy(v);
+                  localStorage.setItem('tours-sort-by', v);
+                }}
+                startContent={<ArrowUpDown size={14} />}
+                className="tp__sort-select"
+              >
+                <SelectItem key="price_asc">Ціна: від низької</SelectItem>
+                <SelectItem key="price_desc">Ціна: від високої</SelectItem>
+                <SelectItem key="rating_desc">Рейтинг</SelectItem>
+                <SelectItem key="newest">Новинки</SelectItem>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {/* States */}
+        {isLoading && (
+          <div className="tp__state">
+            <Spinner size="lg" color="primary" />
+            <p>{isLoadingAllTours ? 'Завантаження турів...' : 'Пошук...'}</p>
+          </div>
+        )}
+
+        {error && !isLoading && (
+          <div className="tp__state tp__state--error">
+            <p>Не вдалося завантажити тури</p>
+            <Button color="primary" size="sm" onClick={refetchAllTours}>Оновити</Button>
+          </div>
+        )}
+
+        {!isLoading && !error && currentTours.length === 0 && hasActiveSearch && (
+          <div className="tp__state">
+            <div className="tp__empty-icon">🔍</div>
+            <p>Нічого не знайдено</p>
+            <span>Спробуйте змінити фільтри або пошуковий запит</span>
+            <Button color="primary" variant="flat" size="sm" onClick={handleClear}>
+              Скинути пошук
+            </Button>
+          </div>
+        )}
+
+        {!isLoading && !error && currentTours.length > 0 && (
+          <Cards tours={currentTours} loading={false} onRetry={refetchAllTours} />
+        )}
+
+        {!isLoading && !error && totalPages && totalPages > 1 && (
+          <div className="tp__pagination">
+            <Pagination
+              page={currentPage}
+              total={totalPages}
+              onChange={p => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              showControls
+              color="primary"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
