@@ -4,7 +4,7 @@ import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Input, Textarea, Select, SelectItem, Divider,
-  useDisclosure, Image,
+  useDisclosure,
 } from '@heroui/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, AdminTour } from '../../services/AdminService';
@@ -84,7 +84,7 @@ const ImageUpload: React.FC<{
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>{label}</span>
 
-{value && (
+      {value && (
         <div style={{ position: 'relative', width: 'fit-content', display: 'inline-block' }}>
           <img
             src={`${API_BASE_URL}${value}`}
@@ -325,7 +325,7 @@ export const AdminTours: React.FC = () => {
   const addGalleryImage = async (file: File) => {
     try {
       const url = await uploadImage(file, 'gallery');
-      setGalleryImages([...galleryImages, url]);
+      setGalleryImages((prev) => [...prev, url]);
     } catch (err) {
       console.error('Gallery upload failed:', err);
     }
@@ -509,8 +509,11 @@ export const AdminTours: React.FC = () => {
                     />
                     <Select
                       label="Статус"
-                      defaultSelectedKeys={[formData.status_id.toString()]}
-                      onSelectionChange={(keys) => setFormData({ ...formData, status_id: Number(Array.from(keys)[0]) })}
+                      selectedKeys={[formData.status_id.toString()]}
+                      onSelectionChange={(keys) => {
+                        const val = Array.from(keys)[0];
+                        if (val) setFormData({ ...formData, status_id: Number(val) });
+                      }}
                       variant="bordered"
                     >
                       {STATUSES.map((s) => (
@@ -546,26 +549,32 @@ export const AdminTours: React.FC = () => {
                           )}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                        <Select
-                          label="Звідки"
-                          placeholder="Оберіть місто"
-                          defaultSelectedKeys={td.from_location_id ? [td.from_location_id.toString()] : []}
-                          onSelectionChange={(keys) => updateDate(index, 'from_location_id', Number(Array.from(keys)[0]))}
-                          variant="bordered"
-                          size="sm"
-                        >
+                          <Select
+                            label="Звідки"
+                            placeholder="Оберіть місто"
+                            selectedKeys={td.from_location_id ? [td.from_location_id.toString()] : []}
+                            onSelectionChange={(keys) => {
+                              const val = Array.from(keys)[0];
+                              if (val) updateDate(index, 'from_location_id', Number(val));
+                            }}
+                            variant="bordered"
+                            size="sm"
+                          >
                             {locations.map((loc) => (
                               <SelectItem key={loc.id.toString()}>{loc.name}, {loc.country}</SelectItem>
                             ))}
                           </Select>
-                        <Select
-                          label="Куди"
-                          placeholder="Оберіть місто"
-                          defaultSelectedKeys={td.to_location_id ? [td.to_location_id.toString()] : []}
-                          onSelectionChange={(keys) => updateDate(index, 'to_location_id', Number(Array.from(keys)[0]))}
-                          variant="bordered"
-                          size="sm"
-                        >
+                          <Select
+                            label="Куди"
+                            placeholder="Оберіть місто"
+                            selectedKeys={td.to_location_id ? [td.to_location_id.toString()] : []}
+                            onSelectionChange={(keys) => {
+                              const val = Array.from(keys)[0];
+                              if (val) updateDate(index, 'to_location_id', Number(val));
+                            }}
+                            variant="bordered"
+                            size="sm"
+                          >
                             {locations.map((loc) => (
                               <SelectItem key={loc.id.toString()}>{loc.name}, {loc.country}</SelectItem>
                             ))}
@@ -619,7 +628,7 @@ export const AdminTours: React.FC = () => {
 
                   {galleryImages.length > 0 ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-{galleryImages.map((img, index) => (
+                      {galleryImages.map((img, index) => (
                         <div key={index} style={{ position: 'relative', display: 'inline-block' }}>
                           <img
                             src={`${API_BASE_URL}${img}`}

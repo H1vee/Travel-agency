@@ -138,7 +138,7 @@ export const InfoSide = () => {
     );
   }
 
-if (!data) {
+if (!data || !data.id || data.status === 'inactive') {
     return (
       <div className="info-side">
         <Card className="info-side__card not-found-state">
