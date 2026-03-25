@@ -17,6 +17,7 @@ import (
 	tourusers "tour-server/tourusers/api"
 	userfavorites "tour-server/userfavorites/api"
 	tourcomments "tour-server/tourcomments/api"
+	liqpayAPI "tour-server/liqpay/api"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -166,6 +167,14 @@ func main() {
 	optionalAuth.GET("/tour-comments/:id", tourcomments.GetTourComments(database.DB))
 	optionalAuth.POST("/tour-comments", tourcomments.CreateComment(database.DB))
 	optionalAuth.POST("/tour-comments/:id/like", tourcomments.ToggleLike(database.DB))
+
+	// ========================================
+	// LIQPAY
+	// ========================================
+	// Callback is public — LiqPay server calls it directly (no auth)
+	e.POST("/liqpay/callback", liqpayAPI.LiqPayCallback(database.DB))
+	// Create payment requires the booking to exist — optional auth (guests too)
+	optionalAuth.POST("/liqpay/create-payment", liqpayAPI.CreatePayment(database.DB))
 
 	// ========================================
 	// PROTECTED ENDPOINTS (auth required)

@@ -1,18 +1,6 @@
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Button,
-  Input,
-  Chip,
-  Card,
-  CardBody,
-  Divider,
-  Spinner,
-  Avatar,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  useDisclosure, Input, Chip, Divider, Spinner, Avatar,
 } from "@heroui/react";
 import { addToast, ToastProvider } from "@heroui/react";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,29 +8,11 @@ import { useParams } from "react-router-dom";
 import { useState, ChangeEvent, useEffect } from "react";
 import { useAuth } from '../../../../context/AuthContext';
 import {
-  User,
-  Mail,
-  Phone,
-  Users,
-  CreditCard,
-  CheckCircle,
-  AlertCircle,
+  User, Mail, Phone, CreditCard, CheckCircle, AlertCircle,
+  Minus, Plus, ShieldCheck,
 } from 'lucide-react';
+import { openLiqPayWidget } from '../../../../hooks/useLiqPay';
 import "./Form.scss";
-
-interface FormDataType {
-  name: string;
-  email: string;
-  phone: string;
-  seats: string;
-}
-
-interface FormErrorsType {
-  name: string;
-  email: string;
-  phone: string;
-  seats: string;
-}
 
 interface TourSeatData {
   id: number;
@@ -51,487 +21,337 @@ interface TourSeatData {
   price: number;
 }
 
+const API = 'http://127.0.0.1:1323';
+
+const formatPrice = (p: number) =>
+  new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH', minimumFractionDigits: 0 }).format(p);
+
 export const Form = () => {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { id } = useParams();
   const { isAuthenticated, user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
 
-  const [formData, setFormData] = useState<FormDataType>({
-    name: "",
-    email: "",
-    phone: "+380",
-    seats: "1",
-  });
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('+380');
+  const [seats, setSeats] = useState(1);
+  const [errors, setErrors] = useState({ name: '', email: '', phone: '' });
 
-  const [formErrors, setFormErrors] = useState<FormErrorsType>({
-    name: "",
-    email: "",
-    phone: "",
-    seats: "",
-  });
+  // Step: 'form' | 'submitting' | 'paying' | 'paid'
+  const [step, setStep] = useState<'form' | 'submitting' | 'paying' | 'paid'>('form');
 
-  useEffect(() => {
-    if (isAuthenticated && user && isOpen) {
-      setFormData((prev) => ({
-        ...prev,
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "+380",
-      }));
-    }
-  }, [isAuthenticated, user, isOpen]);
-
-  const { isPending, error, data: tourSeats } = useQuery({
-    queryKey: ["tourSeats", id],
+  const { isPending, data: tourSeats } = useQuery({
+    queryKey: ['tourSeats', id],
     queryFn: async (): Promise<TourSeatData[]> => {
-      const response = await fetch(`http://127.0.0.1:1323/tour-seats/${id}`);
-      if (!response.ok) throw new Error("Tour not found");
-      return response.json();
+      const r = await fetch(`${API}/tour-seats/${id}`);
+      if (!r.ok) throw new Error('Tour not found');
+      return r.json();
     },
     enabled: !!id,
-    // Always fetch fresh data — don't use stale seat counts
     staleTime: 0,
   });
 
   const seatData = tourSeats?.[0];
-  const availableSeats = seatData?.available_seats ?? 0;
-  const tourPrice = seatData?.price ?? 0;
+  const available = seatData?.available_seats ?? 0;
+  const price = seatData?.price ?? 0;
   const tourDateId = seatData?.tour_date_id ?? 0;
-  const totalPrice = tourPrice * parseInt(formData.seats || "1", 10);
+  const total = price * seats;
 
-  const updateFormData = (field: keyof FormDataType, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    if (isAuthenticated && user && isOpen) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '+380');
+    }
+  }, [isAuthenticated, user, isOpen]);
+
+  const validateName = (v: string) => {
+    if (!v.trim()) return "Ім'я обов'язкове";
+    if (v.trim().length < 2) return 'Мінімум 2 символи';
+    return '';
+  };
+  const validateEmail = (v: string) => {
+    if (!v.trim()) return '';
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : 'Некоректний email';
+  };
+  const validatePhone = (v: string) => {
+    if (!v.trim()) return 'Телефон обов\'язковий';
+    if (!v.startsWith('+380')) return 'Починається з +380';
+    if (v.replace(/\D/g, '').slice(3).length !== 9) return '9 цифр після +380';
+    return '';
   };
 
-  const validateName = (name: string): string => {
-    if (!name.trim()) return "Ім'я є обов'язковим";
-    if (name.trim().length < 2) return "Ім'я повинно містити принаймні 2 символи";
-    if (!/^[a-zA-Zа-яА-ЯіІєЄґҐїЇ'' -]*$/.test(name))
-      return "Ім'я може містити тільки літери, пробіли та дефіси";
-    return "";
+  const handlePhone = (e: ChangeEvent<HTMLInputElement>) => {
+    let v = e.target.value;
+    if (!v.startsWith('+380')) v = '+380';
+    const digits = v.replace(/\D/g, '').slice(3);
+    const formatted = '+380' + digits.slice(0, 9);
+    setPhone(formatted);
+    setErrors(p => ({ ...p, phone: validatePhone(formatted) }));
   };
 
-  const validateEmail = (email: string): string => {
-    if (!email.trim()) return "";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return "Некоректний формат email";
-    return "";
-  };
-
-  const validatePhone = (phone: string): string => {
-    if (!phone.trim()) return "Номер телефону є обов'язковим";
-    if (!phone.startsWith("+380")) return "Номер повинен починатися з +380";
-    const digitsOnly = phone.replace(/\D/g, "").slice(3);
-    if (digitsOnly.length !== 9) return "Номер повинен містити 9 цифр після +380";
-    return "";
-  };
-
-  const validateSeats = (seats: string): string => {
-    const intSeats = parseInt(seats, 10);
-    if (!seats.trim() || isNaN(intSeats)) return "Кількість місць є обов'язковою";
-    if (intSeats < 1) return "Мінімальна кількість місць — 1";
-    if (intSeats > availableSeats) return `Максимальна кількість місць — ${availableSeats}`;
-    return "";
-  };
-
-  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormErrors((prev) => ({ ...prev, name: validateName(value) }));
-    updateFormData("name", value);
-  };
-
-  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormErrors((prev) => ({ ...prev, email: validateEmail(value) }));
-    updateFormData("email", value);
-  };
-
-  const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    if (!value.startsWith("+380")) value = "+380";
-    const digitsOnly = value.replace(/\D/g, "").slice(3);
-    const formattedPhone = "+380" + digitsOnly.slice(0, 9);
-    setFormErrors((prev) => ({ ...prev, phone: validatePhone(formattedPhone) }));
-    updateFormData("phone", formattedPhone);
-  };
-
-  const handleSeatsChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "");
-    const intSeats = parseInt(value, 10) || 1;
-    setFormErrors((prev) => ({ ...prev, seats: validateSeats(intSeats.toString()) }));
-    updateFormData("seats", intSeats.toString());
-  };
+  const isFormValid = () =>
+    name.trim().length >= 2 &&
+    validatePhone(phone) === '' &&
+    !errors.name && !errors.email && !errors.phone &&
+    seats >= 1 && seats <= available;
 
   const resetForm = () => {
-    setFormData({
-      name: isAuthenticated ? user?.name || "" : "",
-      email: isAuthenticated ? user?.email || "" : "",
-      phone: isAuthenticated ? user?.phone || "+380" : "+380",
-      seats: "1",
-    });
-    setFormErrors({ name: "", email: "", phone: "", seats: "" });
+    setName(isAuthenticated ? user?.name || '' : '');
+    setEmail(isAuthenticated ? user?.email || '' : '');
+    setPhone(isAuthenticated ? user?.phone || '+380' : '+380');
+    setSeats(1);
+    setErrors({ name: '', email: '', phone: '' });
+    setStep('form');
   };
 
-  const handleConfirm = async (onClose: () => void) => {
-    const nameError = validateName(formData.name);
-    const emailError = validateEmail(formData.email);
-    const phoneError = validatePhone(formData.phone);
-    const seatsError = validateSeats(formData.seats);
+  const handleBookAndPay = async (onClose: () => void) => {
+    // Validate
+    const nameErr = validateName(name);
+    const emailErr = validateEmail(email);
+    const phoneErr = validatePhone(phone);
+    setErrors({ name: nameErr, email: emailErr, phone: phoneErr });
+    if (nameErr || phoneErr) return;
+    if (!tourDateId) { addToast({ title: 'Помилка', description: 'Не вдалося визначити дату туру', color: 'danger' }); return; }
 
-    setFormErrors({ name: nameError, email: emailError, phone: phoneError, seats: seatsError });
-
-    if (nameError || phoneError || seatsError) {
-      addToast({
-        title: "Помилка валідації",
-        description: "Будь ласка, виправте помилки в формі",
-        color: "danger",
-      });
-      return;
-    }
-
-    if (!tourDateId) {
-      addToast({
-        title: "Помилка",
-        description: "Не вдалося визначити дату туру. Спробуйте перезавантажити сторінку.",
-        color: "danger",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const bookingData = {
-      tour_date_id: tourDateId,
-      customer_name: formData.name.trim(),
-      customer_email: formData.email.trim(),
-      customer_phone: formData.phone.trim(),
-      seats: parseInt(formData.seats, 10),
-      total_price: Number(totalPrice.toFixed(2)),
-    };
+    setStep('submitting');
 
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      // Step 1: create booking
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const token = localStorage.getItem('tour_auth_token');
       if (token && isAuthenticated) headers.Authorization = `Bearer ${token}`;
 
-      const response = await fetch("http://127.0.0.1:1323/tour/bookings", {
-        method: "POST",
-        headers,
-        body: JSON.stringify(bookingData),
+      const bookingRes = await fetch(`${API}/tour/bookings`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          tour_date_id: tourDateId,
+          customer_name: name.trim(),
+          customer_email: email.trim(),
+          customer_phone: phone.trim(),
+          seats,
+          total_price: Number(total.toFixed(2)),
+        }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Booking failed");
+      if (!bookingRes.ok) {
+        const e = await bookingRes.json();
+        throw new Error(e.error || 'Booking failed');
       }
 
-      // Invalidate seat data so InfoSide re-fetches updated available_seats immediately
-      await queryClient.invalidateQueries({ queryKey: ["tourSeats", id] });
-      // Also invalidate the tour detail query used by InfoSide for the progress bar
-      await queryClient.invalidateQueries({ queryKey: ["tourData", id] });
+      const { booking_id } = await bookingRes.json();
 
-      addToast({
-        title: "🎉 Бронювання підтверджено!",
-        description: isAuthenticated
-          ? "Ваше замовлення збережено в особистому кабінеті"
-          : "Ваше замовлення прийнято. Менеджер зв'яжеться з вами найближчим часом",
-        color: "success",
-        variant: "solid",
+      // Step 2: get LiqPay payment data
+      const payRes = await fetch(`${API}/liqpay/create-payment`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ booking_id }),
       });
 
-      onClose();
-      resetForm();
+      if (!payRes.ok) {
+        const e = await payRes.json();
+        throw new Error(e.error || 'Payment init failed');
+      }
+
+      const { data, signature } = await payRes.json();
+
+      setStep('paying');
+      onClose(); // close our modal — LiqPay widget will open
+
+      // Step 3: open LiqPay widget
+      await openLiqPayWidget({
+        data,
+        signature,
+        onSuccess: async () => {
+          setStep('paid');
+          await queryClient.invalidateQueries({ queryKey: ['tourSeats', id] });
+          await queryClient.invalidateQueries({ queryKey: ['tourData', id] });
+          addToast({
+            title: '🎉 Оплата успішна!',
+            description: 'Бронювання підтверджено. Дякуємо!',
+            color: 'success',
+          });
+          resetForm();
+        },
+        onClose: () => {
+          // Widget closed without payment — booking stays pending
+          addToast({
+            title: 'Оплату скасовано',
+            description: 'Бронювання збережено. Ви можете оплатити пізніше в особистому кабінеті.',
+            color: 'warning',
+          });
+          setStep('form');
+        },
+      });
+
     } catch (err) {
+      setStep('form');
       addToast({
-        title: "❌ Бронювання не вдалося",
-        description: err instanceof Error ? err.message : "Виникла проблема з вашим бронюванням",
-        color: "danger",
+        title: 'Помилка',
+        description: err instanceof Error ? err.message : 'Спробуйте ще раз',
+        color: 'danger',
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const isFormValid = (): boolean => {
-    const { name, phone, seats } = formData;
-    const hasErrors = Object.values(formErrors).some((e) => !!e);
-    const hasRequiredFields = !!(name.trim() && phone.trim() && seats.trim());
-    return hasRequiredFields && !hasErrors && parseInt(seats, 10) >= 1;
-  };
-
   const getAvatarUrl = (u: any) =>
-    u?.avatar_url ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.name || '')}&background=2c7be5&color=fff&size=128`;
+    u?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.name || '')}&background=6366f1&color=fff&size=128`;
 
-  if (isPending)
-    return (
-      <div className="booking-form__loading">
-        <Spinner size="lg" />
-        <p>Завантаження даних туру...</p>
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="booking-form__error">
-        <AlertCircle size={48} />
-        <p>Помилка: {(error as Error).message}</p>
-      </div>
-    );
-
-  if (!tourSeats || tourSeats.length === 0)
-    return (
-      <div className="booking-form__not-found">
-        <AlertCircle size={48} />
-        <p>Дані про місця відсутні</p>
-      </div>
-    );
+  if (isPending) return <div className="bf__loading"><Spinner size="sm" /><span>Завантаження...</span></div>;
+  if (!tourSeats?.length) return null;
 
   return (
-    <div className="booking-form">
+    <div className="bf">
       <ToastProvider placement="top-center" />
 
-      <div className="booking-form__button-container">
-        <Button
-          color="primary"
-          variant="shadow"
-          onPress={onOpen}
-          className="booking-form__purchase-button"
-          size="lg"
-          startContent={<CreditCard size={20} />}
-          isDisabled={availableSeats === 0}
-        >
-          {availableSeats === 0
-            ? "Місць немає"
-            : isAuthenticated
-            ? "Забронювати тур"
-            : "Забронювати як гість"}
-        </Button>
-
-        <Modal
-          isOpen={isOpen}
-          placement="center"
-          size="2xl"
-          scrollBehavior="inside"
-          classNames={{
-            wrapper: "booking-modal-wrapper",
-            base: "booking-modal-base",
-            backdrop: "booking-modal-backdrop",
-          }}
-          onOpenChange={(open: boolean) => {
-            if (!open) resetForm();
-            onOpenChange();
-          }}
-        >
-          <ModalContent>
-            {(onClose: () => void) => (
-              <>
-                <ModalHeader className="booking-form__modal-header">
-                  <div className="booking-form__header-content">
-                    <div className="booking-form__header-main">
-                      <h2 className="booking-form__title">
-                        {isAuthenticated ? "Бронювання туру" : "Гостьове бронювання"}
-                      </h2>
-                      {isAuthenticated ? (
-                        <div className="booking-form__auth-status">
-                          <Chip
-                            color="success"
-                            variant="flat"
-                            size="sm"
-                            startContent={<CheckCircle size={14} />}
-                          >
-                            Авторизований
-                          </Chip>
-                        </div>
-                      ) : (
-                        <div className="booking-form__guest-notice">
-                          <Chip
-                            color="warning"
-                            variant="flat"
-                            size="sm"
-                            startContent={<AlertCircle size={14} />}
-                          >
-                            Гостьове бронювання
-                          </Chip>
-                        </div>
-                      )}
-                    </div>
-
-                    {isAuthenticated && user && (
-                      <div className="booking-form__user-info">
-                        <Avatar src={getAvatarUrl(user)} name={user.name} size="sm" />
-                        <div className="booking-form__user-details">
-                          <span
-                            className="booking-form__user-name"
-                            style={{ color: '#1e293b', fontWeight: '700', fontSize: '1rem' }}
-                          >
-                            {user.name}
-                          </span>
-                          <span
-                            className="booking-form__user-email"
-                            style={{ color: '#64748b', fontWeight: '500', fontSize: '0.875rem' }}
-                          >
-                            {user.email}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {!isAuthenticated && (
-                      <p className="booking-form__guest-description">
-                        💡 Увійдіть у акаунт, щоб автоматично заповнити дані та відстежувати бронювання
-                      </p>
-                    )}
-                  </div>
-                </ModalHeader>
-
-                <Divider />
-
-                <ModalBody className="booking-form__modal-body">
-                  <Card className="booking-form__summary-card">
-                    <CardBody>
-                      <div className="booking-form__summary-header">
-                        <h3>Деталі бронювання</h3>
-                        <div className="booking-form__summary-stats">
-                          <div className="booking-form__stat">
-                            <Users size={16} />
-                            <span>{availableSeats} вільних місць</span>
-                          </div>
-                          <div className="booking-form__stat">
-                            <CreditCard size={16} />
-                            <span>{tourPrice.toFixed(2)} UAH/особа</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-
-                  <div className="booking-form__fields">
-                    <div className="booking-form__field-group">
-                      <h4 className="booking-form__section-title">
-                        <User size={18} />
-                        Контактна інформація
-                      </h4>
-
-                      <Input
-                        isRequired
-                        placeholder="Введіть ваше повне ім'я"
-                        label="Повне ім'я"
-                        value={formData.name}
-                        onChange={handleNameChange}
-                        isInvalid={!!formErrors.name}
-                        errorMessage={formErrors.name}
-                        className="booking-form__input"
-                        variant="bordered"
-                        startContent={<User size={18} className="text-default-400" />}
-                      />
-
-                      <Input
-                        isRequired
-                        label="Номер телефону"
-                        placeholder="+380XXXXXXXXX"
-                        value={formData.phone}
-                        onChange={handlePhoneChange}
-                        isInvalid={!!formErrors.phone}
-                        errorMessage={formErrors.phone}
-                        className="booking-form__input"
-                        variant="bordered"
-                        startContent={<Phone size={18} className="text-default-400" />}
-                      />
-
-                      <Input
-                        label="Email (необов'язково)"
-                        placeholder="example@email.com"
-                        variant="bordered"
-                        value={formData.email}
-                        onChange={handleEmailChange}
-                        isInvalid={!!formErrors.email}
-                        errorMessage={formErrors.email}
-                        className="booking-form__input"
-                        startContent={<Mail size={18} className="text-default-400" />}
-                      />
-                    </div>
-
-                    <Divider className="booking-form__section-divider" />
-
-                    <div className="booking-form__field-group">
-                      <h4 className="booking-form__section-title">
-                        <Users size={18} />
-                        Деталі бронювання
-                      </h4>
-
-                      <Input
-                        isRequired
-                        label="Кількість місць"
-                        placeholder="1"
-                        value={formData.seats}
-                        onChange={handleSeatsChange}
-                        isInvalid={!!formErrors.seats}
-                        errorMessage={formErrors.seats}
-                        className="booking-form__input"
-                        variant="bordered"
-                        startContent={<Users size={18} className="text-default-400" />}
-                        description={`Доступно ${availableSeats} місць`}
-                      />
-                    </div>
-                  </div>
-
-                  <Card className="booking-form__price-card">
-                    <CardBody>
-                      <div className="booking-form__price-breakdown">
-                        <div className="booking-form__price-row">
-                          <span>Ціна за 1 місце:</span>
-                          <span>{tourPrice.toFixed(2)} UAH</span>
-                        </div>
-                        <div className="booking-form__price-row">
-                          <span>Кількість місць:</span>
-                          <span>× {formData.seats}</span>
-                        </div>
-                        <Divider className="my-2" />
-                        <div className="booking-form__price-row booking-form__price-total">
-                          <span>Загальна сума:</span>
-                          <span className="booking-form__total-amount">
-                            {totalPrice.toFixed(2)} UAH
-                          </span>
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-                </ModalBody>
-
-                <Divider />
-
-                <ModalFooter className="booking-form__modal-footer">
-                  <Button
-                    color="danger"
-                    variant="light"
-                    onPress={onClose}
-                    className="booking-form__cancel-button"
-                    isDisabled={isSubmitting}
-                  >
-                    Скасувати
-                  </Button>
-
-                  <Button
-                    color="primary"
-                    onPress={() => handleConfirm(onClose)}
-                    isDisabled={!isFormValid() || isSubmitting}
-                    isLoading={isSubmitting}
-                    className="booking-form__confirm-button"
-                    variant="shadow"
-                    size="lg"
-                    startContent={!isSubmitting && <CheckCircle size={18} />}
-                  >
-                    {isSubmitting ? "Обробка..." : "Підтвердити бронювання"}
-                  </Button>
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
+      {/* ── Seat counter + live price ── */}
+      <div className="bf__preview">
+        <div className="bf__counter">
+          <button className="bf__counter-btn" onClick={() => setSeats(s => Math.max(1, s - 1))} disabled={seats <= 1}>
+            <Minus size={14} />
+          </button>
+          <div className="bf__counter-val">
+            <span className="bf__counter-num">{seats}</span>
+            <span className="bf__counter-lbl">{seats === 1 ? 'особа' : seats <= 4 ? 'особи' : 'осіб'}</span>
+          </div>
+          <button className="bf__counter-btn" onClick={() => setSeats(s => Math.min(available, s + 1))} disabled={seats >= available}>
+            <Plus size={14} />
+          </button>
+        </div>
+        <div className="bf__preview-price">
+          <span className="bf__preview-total">{formatPrice(total)}</span>
+          {seats > 1 && <span className="bf__preview-per">{formatPrice(price)} × {seats}</span>}
+        </div>
       </div>
+
+      {/* ── Book button ── */}
+      <button className="bf__book-btn" onClick={onOpen} disabled={available === 0}>
+        {available === 0
+          ? 'Місць немає'
+          : <><CreditCard size={16} /> {isAuthenticated ? 'Забронювати та оплатити' : 'Забронювати'}</>}
+      </button>
+
+      {/* ── Modal ── */}
+      <Modal
+        isOpen={isOpen}
+        placement="center"
+        size="lg"
+        scrollBehavior="inside"
+        classNames={{ base: 'bf__modal', backdrop: 'bf__backdrop' }}
+        onOpenChange={(open) => { if (!open) resetForm(); onOpenChange(); }}
+      >
+        <ModalContent>
+          {(onClose: () => void) => (
+            <>
+              <ModalHeader className="bf__modal-hd">
+                <div className="bf__modal-hd-inner">
+                  <div className="bf__modal-title-row">
+                    <h2 className="bf__modal-title">Бронювання туру</h2>
+                    <Chip size="sm" variant="flat" color={isAuthenticated ? 'success' : 'warning'}
+                      startContent={isAuthenticated ? <CheckCircle size={12} /> : <AlertCircle size={12} />}>
+                      {isAuthenticated ? 'Авторизований' : 'Гість'}
+                    </Chip>
+                  </div>
+
+                  {isAuthenticated && user && (
+                    <div className="bf__user">
+                      <Avatar src={getAvatarUrl(user)} name={user.name} size="sm" />
+                      <div>
+                        <p className="bf__user-name">{user.name}</p>
+                        <p className="bf__user-email">{user.email}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ModalHeader>
+
+              <Divider />
+
+              <ModalBody className="bf__modal-body">
+
+                {/* ── Seats + price ── */}
+                <div className="bf__summary">
+                  <div className="bf__summary-left">
+                    <span className="bf__summary-label">Кількість осіб</span>
+                    <div className="bf__counter">
+                      <button className="bf__counter-btn" onClick={() => setSeats(s => Math.max(1, s - 1))} disabled={seats <= 1 || step === 'submitting'}>
+                        <Minus size={14} />
+                      </button>
+                      <div className="bf__counter-val">
+                        <span className="bf__counter-num">{seats}</span>
+                      </div>
+                      <button className="bf__counter-btn" onClick={() => setSeats(s => Math.min(available, s + 1))} disabled={seats >= available || step === 'submitting'}>
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                    <span className="bf__summary-avail">{available} вільних місць</span>
+                  </div>
+                  <div className="bf__summary-right">
+                    <div className="bf__summary-breakdown">
+                      <div className="bf__summary-row">
+                        <span>{formatPrice(price)}</span>
+                        <span>× {seats}</span>
+                      </div>
+                      <div className="bf__summary-total">
+                        <span>Разом</span>
+                        <span className="bf__summary-total-val">{formatPrice(total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Divider />
+
+                {/* ── Contact ── */}
+                <div className="bf__fields">
+                  <p className="bf__fields-title"><User size={15} /> Контактна інформація</p>
+
+                  <Input isRequired label="Повне ім'я" placeholder="Введіть ім'я"
+                    value={name}
+                    onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: validateName(e.target.value) })); }}
+                    isInvalid={!!errors.name} errorMessage={errors.name}
+                    isDisabled={step === 'submitting'}
+                    variant="bordered" startContent={<User size={16} className="text-default-400" />} />
+
+                  <Input isRequired label="Номер телефону" placeholder="+380XXXXXXXXX"
+                    value={phone} onChange={handlePhone}
+                    isInvalid={!!errors.phone} errorMessage={errors.phone}
+                    isDisabled={step === 'submitting'}
+                    variant="bordered" startContent={<Phone size={16} className="text-default-400" />} />
+
+                  <Input label="Email (необов'язково)" placeholder="example@email.com"
+                    value={email}
+                    onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: validateEmail(e.target.value) })); }}
+                    isInvalid={!!errors.email} errorMessage={errors.email}
+                    isDisabled={step === 'submitting'}
+                    variant="bordered" startContent={<Mail size={16} className="text-default-400" />} />
+                </div>
+
+                {/* ── LiqPay badge ── */}
+                <div className="bf__liqpay-note">
+                  <ShieldCheck size={14} />
+                  <span>Оплата через LiqPay — захищено SSL</span>
+                  <img src="https://static.liqpay.ua/buttons/logo-small.png" alt="LiqPay" className="bf__liqpay-logo" />
+                </div>
+              </ModalBody>
+
+              <Divider />
+
+              <ModalFooter className="bf__modal-footer">
+                <button className="bf__cancel" onClick={onClose} disabled={step === 'submitting'}>
+                  Скасувати
+                </button>
+                <button className="bf__confirm" onClick={() => handleBookAndPay(onClose)}
+                  disabled={!isFormValid() || step === 'submitting'}>
+                  {step === 'submitting'
+                    ? <><Spinner size="sm" color="white" /> Обробка...</>
+                    : <><CreditCard size={15} /> Оплатити {formatPrice(total)}</>}
+                </button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 };
