@@ -80,6 +80,7 @@ func main() {
 			"Accept",
 			"Authorization",
 			"X-Requested-With",
+			"X-Guest-Token",
 		},
 		ExposeHeaders: []string{
 			"X-Total-Count",
@@ -155,15 +156,16 @@ func main() {
 	e.GET("/tour-reviews/:id", tourreviews.GetReviewsByTourID(database.DB))
 
 	// ========================================
-	// OPTIONAL AUTH (guests allowed)
+	// OPTIONAL AUTH (guests + authorized users)
 	// ========================================
-	bookingRoute := e.Group("")
-	bookingRoute.Use(middleware.OptionalJWTMiddleware())
-	bookingRoute.POST("/tour/bookings", bookings.PostBookings(database.DB))
+	optionalAuth := e.Group("")
+	optionalAuth.Use(middleware.OptionalJWTMiddleware())
 
-	commentRoute := e.Group("")
-	commentRoute.Use(middleware.OptionalJWTMiddleware())
-	commentRoute.GET("/tour-comments/:id", tourcomments.GetTourComments(database.DB))
+	optionalAuth.POST("/tour/bookings", bookings.PostBookings(database.DB))
+
+	optionalAuth.GET("/tour-comments/:id", tourcomments.GetTourComments(database.DB))
+	optionalAuth.POST("/tour-comments", tourcomments.CreateComment(database.DB))
+	optionalAuth.POST("/tour-comments/:id/like", tourcomments.ToggleLike(database.DB))
 
 	// ========================================
 	// PROTECTED ENDPOINTS (auth required)
@@ -175,11 +177,10 @@ func main() {
 	protected.PUT("/profile", tourusers.UpdateProfile(database.DB))
 	protected.GET("/user-bookings", bookings.GetUserBookings(database.DB))
 	protected.POST("/tour-reviews", tourreviews.CreateTourReview(database.DB))
-	protected.PUT("/bookings/:id/cancel", bookings.CancelBooking(database.DB)) 
+	protected.PUT("/bookings/:id/cancel", bookings.CancelBooking(database.DB))
 	protected.POST("/user-favorites", userfavorites.AddFavorite(database.DB))
 	protected.GET("/user-favorites", userfavorites.GetUserFavorites(database.DB))
 	protected.DELETE("/user-favorites/:tour_id", userfavorites.RemoveFavorite(database.DB))
-	protected.POST("/tour-comments", tourcomments.CreateComment(database.DB))
 	protected.PUT("/tour-comments/:id", tourcomments.UpdateComment(database.DB))
 	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB))
 
@@ -214,6 +215,7 @@ func main() {
 
 	admin.GET("/locations", adminAPI.GetLocations(database.DB))
 	admin.POST("/upload", adminAPI.UploadImage)
+
 	// ========================================
 	// START SERVER
 	// ========================================

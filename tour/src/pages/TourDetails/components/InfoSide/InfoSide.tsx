@@ -1,35 +1,13 @@
 import React from "react";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Skeleton,
-  Chip,
-  Progress,
-  Divider,
-  Tooltip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  useDisclosure
+  Button, Skeleton, Chip, Progress,
+  Modal, ModalContent, ModalHeader, ModalBody, useDisclosure
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import {
-  Calendar,
-  Clock,
-  Users,
-  Star,
-  MapPin,
-  Info,
-  Heart,
-  Share2,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Timer
+  Calendar, Clock, Users, Star, MapPin, Info,
+  Heart, Share2, AlertTriangle, CheckCircle, XCircle, Timer
 } from "lucide-react";
 import { useAuth } from '../../../../context/AuthContext';
 import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
@@ -52,372 +30,211 @@ interface TourData {
   datefrom: string | undefined;
   dateto: string | undefined;
   price: number;
-  difficulty?: string;
-  minAge?: number;
 }
 
 export const InfoSide = () => {
   const { id } = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isAuthenticated } = useAuth();
-
   const tourId = id ? parseInt(id) : 0;
   const isFavorite = useIsFavorite(tourId);
-  const { toggleFavorite, isLoading: isFavoriteLoading } = useToggleFavorite();
+  const { toggleFavorite, isLoading: favLoading } = useToggleFavorite();
 
   const { isPending, error, data, refetch } = useQuery({
     queryKey: ["tourData", id],
     queryFn: async () => {
-      const fetched = await fetch(`http://127.0.0.1:1323/tours/${id}`);
-      if (!fetched.ok) throw new Error("Tour not found");
-      const rawTour: any = await fetched.json();
-
-      // Parse dates safely — they may be missing if tour has no dates configured
-      const parsedDateFrom = rawTour.datefrom ? new Date(Date.parse(rawTour.datefrom)) : undefined;
-      const parsedDateTo = rawTour.dateto ? new Date(Date.parse(rawTour.dateto)) : undefined;
-
+      const res = await fetch(`http://127.0.0.1:1323/tours/${id}`);
+      if (!res.ok) throw new Error("Tour not found");
+      const raw: any = await res.json();
       return {
-        ...rawTour,
-        date_from: parsedDateFrom,
-        date_to: parsedDateTo,
-        country: rawTour.location || rawTour.country || "Україна",
-        location: rawTour.location || "Не вказано",
-        price: rawTour.price || 0,
-        difficulty: rawTour.difficulty || "Середня",
-        minAge: rawTour.minAge || 18,
+        ...raw,
+        date_from: raw.datefrom ? new Date(Date.parse(raw.datefrom)) : undefined,
+        date_to: raw.dateto ? new Date(Date.parse(raw.dateto)) : undefined,
+        country: raw.location || raw.country || "Україна",
+        location: raw.location || "Не вказано",
+        price: raw.price || 0,
       } as TourData;
     },
     enabled: !!id,
     retry: 3,
   });
 
-  const handleFavoriteToggle = () => {
-    if (!isAuthenticated) {
-      alert('Увійдіть у свій акаунт, щоб додавати тури в обране');
-      return;
-    }
+  const handleFavorite = () => {
+    if (!isAuthenticated) { alert('Увійдіть, щоб додавати в обране'); return; }
     if (tourId > 0) toggleFavorite(tourId);
-  };
-
-  if (isPending) {
-    return (
-      <div className="info-side">
-        <Card className="info-side__card">
-          <CardHeader className="info-side__header">
-            <Skeleton className="info-side__header-skeleton">
-              <div className="h-8 w-3/4 rounded-lg bg-default-200"></div>
-            </Skeleton>
-          </CardHeader>
-          <CardBody className="info-side__body">
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton key={index} className="info-side__skeleton-item">
-                  <div className="h-16 w-full rounded-lg bg-default-200"></div>
-                </Skeleton>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="info-side">
-        <Card className="info-side__card error-state">
-          <CardBody className="error-content">
-            <AlertTriangle size={48} className="error-icon" />
-            <h3>Помилка завантаження</h3>
-            <p>Не вдалося завантажити інформацію про тур</p>
-            <Button color="primary" onClick={() => refetch()}>
-              Спробувати знову
-            </Button>
-          </CardBody>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!data || !data.id || data.status === 'inactive') {
-    return (
-      <div className="info-side">
-        <Card className="info-side__card not-found-state">
-          <CardBody className="not-found-content">
-            <XCircle size={48} className="not-found-icon" />
-            <h3>Тур недоступний</h3>
-            <p>Цей тур більше не доступний або був видалений</p>
-            <Button color="primary" onClick={() => window.location.href = '/Tours'}>
-              Переглянути інші тури
-            </Button>
-          </CardBody>
-        </Card>
-      </div>
-    );
-  }
-
-  const seatsPercentage = data.totalSeats > 0
-    ? Math.round(((data.totalSeats - data.availableSeats) / data.totalSeats) * 100)
-    : 0;
-  const isAlmostFull = data.availableSeats <= 3 && data.availableSeats > 0;
-  const isFull = data.availableSeats === 0;
-
-  const getStatusConfig = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'available':
-      case 'active':
-        return { color: 'success' as const, icon: CheckCircle, text: 'Доступний' };
-      case 'pending':
-        return { color: 'warning' as const, icon: Timer, text: 'Очікування' };
-      case 'completed':
-        return { color: 'primary' as const, icon: CheckCircle, text: 'Завершений' };
-      case 'cancelled':
-        return { color: 'danger' as const, icon: XCircle, text: 'Скасований' };
-      default:
-        return { color: 'default' as const, icon: Info, text: status };
-    }
-  };
-
-  const statusConfig = getStatusConfig(data.status);
-
-  const renderRatingStars = (rating: number): JSX.Element => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(<Star key={i} size={16} fill="currentColor" className="star star--filled" />);
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(<Star key={i} size={16} className="star star--half" />);
-      } else {
-        stars.push(<Star key={i} size={16} className="star star--empty" />);
-      }
-    }
-    return <div className="rating-stars">{stars}</div>;
-  };
-
-  // Safe date formatting — returns placeholder if dates are missing
-  const formatDates = (dateFrom: Date | undefined, dateTo: Date | undefined): string => {
-    if (!dateFrom || !dateTo) return 'Дати уточнюються';
-    const options: Intl.DateTimeFormatOptions = {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    };
-    return `${dateFrom.toLocaleDateString("uk-UA", options)} - ${dateTo.toLocaleDateString("uk-UA", options)}`;
   };
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({ title: data.title, text: `Подивіться на цей тур: ${data.title}`, url: window.location.href });
+      navigator.share({ title: data?.title, url: window.location.href });
     } else {
       navigator.clipboard.writeText(window.location.href);
     }
   };
 
+  const formatDates = (from: Date | undefined, to: Date | undefined) => {
+    if (!from || !to) return 'Дати уточнюються';
+    const o: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+    return `${from.toLocaleDateString('uk-UA', o)} — ${to.toLocaleDateString('uk-UA', o)}`;
+  };
+
+  const formatPrice = (p: number) =>
+    new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH', minimumFractionDigits: 0 }).format(p);
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <Star
+        key={i}
+        size={14}
+        fill={i < Math.floor(rating) ? '#f59e0b' : 'none'}
+        color={i < Math.floor(rating) ? '#f59e0b' : '#d1d5db'}
+        strokeWidth={2}
+      />
+    ));
+  };
+
+  if (isPending) return (
+    <div className="is is--loading">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Skeleton key={i} className="is__sk" />
+      ))}
+    </div>
+  );
+
+  if (error || !data || !data.id) return (
+    <div className="is is--error">
+      <AlertTriangle size={36} color="#ef4444" />
+      <p>Не вдалося завантажити тур</p>
+      <Button size="sm" color="primary" onClick={() => refetch()}>Спробувати знову</Button>
+    </div>
+  );
+
+  const seatsUsed = data.totalSeats > 0
+    ? Math.round(((data.totalSeats - data.availableSeats) / data.totalSeats) * 100)
+    : 0;
+  const almostFull = data.availableSeats <= 3 && data.availableSeats > 0;
+  const full = data.availableSeats === 0;
+
   return (
-    <div className="info-side">
-      <Card className="info-side__card">
-        <CardHeader className="info-side__header">
-          <div className="header-content">
-            <div className="header-main">
-              <h2 className="tour-title">{data.title}</h2>
-              <div className="tour-location">
-                <MapPin size={16} />
-                <span>{data.country}</span>
-              </div>
-            </div>
-            <div className="header-actions">
-              <Tooltip content={isFavorite ? "Видалити з улюблених" : "Додати в улюблені"}>
-                <Button
-                  isIconOnly
-                  variant="light"
-                  size="sm"
-                  className={`favorite-btn ${isFavorite ? 'favorite-btn--active' : ''}`}
-                  onClick={handleFavoriteToggle}
-                  isLoading={isFavoriteLoading}
-                  isDisabled={!isAuthenticated}
-                >
-                  <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
-                </Button>
-              </Tooltip>
-              <Tooltip content="Поділитися">
-                <Button isIconOnly variant="light" size="sm" onClick={handleShare}>
-                  <Share2 size={18} />
-                </Button>
-              </Tooltip>
+    <div className="is">
+      {/* ── Header ── */}
+      <div className="is__head">
+        <div className="is__head-top">
+          <div>
+            <h1 className="is__title">{data.title}</h1>
+            <div className="is__location">
+              <MapPin size={14} />
+              <span>{data.country}</span>
             </div>
           </div>
-        </CardHeader>
-
-        <CardBody className="info-side__body">
-          {/* Rating */}
-          <div className="info-item">
-            <div className="info-item__icon"><Star size={20} /></div>
-            <div className="info-item__content">
-              <div className="info-label">Рейтинг</div>
-              <div className="info-value rating-value">
-                <span className="rating-number">{data.rating.toFixed(1)}</span>
-                {renderRatingStars(data.rating)}
-              </div>
-            </div>
+          <div className="is__head-actions">
+            <button
+              className={`is__icon-btn ${isFavorite ? 'is__icon-btn--active' : ''}`}
+              onClick={handleFavorite}
+              disabled={favLoading || !isAuthenticated}
+              title="Обране"
+            >
+              <Heart size={17} fill={isFavorite ? 'currentColor' : 'none'} />
+            </button>
+            <button className="is__icon-btn" onClick={handleShare} title="Поділитись">
+              <Share2 size={17} />
+            </button>
           </div>
+        </div>
 
-          <Divider className="info-divider" />
-
-          {/* Status */}
-          <div className="info-item">
-            <div className="info-item__icon"><statusConfig.icon size={20} /></div>
-            <div className="info-item__content">
-              <div className="info-label">Статус</div>
-              <div className="info-value">
-                <Chip
-                  color={statusConfig.color}
-                  variant="flat"
-                  size="sm"
-                  startContent={<statusConfig.icon size={14} />}
-                >
-                  {statusConfig.text}
-                </Chip>
-              </div>
+        {/* Rating + Status row */}
+        <div className="is__head-meta">
+          {data.rating > 0 && (
+            <div className="is__rating">
+              <div className="is__stars">{renderStars(data.rating)}</div>
+              <span className="is__rating-val">{data.rating.toFixed(1)}</span>
             </div>
-          </div>
-
-          <Divider className="info-divider" />
-
-          {/* Dates */}
-          <div className="info-item">
-            <div className="info-item__icon"><Calendar size={20} /></div>
-            <div className="info-item__content">
-              <div className="info-label">Дати подорожі</div>
-              <div className="info-value dates-value">
-                {formatDates(data.date_from, data.date_to)}
-              </div>
-            </div>
-          </div>
-
-          <Divider className="info-divider" />
-
-          {/* Duration */}
-          <div className="info-item">
-            <div className="info-item__icon"><Clock size={20} /></div>
-            <div className="info-item__content">
-              <div className="info-label">Тривалість</div>
-              <div className="info-value">
-                {data.duration > 0
-                  ? <span className="duration-value">{data.duration} днів</span>
-                  : <span style={{ color: '#94a3b8' }}>Уточнюється</span>
-                }
-              </div>
-            </div>
-          </div>
-
-          <Divider className="info-divider" />
-
-          {/* Seats */}
-          <div className="info-item">
-            <div className="info-item__icon"><Users size={20} /></div>
-            <div className="info-item__content">
-              <div className="info-label">Місця</div>
-              <div className="info-value seats-value">
-                <div className="seats-info">
-                  <div className="seats-numbers">
-                    <span className="available">{data.availableSeats}</span>
-                    <span className="separator">/</span>
-                    <span className="total">{data.totalSeats}</span>
-                  </div>
-                  {isAlmostFull && (
-                    <Chip color="warning" size="sm" variant="flat">Залишилось мало місць!</Chip>
-                  )}
-                  {isFull && (
-                    <Chip color="danger" size="sm" variant="flat">Місць немає</Chip>
-                  )}
-                </div>
-                <Progress
-                  value={seatsPercentage}
-                  color={isFull ? "danger" : isAlmostFull ? "warning" : "success"}
-                  size="sm"
-                  className="seats-progress"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Divider className="info-divider" />
-
-          {/* Price */}
-          {data.price > 0 && (
-            <>
-              <div className="info-item">
-                <div className="info-item__content price-content">
-                  <div className="info-label">Ціна за особу</div>
-                  <div className="price-value">
-                    <span className="price-amount">₴{data.price.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-              <Divider className="info-divider" />
-            </>
           )}
+          <Chip
+            size="sm"
+            variant="flat"
+            color={data.status === 'active' ? 'success' : 'default'}
+            startContent={data.status === 'active' ? <CheckCircle size={12} /> : <Timer size={12} />}
+          >
+            {data.status === 'active' ? 'Доступний' : data.status}
+          </Chip>
+        </div>
+      </div>
 
-          {/* Description */}
-          <div className="description-section">
-            <div className="description-header">
-              <h4>Опис туру</h4>
-              <Button
+      {/* ── Info rows ── */}
+      <div className="is__info">
+        <div className="is__row">
+          <div className="is__row-icon"><Calendar size={16} /></div>
+          <div className="is__row-body">
+            <span className="is__row-label">Дати</span>
+            <span className="is__row-val">{formatDates(data.date_from, data.date_to)}</span>
+          </div>
+        </div>
+
+        <div className="is__row">
+          <div className="is__row-icon"><Clock size={16} /></div>
+          <div className="is__row-body">
+            <span className="is__row-label">Тривалість</span>
+            <span className="is__row-val">
+              {data.duration > 0 ? `${data.duration} днів` : 'Уточнюється'}
+            </span>
+          </div>
+        </div>
+
+        <div className="is__row">
+          <div className="is__row-icon"><Users size={16} /></div>
+          <div className="is__row-body">
+            <span className="is__row-label">Місця</span>
+            <div className="is__seats">
+              <div className="is__seats-top">
+                <span className="is__seats-nums">
+                  <strong>{data.availableSeats}</strong>
+                  <span>/ {data.totalSeats} вільних</span>
+                </span>
+                {almostFull && <Chip size="sm" color="warning" variant="flat">Майже зайнято</Chip>}
+                {full && <Chip size="sm" color="danger" variant="flat">Немає місць</Chip>}
+              </div>
+              <Progress
+                value={seatsUsed}
                 size="sm"
-                variant="light"
-                color="primary"
-                onClick={onOpen}
-                endContent={<Info size={14} />}
-              >
-                Детальніше
-              </Button>
-            </div>
-            <div className="description-content">
-              <p>{data.detailedDescription}</p>
+                color={full ? 'danger' : almostFull ? 'warning' : 'success'}
+                className="is__seats-bar"
+              />
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Booking form */}
-          <div className="form-section">
-            <Form />
+      {/* ── Price + CTA ── */}
+      <div className="is__purchase">
+        <div className="is__price-block">
+          <span className="is__price-label">Ціна за особу</span>
+          <span className="is__price">{formatPrice(data.price)}</span>
+        </div>
+        <div>
+          <Form />
+        </div>
+      </div>
+
+      {/* ── Description ── */}
+      {data.detailedDescription && (
+        <div className="is__desc">
+          <div className="is__desc-header">
+            <span>Про тур</span>
+            <button className="is__desc-more" onClick={onOpen}>
+              <Info size={13} /> Детальніше
+            </button>
           </div>
-        </CardBody>
-      </Card>
+          <p className="is__desc-text">{data.detailedDescription}</p>
+        </div>
+      )}
 
-      {/* Full description modal */}
+      {/* ── Full desc modal ── */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <h3>{data.title}</h3>
-            <p className="text-small text-default-500">Детальна інформація про тур</p>
-          </ModalHeader>
+          <ModalHeader>{data.title}</ModalHeader>
           <ModalBody className="pb-6">
-            <div className="modal-content">
-              <h4>Повний опис</h4>
-              <p>{data.detailedDescription}</p>
-              <div className="additional-info">
-                <div className="info-grid">
-                  {data.difficulty && (
-                    <div className="info-item-small">
-                      <span className="label">Складність:</span>
-                      <span className="value">{data.difficulty}</span>
-                    </div>
-                  )}
-                  {data.minAge && (
-                    <div className="info-item-small">
-                      <span className="label">Мінімальний вік:</span>
-                      <span className="value">{data.minAge}+</span>
-                    </div>
-                  )}
-                  <div className="info-item-small">
-                    <span className="label">Локація:</span>
-                    <span className="value">{data.location}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <p style={{ lineHeight: 1.7, color: '#374151' }}>{data.detailedDescription}</p>
           </ModalBody>
         </ModalContent>
       </Modal>
