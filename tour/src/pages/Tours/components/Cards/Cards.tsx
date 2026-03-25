@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Heart, MapPin, Star, Clock, Eye, RefreshCw } from "lucide-react";
+import { Heart, MapPin, Clock, Star, ArrowUpRight } from "lucide-react";
 import { useAuth } from '../../../../context/AuthContext';
 import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
 import { Tour } from '../../../../types/tours';
@@ -13,14 +13,12 @@ interface CardsProps {
   onRetry?: () => void;
 }
 
-// ─── Single card ──────────────────────────────────────────────────────────────
-
-const TourCard: React.FC<{ tour: Tour }> = ({ tour }) => {
+const TourCard: React.FC<{ tour: Tour; index: number }> = ({ tour, index }) => {
   const { isAuthenticated } = useAuth();
   const isFavorite = useIsFavorite(tour.id);
   const { toggleFavorite, isLoading: favLoading } = useToggleFavorite();
-  const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const imageUrl = imageService.getImageUrl(tour.imageSrc);
 
@@ -37,190 +35,131 @@ const TourCard: React.FC<{ tour: Tour }> = ({ tour }) => {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH', minimumFractionDigits: 0 }).format(price);
 
-  const renderStars = (rating: number) => {
-    const full = Math.floor(rating);
-    const half = rating % 1 >= 0.5;
-    return (
-      <div className="tc__stars">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star
-            key={i}
-            size={11}
-            fill={i < full ? '#fbbf24' : (i === full && half ? '#fbbf24' : 'none')}
-            color={i < full || (i === full && half) ? '#fbbf24' : '#d1d5db'}
-            strokeWidth={2}
-          />
-        ))}
-      </div>
-    );
-  };
+  const finalPrice = tour.discount != null && tour.discount > 0
+    ? tour.price * (1 - tour.discount / 100)
+    : tour.price;
 
   return (
-    <Link to={`/TourDetails/${tour.id}`} className="tc">
-      {/* ── Image ── */}
-      <div className="tc__img-wrap">
+    <Link
+      to={`/TourDetails/${tour.id}`}
+      className="tc"
+      style={{ animationDelay: `${(index % 12) * 40}ms` }}
+    >
+      <div className="tc__photo">
         {!imgError ? (
-          <>
-            {!imgLoaded && <div className="tc__img-skeleton" />}
-            <img
-              src={imageUrl}
-              alt={tour.title}
-              className={`tc__img ${imgLoaded ? 'tc__img--loaded' : ''}`}
-              loading="lazy"
-              onLoad={() => setImgLoaded(true)}
-              onError={() => setImgError(true)}
-            />
-          </>
+          <img
+            src={imageUrl}
+            alt={tour.title}
+            className={`tc__photo-img ${imgLoaded ? 'tc__photo-img--in' : ''}`}
+            loading="lazy"
+            onLoad={() => setImgLoaded(true)}
+            onError={() => setImgError(true)}
+          />
         ) : (
-          <div className="tc__img-placeholder">
-            <MapPin size={28} color="#cbd5e1" />
+          <div className="tc__photo-missing">
+            <MapPin size={24} />
             <span>Фото відсутнє</span>
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="tc__overlay" />
+        <div className="tc__photo-grad" />
 
-        {/* Top badges */}
-        <div className="tc__top">
-          {tour.isPopular && (
-            <span className="tc__badge tc__badge--hot">🔥 Хіт</span>
-          )}
-          {tour.discount && tour.discount > 0 && (
-            <span className="tc__badge tc__badge--sale">−{tour.discount}%</span>
-          )}
-        </div>
-
-        {/* Favorite */}
-        <button
-          className={`tc__fav ${isFavorite ? 'tc__fav--active' : ''}`}
-          onClick={handleFavorite}
-          disabled={favLoading}
-          aria-label={isFavorite ? 'Видалити з обраного' : 'Додати в обране'}
-        >
-          <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-        </button>
-
-        {/* Hover CTA */}
-        <div className="tc__cta">
-          <Eye size={15} />
-          <span>Детальніше</span>
-        </div>
-      </div>
-
-      {/* ── Body ── */}
-      <div className="tc__body">
-        <h3 className="tc__title">{tour.title}</h3>
-
-        <div className="tc__meta">
-          {tour.location && (
-            <div className="tc__meta-item">
-              <MapPin size={12} />
-              <span>{tour.location}</span>
-            </div>
-          )}
-          {tour.duration && (
-            <div className="tc__meta-item">
-              <Clock size={12} />
-              <span>{tour.duration}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Rating row */}
-        {tour.rating && tour.rating > 0 ? (
-          <div className="tc__rating">
-            {renderStars(tour.rating)}
-            <span className="tc__rating-val">{tour.rating.toFixed(1)}</span>
-          </div>
-        ) : (
-          <div className="tc__rating tc__rating--none">
-            <span>Без оцінок</span>
+        {(tour.isPopular || (tour.discount != null && tour.discount > 0)) && (
+          <div className="tc__badges">
+            {tour.isPopular && <span className="tc__badge tc__badge--pop">Хіт</span>}
+            {tour.discount != null && tour.discount > 0 && (
+              <span className="tc__badge tc__badge--off">−{tour.discount}%</span>
+            )}
           </div>
         )}
 
-        {/* Price */}
-        <div className="tc__footer">
-          <div className="tc__price-wrap">
-            <span className="tc__price-label">від</span>
-            {tour.discount && tour.discount > 0 ? (
-              <div className="tc__price-discount">
-                <span className="tc__price-old">
-                  {formatPrice(tour.price)}
-                </span>
-                <span className="tc__price">
-                  {formatPrice(tour.price * (1 - tour.discount / 100))}
-                </span>
-              </div>
-            ) : (
-              <span className="tc__price">{formatPrice(tour.price)}</span>
+        <button
+          className={`tc__fav ${isFavorite ? 'tc__fav--on' : ''}`}
+          onClick={handleFavorite}
+          disabled={favLoading}
+          aria-label="Обране"
+        >
+          <Heart size={15} fill={isFavorite ? 'currentColor' : 'none'} />
+        </button>
+
+        <div className="tc__photo-bottom">
+          <h3 className="tc__name">{tour.title}</h3>
+          <div className="tc__photo-meta">
+            {tour.location && (
+              <span className="tc__loc"><MapPin size={11} />{tour.location}</span>
+            )}
+            {tour.duration && (
+              <span className="tc__dur"><Clock size={11} />{tour.duration}</span>
             )}
           </div>
-          <div className="tc__arrow">→</div>
+        </div>
+      </div>
+
+      <div className="tc__foot">
+        <div className="tc__rating">
+          {tour.rating && tour.rating > 0 ? (
+            <>
+              <Star size={13} fill="#f59e0b" color="#f59e0b" />
+              <span className="tc__rating-num">{tour.rating.toFixed(1)}</span>
+            </>
+          ) : null}
+        </div>
+
+        <div className="tc__price-row">
+          <div className="tc__price-block">
+            {tour.discount != null && tour.discount > 0 && (
+              <span className="tc__price-was">{formatPrice(tour.price)}</span>
+            )}
+            <span className="tc__price">{formatPrice(finalPrice)}</span>
+          </div>
+          <div className="tc__go"><ArrowUpRight size={16} /></div>
         </div>
       </div>
     </Link>
   );
 };
 
-// ─── Skeleton card ────────────────────────────────────────────────────────────
-
-const SkeletonCard: React.FC = () => (
+const Skeleton: React.FC = () => (
   <div className="tc tc--skeleton">
-    <div className="tc__img-wrap tc__img-skeleton" />
-    <div className="tc__body">
-      <div className="sk-line sk-line--title" />
-      <div className="sk-line sk-line--meta" />
-      <div className="sk-line sk-line--rating" />
-      <div className="sk-line sk-line--price" />
+    <div className="tc__photo tc__sk-photo" />
+    <div className="tc__foot">
+      <div className="tc__sk-line" style={{ width: '40%', height: 12 }} />
+      <div className="tc__sk-line" style={{ width: '55%', height: 18 }} />
     </div>
   </div>
 );
 
-// ─── Cards grid ───────────────────────────────────────────────────────────────
-
 export const Cards: React.FC<CardsProps> = ({ tours, loading, onRetry }) => {
   useEffect(() => {
     if (tours.length) {
-      imageService.preloadImages(tours.map(t => t.imageSrc), { priority: 'medium', concurrency: 4 })
-        .catch(() => {});
+      imageService.preloadImages(tours.map(t => t.imageSrc), { priority: 'medium', concurrency: 4 }).catch(() => {});
     }
   }, [tours]);
 
   if (loading) {
     return (
       <div className="cards-grid">
-        {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
+        {Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} />)}
       </div>
     );
   }
 
-  if (!Array.isArray(tours)) {
+  if (!Array.isArray(tours) || tours.length === 0) {
     return (
       <div className="cards-empty">
-        <div className="cards-empty__icon">⚠️</div>
-        <h3>Помилка завантаження</h3>
-        <p>Не вдалося завантажити тури</p>
-        <button className="cards-empty__btn" onClick={onRetry}>
-          <RefreshCw size={15} /> Спробувати знову
-        </button>
-      </div>
-    );
-  }
-
-  if (tours.length === 0) {
-    return (
-      <div className="cards-empty">
-        <div className="cards-empty__icon">🔍</div>
-        <h3>Нічого не знайдено</h3>
-        <p>Спробуйте змінити параметри пошуку</p>
+        <span className="cards-empty__emoji">{!Array.isArray(tours) ? '⚠️' : '🔍'}</span>
+        <strong>{!Array.isArray(tours) ? 'Помилка завантаження' : 'Нічого не знайдено'}</strong>
+        <p>{!Array.isArray(tours) ? 'Не вдалося завантажити тури' : 'Спробуйте змінити параметри пошуку'}</p>
+        {!Array.isArray(tours) && onRetry && (
+          <button className="cards-empty__retry" onClick={onRetry}>Спробувати знову</button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="cards-grid">
-      {tours.map(tour => <TourCard key={tour.id} tour={tour} />)}
+      {tours.map((tour, i) => <TourCard key={tour.id} tour={tour} index={i} />)}
     </div>
   );
 };

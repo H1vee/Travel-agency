@@ -7,7 +7,6 @@ export interface Tour {
   region?: string;
   duration?: string;
   rating?: number;
-  participants?: number;
   location?: string;
   isPopular?: boolean;
   discount?: number;

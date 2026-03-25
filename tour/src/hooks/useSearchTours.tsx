@@ -1,13 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  Tour, 
+import {
+  Tour,
   SearchResponse,
-  Filters, 
-  PriceRange, 
+  Filters,
+  PriceRange,
   SortOption,
-  DURATIONS, 
-  API_BASE_URL 
+  DURATIONS,
+  API_BASE_URL
 } from '../types/tours';
 
 interface SearchHookReturn {
@@ -34,61 +34,36 @@ interface SearchHookReturn {
 
 const mapDurationToServerParams = (durationIds: string[]): { minDuration?: number; maxDuration?: number } => {
   if (durationIds.length === 0) return {};
-  
   const selectedRanges = durationIds
     .map(id => DURATIONS.find(d => d.id === id))
     .filter((d): d is typeof DURATIONS[0] => d !== undefined);
-  
   if (selectedRanges.length === 0) return {};
-  
   const globalMin = Math.min(...selectedRanges.map(r => r.min));
   const globalMax = Math.max(...selectedRanges.map(r => r.max));
-  
   return { minDuration: globalMin, maxDuration: globalMax };
 };
 
 const buildSearchUrl = (
-  searchQuery: string, 
-  filters: Filters, 
+  searchQuery: string,
+  filters: Filters,
   page: number,
   limit: number,
   sortBy: SortOption
 ): string => {
   const params = new URLSearchParams();
-  
-  if (searchQuery.trim()) {
-    params.append("title", searchQuery.trim());
-  }
-  
-  if (filters.minPrice !== undefined && filters.minPrice > 0) {
-    params.append("minPrice", filters.minPrice.toString());
-  }
-  if (filters.maxPrice !== undefined && filters.maxPrice > 0) {
-    params.append("maxPrice", filters.maxPrice.toString());
-  }
-  
+  if (searchQuery.trim()) params.append("title", searchQuery.trim());
+  if (filters.minPrice !== undefined && filters.minPrice > 0) params.append("minPrice", filters.minPrice.toString());
+  if (filters.maxPrice !== undefined && filters.maxPrice > 0) params.append("maxPrice", filters.maxPrice.toString());
   if (filters.duration && filters.duration.length > 0) {
     const { minDuration, maxDuration } = mapDurationToServerParams(filters.duration);
-    if (minDuration !== undefined) {
-      params.append("minDuration", minDuration.toString());
-    }
-    if (maxDuration !== undefined) {
-      params.append("maxDuration", maxDuration.toString());
-    }
+    if (minDuration !== undefined) params.append("minDuration", minDuration.toString());
+    if (maxDuration !== undefined) params.append("maxDuration", maxDuration.toString());
   }
-  
-  if (filters.rating && filters.rating.length > 0) {
-    params.append("ratings", filters.rating.join(","));
-  }
-  
-  if (filters.region && filters.region.length > 0) {
-    params.append("region", filters.region.join(","));
-  }
-
+  if (filters.rating && filters.rating.length > 0) params.append("ratings", filters.rating.join(","));
+  if (filters.region && filters.region.length > 0) params.append("region", filters.region.join(","));
   params.append("page", page.toString());
   params.append("limit", limit.toString());
   params.append("sortBy", sortBy);
-
   return `${API_BASE_URL}/search?${params.toString()}`;
 };
 
@@ -99,20 +74,31 @@ export const useSearchTours = (): SearchHookReturn => {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
 
-  const { 
-    data: allTours = [], 
-    isPending: isLoadingAllTours, 
+  const {
+    data: allTours = [],
+    isPending: isLoadingAllTours,
     error: allToursError,
-    refetch: refetchAllTours 
+    refetch: refetchAllTours
   } = useQuery({
     queryKey: ["allTours"],
     queryFn: async (): Promise<Tour[]> => {
       const response = await fetch(`${API_BASE_URL}/cards`);
-      if (!response.ok) {
-        throw new Error(`Failed to load tours: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Failed to load tours: ${response.status}`);
       const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) return [];
+      // Map /cards response — now includes rating from backend
+      return data.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        rating: typeof item.rating === 'number' ? item.rating : 0,
+        imageSrc: item.imageSrc || item.image_src || '',
+        description: '',
+        location: '',
+        duration: '',
+        isPopular: false,
+        discount: 0,
+      }));
     },
     retry: 2,
     staleTime: 10 * 60 * 1000,
@@ -135,42 +121,22 @@ export const useSearchTours = (): SearchHookReturn => {
     return buildSearchUrl(searchQuery, filters, currentPage, itemsPerPage, sortBy);
   }, [searchQuery, filters, hasActiveSearch, currentPage, itemsPerPage, sortBy]);
 
-  const { 
-    data: searchResponse, 
+  const {
+    data: searchResponse,
     isPending: isSearching,
     error: searchQueryError
   } = useQuery({
     queryKey: ["searchTours", searchUrl],
     queryFn: async (): Promise<SearchResponse> => {
       if (!searchUrl) {
-        return { 
-          tours: [], 
-          total: 0, 
-          page: 1, 
-          limit: itemsPerPage, 
-          totalPages: 0, 
-          appliedFilters: {} 
-        };
+        return { tours: [], total: 0, page: 1, limit: itemsPerPage, totalPages: 0, appliedFilters: {} };
       }
-      
       const response = await fetch(searchUrl);
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status}`);
-      }
-      
+      if (!response.ok) throw new Error(`Search failed: ${response.status}`);
       const data = await response.json();
-      
       if (!data.tours || !Array.isArray(data.tours)) {
-        return { 
-          tours: [], 
-          total: 0, 
-          page: 1, 
-          limit: itemsPerPage, 
-          totalPages: 0, 
-          appliedFilters: {} 
-        };
+        return { tours: [], total: 0, page: 1, limit: itemsPerPage, totalPages: 0, appliedFilters: {} };
       }
-      
       return data as SearchResponse;
     },
     enabled: !!searchUrl && hasActiveSearch,
@@ -181,21 +147,17 @@ export const useSearchTours = (): SearchHookReturn => {
 
   const searchResults = useMemo(() => {
     if (!searchResponse?.tours) return [];
-    
-    console.log('Search response tours:', searchResponse.tours);
-
     return searchResponse.tours.map(item => ({
       id: item.id,
       title: item.title,
       price: item.price,
-      rating: item.rating,
-      imageSrc: item.imageSrc,
+      rating: typeof item.rating === 'number' ? item.rating : 0,
+      imageSrc: item.imageSrc || '',
       description: '',
       location: item.location || '',
       duration: item.duration ? `${item.duration} днів` : '',
-      participants: 0,
-      isPopular: item.rating >= 4.5,
-      discount: 0
+      isPopular: (item.rating ?? 0) >= 4.5,
+      discount: 0,
     }));
   }, [searchResponse]);
 
@@ -211,18 +173,9 @@ export const useSearchTours = (): SearchHookReturn => {
 
   const priceRange = useMemo(() => {
     if (!allTours.length) return { min: 0, max: 100000 };
-    
-    const prices = allTours
-      .map(tour => tour.price || 0)
-      .filter(price => price > 0);
-    
-    if (prices.length === 0) return { min: 0, max: 100000 };
-    
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const maxWithBuffer = Math.ceil(max * 1.2);
-    
-    return { min: 0, max: maxWithBuffer };
+    const prices = allTours.map(t => t.price || 0).filter(p => p > 0);
+    if (!prices.length) return { min: 0, max: 100000 };
+    return { min: 0, max: Math.ceil(Math.max(...prices) * 1.2) };
   }, [allTours]);
 
   const clearSearch = useCallback(() => {
@@ -231,9 +184,7 @@ export const useSearchTours = (): SearchHookReturn => {
     setCurrentPage(1);
   }, []);
 
-  const setPage = useCallback((page: number) => {
-    setCurrentPage(page);
-  }, []);
+  const setPage = useCallback((page: number) => setCurrentPage(page), []);
 
   const handleSetSortBy = useCallback((newSortBy: SortOption) => {
     setSortBy(newSortBy);
@@ -244,8 +195,6 @@ export const useSearchTours = (): SearchHookReturn => {
     setItemsPerPage(count);
     setCurrentPage(1);
   }, []);
-
-  const combinedError = allToursError || searchQueryError;
 
   return {
     allTours,
@@ -260,7 +209,7 @@ export const useSearchTours = (): SearchHookReturn => {
     totalPages: searchResponse?.totalPages,
     isLoadingAllTours,
     isSearching,
-    error: combinedError as Error | null,
+    error: (allToursError || searchQueryError) as Error | null,
     updateSearch,
     clearSearch,
     refetchAllTours,
