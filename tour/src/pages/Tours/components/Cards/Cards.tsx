@@ -1,16 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { Card, CardFooter, Image, Button, Skeleton, Chip } from "@heroui/react";
 import { Link } from "react-router-dom";
-import { 
-  Heart, 
-  MapPin, 
-  Star, 
-  RefreshCw,
-  Eye,
-  Calendar,
-  Users,
-  Clock
-} from "lucide-react";
+import { Heart, MapPin, Star, Clock, Eye, RefreshCw } from "lucide-react";
 import { useAuth } from '../../../../context/AuthContext';
 import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
 import { Tour } from '../../../../types/tours';
@@ -23,297 +13,214 @@ interface CardsProps {
   onRetry?: () => void;
 }
 
-export const Cards: React.FC<CardsProps> = ({ 
-  tours, 
-  loading, 
-  onRetry
-}) => {
+// ─── Single card ──────────────────────────────────────────────────────────────
+
+const TourCard: React.FC<{ tour: Tour }> = ({ tour }) => {
   const { isAuthenticated } = useAuth();
-  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
-  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
-  const [cachedImageUrls, setCachedImageUrls] = useState<Map<number, string>>(new Map());
+  const isFavorite = useIsFavorite(tour.id);
+  const { toggleFavorite, isLoading: favLoading } = useToggleFavorite();
+  const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  // 🚀 ОПТИМІЗАЦІЯ: Предзавантажуємо всі зображення при зміні турів
-  useEffect(() => {
-    if (!tours || tours.length === 0) return;
+  const imageUrl = imageService.getImageUrl(tour.imageSrc);
 
-    const preloadAllImages = async () => {
-      const imageSources = tours.map(tour => tour.imageSrc);
-      
-      // Використовуємо batch preload для ефективності
-      await imageService.preloadImages(imageSources);
-      
-      // Кешуємо URL-и для швидкого доступу
-      const urlMap = new Map<number, string>();
-      tours.forEach(tour => {
-        if (tour.imageSrc) {
-          urlMap.set(tour.id, imageService.getImageUrl(tour.imageSrc));
-        }
-      });
-      setCachedImageUrls(urlMap);
-    };
-
-    preloadAllImages().catch(console.error);
-  }, [tours]);
-
-  const handleImageLoad = useCallback((tourId: number) => {
-    setLoadingImages(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(tourId);
-      return newSet;
-    });
-  }, []);
-
-  const handleImageError = useCallback((tourId: number) => {
-    setFailedImages(prev => new Set([...prev, tourId]));
-    setLoadingImages(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(tourId);
-      return newSet;
-    });
-  }, []);
-
-  const formatPrice = (price: number, discount?: number) => {
-    if (discount && discount > 0) {
-      const discountedPrice = price - (price * discount / 100);
-      return {
-        original: price,
-        final: Math.round(discountedPrice),
-        discount
-      };
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      alert('Увійдіть, щоб додавати тури в обране');
+      return;
     }
-    return { final: Math.round(price) };
+    toggleFavorite(tour.id);
   };
 
-  const FavoriteButton: React.FC<{ tourId: number }> = ({ tourId }) => {
-    const isFavorite = useIsFavorite(tourId);
-    const { toggleFavorite, isLoading } = useToggleFavorite();
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH', minimumFractionDigits: 0 }).format(price);
 
-    const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      if (!isAuthenticated) {
-        alert('Увійдіть у свій акаунт, щоб додавати тури в обране');
-        return;
-      }
-
-      toggleFavorite(tourId);
-    }, [tourId, isAuthenticated, toggleFavorite]);
-
+  const renderStars = (rating: number) => {
+    const full = Math.floor(rating);
+    const half = rating % 1 >= 0.5;
     return (
-      <button
-        className={`card-favorite ${isFavorite ? 'card-favorite--active' : ''}`}
-        onClick={handleFavoriteClick}
-        disabled={isLoading}
-        aria-label={isFavorite ? "Видалити з улюблених" : "Додати в улюблені"}
-      >
-        <Heart 
-          size={18} 
-          fill={isFavorite ? "currentColor" : "none"}
-        />
-      </button>
+      <div className="tc__stars">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            size={11}
+            fill={i < full ? '#fbbf24' : (i === full && half ? '#fbbf24' : 'none')}
+            color={i < full || (i === full && half) ? '#fbbf24' : '#d1d5db'}
+            strokeWidth={2}
+          />
+        ))}
+      </div>
     );
   };
 
+  return (
+    <Link to={`/TourDetails/${tour.id}`} className="tc">
+      {/* ── Image ── */}
+      <div className="tc__img-wrap">
+        {!imgError ? (
+          <>
+            {!imgLoaded && <div className="tc__img-skeleton" />}
+            <img
+              src={imageUrl}
+              alt={tour.title}
+              className={`tc__img ${imgLoaded ? 'tc__img--loaded' : ''}`}
+              loading="lazy"
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+            />
+          </>
+        ) : (
+          <div className="tc__img-placeholder">
+            <MapPin size={28} color="#cbd5e1" />
+            <span>Фото відсутнє</span>
+          </div>
+        )}
+
+        {/* Gradient overlay */}
+        <div className="tc__overlay" />
+
+        {/* Top badges */}
+        <div className="tc__top">
+          {tour.isPopular && (
+            <span className="tc__badge tc__badge--hot">🔥 Хіт</span>
+          )}
+          {tour.discount && tour.discount > 0 && (
+            <span className="tc__badge tc__badge--sale">−{tour.discount}%</span>
+          )}
+        </div>
+
+        {/* Favorite */}
+        <button
+          className={`tc__fav ${isFavorite ? 'tc__fav--active' : ''}`}
+          onClick={handleFavorite}
+          disabled={favLoading}
+          aria-label={isFavorite ? 'Видалити з обраного' : 'Додати в обране'}
+        >
+          <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+        </button>
+
+        {/* Hover CTA */}
+        <div className="tc__cta">
+          <Eye size={15} />
+          <span>Детальніше</span>
+        </div>
+      </div>
+
+      {/* ── Body ── */}
+      <div className="tc__body">
+        <h3 className="tc__title">{tour.title}</h3>
+
+        <div className="tc__meta">
+          {tour.location && (
+            <div className="tc__meta-item">
+              <MapPin size={12} />
+              <span>{tour.location}</span>
+            </div>
+          )}
+          {tour.duration && (
+            <div className="tc__meta-item">
+              <Clock size={12} />
+              <span>{tour.duration}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Rating row */}
+        {tour.rating && tour.rating > 0 ? (
+          <div className="tc__rating">
+            {renderStars(tour.rating)}
+            <span className="tc__rating-val">{tour.rating.toFixed(1)}</span>
+          </div>
+        ) : (
+          <div className="tc__rating tc__rating--none">
+            <span>Без оцінок</span>
+          </div>
+        )}
+
+        {/* Price */}
+        <div className="tc__footer">
+          <div className="tc__price-wrap">
+            <span className="tc__price-label">від</span>
+            {tour.discount && tour.discount > 0 ? (
+              <div className="tc__price-discount">
+                <span className="tc__price-old">
+                  {formatPrice(tour.price)}
+                </span>
+                <span className="tc__price">
+                  {formatPrice(tour.price * (1 - tour.discount / 100))}
+                </span>
+              </div>
+            ) : (
+              <span className="tc__price">{formatPrice(tour.price)}</span>
+            )}
+          </div>
+          <div className="tc__arrow">→</div>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+// ─── Skeleton card ────────────────────────────────────────────────────────────
+
+const SkeletonCard: React.FC = () => (
+  <div className="tc tc--skeleton">
+    <div className="tc__img-wrap tc__img-skeleton" />
+    <div className="tc__body">
+      <div className="sk-line sk-line--title" />
+      <div className="sk-line sk-line--meta" />
+      <div className="sk-line sk-line--rating" />
+      <div className="sk-line sk-line--price" />
+    </div>
+  </div>
+);
+
+// ─── Cards grid ───────────────────────────────────────────────────────────────
+
+export const Cards: React.FC<CardsProps> = ({ tours, loading, onRetry }) => {
+  useEffect(() => {
+    if (tours.length) {
+      imageService.preloadImages(tours.map(t => t.imageSrc), { priority: 'medium', concurrency: 4 })
+        .catch(() => {});
+    }
+  }, [tours]);
+
   if (loading) {
     return (
-      <div className="cards-container">
-        <div className="cards-grid">
-          {Array.from({ length: 12 }).map((_, index) => (
-            <Card key={index} className="card-skeleton">
-              <Skeleton className="card-skeleton__image">
-                <div className="card-skeleton__image-placeholder"></div>
-              </Skeleton>
-              <CardFooter className="card-skeleton__footer">
-                <div className="card-skeleton__content">
-                  <Skeleton className="card-skeleton__title">
-                    <div className="h-4 w-3/4 rounded-lg bg-default-200"></div>
-                  </Skeleton>
-                  <Skeleton className="card-skeleton__detail">
-                    <div className="h-3 w-1/2 rounded-lg bg-default-200"></div>
-                  </Skeleton>
-                  <Skeleton className="card-skeleton__price">
-                    <div className="h-5 w-2/3 rounded-lg bg-default-200"></div>
-                  </Skeleton>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+      <div className="cards-grid">
+        {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
       </div>
     );
   }
 
   if (!Array.isArray(tours)) {
     return (
-      <div className="error-state">
-        <div className="error-state__content">
-          <div className="error-state__icon">⚠️</div>
-          <h3 className="error-state__title">Помилка завантаження</h3>
-          <p className="error-state__description">
-            Не вдалося завантажити тури. Перевірте з'єднання з інтернетом та спробуйте ще раз.
-          </p>
-          <Button
-            color="primary"
-            variant="flat"
-            startContent={<RefreshCw size={16} />}
-            onClick={onRetry}
-            className="error-state__button"
-          >
-            Спробувати знову
-          </Button>
-        </div>
+      <div className="cards-empty">
+        <div className="cards-empty__icon">⚠️</div>
+        <h3>Помилка завантаження</h3>
+        <p>Не вдалося завантажити тури</p>
+        <button className="cards-empty__btn" onClick={onRetry}>
+          <RefreshCw size={15} /> Спробувати знову
+        </button>
       </div>
     );
   }
 
   if (tours.length === 0) {
     return (
-      <div className="empty-state">
-        <div className="empty-state__content">
-          <div className="empty-state__icon">🔍</div>
-          <h3 className="empty-state__title">Нічого не знайдено</h3>
-          <p className="empty-state__description">
-            Спробуйте змінити параметри пошуку або фільтри, щоб знайти підходящі тури.
-          </p>
-          <div className="empty-state__suggestions">
-            <span>Популярні напрямки:</span>
-            <div className="suggestions-list">
-              <Chip size="sm" variant="flat" color="primary">Єгипет</Chip>
-              <Chip size="sm" variant="flat" color="primary">Дубай</Chip>
-              <Chip size="sm" variant="flat" color="primary">Бостон</Chip>
-              <Chip size="sm" variant="flat" color="primary">Мальдіви</Chip>
-            </div>
-          </div>
-        </div>
+      <div className="cards-empty">
+        <div className="cards-empty__icon">🔍</div>
+        <h3>Нічого не знайдено</h3>
+        <p>Спробуйте змінити параметри пошуку</p>
       </div>
     );
   }
 
   return (
-    <div className="cards-container">
-      <div className="cards-grid">
-        {tours.map((tour) => {
-          const priceInfo = formatPrice(tour.price, tour.discount);
-          const isImageFailed = failedImages.has(tour.id);
-          const isImageLoading = loadingImages.has(tour.id);
-          
-          // 🚀 ОПТИМІЗАЦІЯ: Використовуємо закешований URL
-          const imageUrl = cachedImageUrls.get(tour.id) || imageService.getImageUrl(tour.imageSrc);
-          
-          // 🚀 ОПТИМІЗАЦІЯ: Перевіряємо чи зображення вже в кеші
-          const isImageCached = tour.imageSrc ? imageService.isCached(tour.imageSrc) : false;
-
-          return (
-            <div key={tour.id} className="card-wrapper">
-              <Card className="tour-card">
-                <div className="card-image-container">
-                  {tour.discount && tour.discount > 0 && (
-                    <Chip 
-                      size="sm" 
-                      color="danger" 
-                      variant="solid"
-                      className="card-badge card-badge--discount"
-                    >
-                      -{tour.discount}%
-                    </Chip>
-                  )}
-
-                  <FavoriteButton tourId={tour.id} />
-
-                  {isImageFailed ? (
-                    <div className="card-image-placeholder">
-                      <MapPin size={32} />
-                      <span>Зображення недоступне</span>
-                    </div>
-                  ) : (
-                    <>
-                      {(isImageLoading && !isImageCached) && (
-                        <div className="card-image-loading">
-                          <Skeleton className="w-full h-full" />
-                        </div>
-                      )}
-                      <Image
-                        radius="none"
-                        width="100%"
-                        height="100%"
-                        alt={tour.title}
-                        src={imageUrl}
-                        className="card-image"
-                        onLoad={() => handleImageLoad(tour.id)}
-                        onError={() => handleImageError(tour.id)}
-                        // 🚀 ОПТИМІЗАЦІЯ: Якщо зображення в кеші - eager, інакше lazy
-                        loading={isImageCached ? 'eager' : 'lazy'}
-                      />
-                    </>
-                  )}
-
-                  <Link to={`/TourDetails/${tour.id}`} className="card-overlay-link">
-                    <div className="card-overlay">
-                      <Button
-                        size="sm"
-                        variant="solid"
-                        color="primary"
-                        startContent={<Eye size={16} />}
-                        className="card-view-btn"
-                      >
-                        Переглянути
-                      </Button>
-                    </div>
-                  </Link>
-
-                  <div className="card-gradient"></div>
-                </div>
-                
-                <CardFooter className="card-footer">
-                  <Link to={`/TourDetails/${tour.id}`} className="card-content-link">
-                    <div className="card-content">
-                      <div className="card-header">
-                        <h3 className="card-title">{tour.title}</h3>
-                      </div>
-
-                      <div className="card-details">
-                        {tour.location && (
-                          <div className="card-detail">
-                            <MapPin size={12} />
-                            <span>{tour.location}</span>
-                          </div>
-                        )}
-                        
-                        {tour.duration && (
-                          <div className="card-detail">
-                            <Clock size={12} />
-                            <span>{tour.duration}</span>
-                          </div>
-                        )}
-
-                        {tour.participants && (
-                          <div className="card-detail">
-                            <Users size={12} />
-                            <span>до {tour.participants} осіб</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="card-price-section">
-                        {priceInfo.discount ? (
-                          <div className="price-with-discount">
-                            <span className="price-original">₴{priceInfo.original?.toLocaleString()}</span>
-                            <span className="price-final">₴{priceInfo.final.toLocaleString()}</span>
-                          </div>
-                        ) : (
-                          <span className="price-final">₴{priceInfo.final.toLocaleString()}</span>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                </CardFooter>
-              </Card>
-            </div>
-          );
-        })}
-      </div>
+    <div className="cards-grid">
+      {tours.map(tour => <TourCard key={tour.id} tour={tour} />)}
     </div>
   );
 };
