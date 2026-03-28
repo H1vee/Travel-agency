@@ -52,7 +52,7 @@ export interface CommentsResponse {
   pagination: { page: number; limit: number; total: number; totalPages: number; };
 }
 
-const API = 'http://127.0.0.1:1323';
+const API = process.env.REACT_APP_API_URL!;
 
 function authHeaders(token?: string | null): Record<string, string> {
   const h: Record<string, string> = {

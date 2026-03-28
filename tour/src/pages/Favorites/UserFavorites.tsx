@@ -70,7 +70,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ tourId, tourTitle, isOpen, 
   const { data: tourSeats, isPending: seatsLoading } = useQuery({
     queryKey: ['tourSeats', tourId.toString()],
     queryFn: async (): Promise<TourSeatData[]> => {
-      const res = await fetch(`http://127.0.0.1:1323/tour-seats/${tourId}`);
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/tour-seats/${tourId}`);
       if (!res.ok) throw new Error('Failed to fetch seats');
       return res.json();
     },
@@ -123,7 +123,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ tourId, tourTitle, isOpen, 
       const token = localStorage.getItem('tour_auth_token');
       if (token && isAuthenticated) headers.Authorization = `Bearer ${token}`;
 
-      const res = await fetch('http://127.0.0.1:1323/tour/bookings', {
+      const res = await fetch('${process.env.REACT_APP_API_URL}/tour/bookings', {
         method: 'POST',
         headers,
         body: JSON.stringify({

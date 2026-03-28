@@ -1,12 +1,24 @@
 tour/node_modules/
-tour-server/search/FastTextModel/*
-tour-server/database/*
+tour/.env
+
+.vagrant
+Vagrantfile
+
+tour-server/search/FastTextModel/
+
+
+tour-server/database/
+
+
 tour-server/*.log
 
 tour-server/.env
 tour-server/.env.local
 tour-server/.env.production
+.env.production
 
 tour-server/tour-server
 tour-server/main
 tour-server/*.exe
+
+scripts/

@@ -86,4 +86,4 @@ export const RATINGS = [
   { id: "1", stars: 1, label: "1-1.9 зірка", min: 1.0, max: 1.99 }
 ];
 
-export const API_BASE_URL = "http://127.0.0.1:1323";
+export const API_BASE_URL = process.env.REACT_APP_API_URL!;

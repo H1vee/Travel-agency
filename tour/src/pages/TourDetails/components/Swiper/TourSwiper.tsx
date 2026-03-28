@@ -32,7 +32,7 @@ export const TourSwiper: React.FC = () => {
   } = useQuery({
     queryKey: ['toursData', id],
     queryFn: async () => {
-      const response = await fetch(`http://127.0.0.1:1323/tour-carousel/${id}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/tour-carousel/${id}`, {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) {

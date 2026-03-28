@@ -86,9 +86,7 @@ export const ToursPage: React.FC = () => {
   }, []);
 
   const handleSearch = useCallback(() => {
-    if (inputValue.trim()) {
-      updateSearch(inputValue.trim(), localFilters);
-    }
+    updateSearch(inputValue.trim(), localFilters);
   }, [inputValue, localFilters, updateSearch]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -100,6 +98,7 @@ export const ToursPage: React.FC = () => {
     clearSearch();
     setLocalFilters({});
     setPriceInputs([priceRange.min, priceRange.max]);
+    updateSearch('', {});
   };
 
   const applyFilters = useCallback(() => {

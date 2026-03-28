@@ -66,7 +66,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ filters }) => {
 
       // 🚀 Використовуємо ваш /search endpoint
       const response = await fetch(
-        `http://127.0.0.1:1323/search?${params}`,
+        `${process.env.REACT_APP_API_URL}/search?${params}`,
         {
           credentials: 'include',
           headers: {
