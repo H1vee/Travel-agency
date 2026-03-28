@@ -1,13 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Tour,
-  SearchResponse,
-  Filters,
-  PriceRange,
-  SortOption,
-  DURATIONS,
-  API_BASE_URL
+  Tour, SearchResponse, Filters, PriceRange, SortOption,
+  DURATIONS, API_BASE_URL
 } from '../types/tours';
 
 interface SearchHookReturn {
@@ -32,15 +27,14 @@ interface SearchHookReturn {
   setItemsPerPage: (count: number) => void;
 }
 
-const mapDurationToServerParams = (durationIds: string[]): { minDuration?: number; maxDuration?: number } => {
-  if (durationIds.length === 0) return {};
-  const selectedRanges = durationIds
-    .map(id => DURATIONS.find(d => d.id === id))
-    .filter((d): d is typeof DURATIONS[0] => d !== undefined);
-  if (selectedRanges.length === 0) return {};
-  const globalMin = Math.min(...selectedRanges.map(r => r.min));
-  const globalMax = Math.max(...selectedRanges.map(r => r.max));
-  return { minDuration: globalMin, maxDuration: globalMax };
+const mapDurationToServerParams = (durationIds: string[]) => {
+  if (!durationIds.length) return {};
+  const selected = durationIds.map(id => DURATIONS.find(d => d.id === id)).filter(Boolean) as typeof DURATIONS;
+  if (!selected.length) return {};
+  return {
+    minDuration: Math.min(...selected.map(r => r.min)),
+    maxDuration: Math.max(...selected.map(r => r.max)),
+  };
 };
 
 const buildSearchUrl = (
@@ -50,43 +44,75 @@ const buildSearchUrl = (
   limit: number,
   sortBy: SortOption
 ): string => {
-  const params = new URLSearchParams();
-  if (searchQuery.trim()) params.append("title", searchQuery.trim());
-  if (filters.minPrice !== undefined && filters.minPrice > 0) params.append("minPrice", filters.minPrice.toString());
-  if (filters.maxPrice !== undefined && filters.maxPrice > 0) params.append("maxPrice", filters.maxPrice.toString());
-  if (filters.duration && filters.duration.length > 0) {
+  const p = new URLSearchParams();
+  if (searchQuery.trim()) p.append('title', searchQuery.trim());
+  if (filters.minPrice !== undefined && filters.minPrice > 0) p.append('minPrice', filters.minPrice.toString());
+  if (filters.maxPrice !== undefined && filters.maxPrice > 0) p.append('maxPrice', filters.maxPrice.toString());
+  if (filters.duration?.length) {
     const { minDuration, maxDuration } = mapDurationToServerParams(filters.duration);
-    if (minDuration !== undefined) params.append("minDuration", minDuration.toString());
-    if (maxDuration !== undefined) params.append("maxDuration", maxDuration.toString());
+    if (minDuration !== undefined) p.append('minDuration', minDuration.toString());
+    if (maxDuration !== undefined) p.append('maxDuration', maxDuration.toString());
   }
-  if (filters.rating && filters.rating.length > 0) params.append("ratings", filters.rating.join(","));
-  if (filters.region && filters.region.length > 0) params.append("region", filters.region.join(","));
-  params.append("page", page.toString());
-  params.append("limit", limit.toString());
-  params.append("sortBy", sortBy);
-  return `${API_BASE_URL}/search?${params.toString()}`;
+  if (filters.rating?.length) p.append('ratings', filters.rating.join(','));
+  if (filters.region?.length) p.append('region', filters.region.join(','));
+  p.append('page', page.toString());
+  p.append('limit', limit.toString());
+  p.append('sortBy', sortBy);
+  return `${API_BASE_URL}/search?${p.toString()}`;
 };
 
 export const useSearchTours = (): SearchHookReturn => {
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [sortBy, setSortBy] = useState<SortOption>('popular');
+  const [sortBy, setSortByState] = useState<SortOption>('popular');
 
-  const {
-    data: allTours = [],
-    isPending: isLoadingAllTours,
-    error: allToursError,
-    refetch: refetchAllTours
-  } = useQuery({
-    queryKey: ["allTours"],
+  // Always use /search — it handles both filtered and unfiltered requests
+  const searchUrl = useMemo(
+    () => buildSearchUrl(searchQuery, filters, currentPage, itemsPerPage, sortBy),
+    [searchQuery, filters, currentPage, itemsPerPage, sortBy]
+  );
+
+  const { data: searchResponse, isPending: isSearching, error: searchError, refetch } = useQuery({
+    queryKey: ['searchTours', searchUrl],
+    queryFn: async (): Promise<SearchResponse> => {
+      const res = await fetch(searchUrl);
+      if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+      const data = await res.json();
+      if (!data.tours || !Array.isArray(data.tours)) {
+        return { tours: [], total: 0, page: 1, limit: itemsPerPage, totalPages: 0, appliedFilters: {} };
+      }
+      return data as SearchResponse;
+    },
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
+  });
+
+  const currentTours: Tour[] = useMemo(() => {
+    if (!searchResponse?.tours) return [];
+    return searchResponse.tours.map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      price: item.price,
+      rating: typeof item.rating === 'number' ? item.rating : 0,
+      imageSrc: item.image_src || item.imageSrc || '',
+      description: '',
+      location: item.location || '',
+      duration: item.duration ? `${item.duration} днів` : '',
+      isPopular: (item.rating ?? 0) >= 4.5,
+      discount: 0,
+    }));
+  }, [searchResponse]);
+
+  // priceRange — fetch once from /cards to get min/max prices
+  const { data: allToursRaw = [], isPending: isLoadingAllTours } = useQuery({
+    queryKey: ['allTours'],
     queryFn: async (): Promise<Tour[]> => {
-      const response = await fetch(`${API_BASE_URL}/cards`);
-      if (!response.ok) throw new Error(`Failed to load tours: ${response.status}`);
-      const data = await response.json();
+      const res = await fetch(`${API_BASE_URL}/cards`);
+      if (!res.ok) throw new Error(`Failed to load tours: ${res.status}`);
+      const data = await res.json();
       if (!Array.isArray(data)) return [];
-      // Map /cards response — now includes rating from backend
       return data.map((item: any) => ({
         id: item.id,
         title: item.title,
@@ -100,66 +126,24 @@ export const useSearchTours = (): SearchHookReturn => {
         discount: 0,
       }));
     },
-    retry: 2,
     staleTime: 10 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
   });
 
-  const hasActiveSearch = useMemo(() => {
-    return !!(
-      searchQuery.trim() ||
-      (filters.minPrice !== undefined && filters.minPrice > 0) ||
-      (filters.maxPrice !== undefined && filters.maxPrice > 0) ||
-      (filters.duration && filters.duration.length > 0) ||
-      (filters.rating && filters.rating.length > 0) ||
-      (filters.region && filters.region.length > 0)
-    );
-  }, [searchQuery, filters]);
+  const priceRange = useMemo(() => {
+    if (!allToursRaw.length) return { min: 0, max: 100000 };
+    const prices = allToursRaw.map(t => t.price || 0).filter(p => p > 0);
+    if (!prices.length) return { min: 0, max: 100000 };
+    return { min: 0, max: Math.ceil(Math.max(...prices) * 1.1) };
+  }, [allToursRaw]);
 
-  const searchUrl = useMemo(() => {
-    if (!hasActiveSearch) return null;
-    return buildSearchUrl(searchQuery, filters, currentPage, itemsPerPage, sortBy);
-  }, [searchQuery, filters, hasActiveSearch, currentPage, itemsPerPage, sortBy]);
-
-  const {
-    data: searchResponse,
-    isPending: isSearching,
-    error: searchQueryError
-  } = useQuery({
-    queryKey: ["searchTours", searchUrl],
-    queryFn: async (): Promise<SearchResponse> => {
-      if (!searchUrl) {
-        return { tours: [], total: 0, page: 1, limit: itemsPerPage, totalPages: 0, appliedFilters: {} };
-      }
-      const response = await fetch(searchUrl);
-      if (!response.ok) throw new Error(`Search failed: ${response.status}`);
-      const data = await response.json();
-      if (!data.tours || !Array.isArray(data.tours)) {
-        return { tours: [], total: 0, page: 1, limit: itemsPerPage, totalPages: 0, appliedFilters: {} };
-      }
-      return data as SearchResponse;
-    },
-    enabled: !!searchUrl && hasActiveSearch,
-    retry: 1,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
-
-  const searchResults = useMemo(() => {
-    if (!searchResponse?.tours) return [];
-    return searchResponse.tours.map(item => ({
-      id: item.id,
-      title: item.title,
-      price: item.price,
-      rating: typeof item.rating === 'number' ? item.rating : 0,
-      imageSrc: item.imageSrc || '',
-      description: '',
-      location: item.location || '',
-      duration: item.duration ? `${item.duration} днів` : '',
-      isPopular: (item.rating ?? 0) >= 4.5,
-      discount: 0,
-    }));
-  }, [searchResponse]);
+  const hasActiveSearch = useMemo(() => !!(
+    searchQuery.trim() ||
+    (filters.minPrice !== undefined && filters.minPrice > 0) ||
+    (filters.maxPrice !== undefined && filters.maxPrice > 0) ||
+    filters.duration?.length ||
+    filters.rating?.length ||
+    filters.region?.length
+  ), [searchQuery, filters]);
 
   const updateSearch = useCallback((newQuery: string, newFilters: Filters) => {
     setSearchQuery(newQuery);
@@ -167,27 +151,16 @@ export const useSearchTours = (): SearchHookReturn => {
     setCurrentPage(1);
   }, []);
 
-  const currentTours = useMemo((): Tour[] => {
-    return hasActiveSearch ? searchResults : allTours;
-  }, [hasActiveSearch, searchResults, allTours]);
-
-  const priceRange = useMemo(() => {
-    if (!allTours.length) return { min: 0, max: 100000 };
-    const prices = allTours.map(t => t.price || 0).filter(p => p > 0);
-    if (!prices.length) return { min: 0, max: 100000 };
-    return { min: 0, max: Math.ceil(Math.max(...prices) * 1.2) };
-  }, [allTours]);
-
   const clearSearch = useCallback(() => {
-    setSearchQuery("");
+    setSearchQuery('');
     setFilters({});
     setCurrentPage(1);
   }, []);
 
   const setPage = useCallback((page: number) => setCurrentPage(page), []);
 
-  const handleSetSortBy = useCallback((newSortBy: SortOption) => {
-    setSortBy(newSortBy);
+  const setSortBy = useCallback((s: SortOption) => {
+    setSortByState(s);
     setCurrentPage(1);
   }, []);
 
@@ -197,8 +170,8 @@ export const useSearchTours = (): SearchHookReturn => {
   }, []);
 
   return {
-    allTours,
-    searchResults,
+    allTours: allToursRaw,
+    searchResults: currentTours,
     currentTours,
     priceRange,
     searchQuery,
@@ -207,14 +180,14 @@ export const useSearchTours = (): SearchHookReturn => {
     currentPage,
     totalResults: searchResponse?.total,
     totalPages: searchResponse?.totalPages,
-    isLoadingAllTours,
+    isLoadingAllTours: isLoadingAllTours && !searchResponse,
     isSearching,
-    error: (allToursError || searchQueryError) as Error | null,
+    error: searchError as Error | null,
     updateSearch,
     clearSearch,
-    refetchAllTours,
+    refetchAllTours: refetch,
     setPage,
-    setSortBy: handleSetSortBy,
+    setSortBy,
     setItemsPerPage: handleSetItemsPerPage,
   };
 };

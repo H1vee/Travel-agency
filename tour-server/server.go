@@ -18,7 +18,8 @@ import (
 	userfavorites "tour-server/userfavorites/api"
 	tourcomments "tour-server/tourcomments/api"
 	liqpayAPI "tour-server/liqpay/api"
-
+	tourratings "tour-server/tourratings/api"
+	
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -173,6 +174,8 @@ func main() {
 	// ========================================
 	// Callback is public — LiqPay server calls it directly (no auth)
 	e.POST("/liqpay/callback", liqpayAPI.LiqPayCallback(database.DB))
+	// Client-side confirmation
+	optionalAuth.POST("/liqpay/confirm", liqpayAPI.ConfirmPayment(database.DB))
 	// Create payment requires the booking to exist — optional auth (guests too)
 	optionalAuth.POST("/liqpay/create-payment", liqpayAPI.CreatePayment(database.DB))
 
@@ -192,7 +195,8 @@ func main() {
 	protected.DELETE("/user-favorites/:tour_id", userfavorites.RemoveFavorite(database.DB))
 	protected.PUT("/tour-comments/:id", tourcomments.UpdateComment(database.DB))
 	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB))
-
+	protected.POST("/tour-ratings", tourratings.PostTourRating(database.DB))
+	protected.GET("/tour-ratings/:tour_id/my", tourratings.GetMyTourRating(database.DB))
 	// ========================================
 	// ADMIN ENDPOINTS (auth + admin role)
 	// ========================================

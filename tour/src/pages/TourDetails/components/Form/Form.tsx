@@ -21,12 +21,14 @@ interface TourSeatData {
   price: number;
 }
 
-const API = 'http://127.0.0.1:1323';
+const API = process.env.REACT_APP_API_URL!;
 
 const formatPrice = (p: number) =>
   new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH', minimumFractionDigits: 0 }).format(p);
 
-export const Form = () => {
+interface FormProps { tourTitle?: string; }
+
+export const Form = ({ tourTitle = "Тур" }: FormProps) => {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { id } = useParams();
   const { isAuthenticated, user } = useAuth();
@@ -162,6 +164,9 @@ export const Form = () => {
       await openLiqPayWidget({
         data,
         signature,
+        amount: total,
+        tourTitle,
+        seats,
         onSuccess: async () => {
           setStep('paid');
           await queryClient.invalidateQueries({ queryKey: ['tourSeats', id] });

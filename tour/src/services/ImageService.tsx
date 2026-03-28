@@ -13,7 +13,7 @@ interface PreloadOptions {
 
 class ImageService {
   private cache: ImageCache = {};
-  private baseURL = 'http://127.0.0.1:1323';
+  private baseURL = process.env.REACT_APP_API_URL!;
   private loadingImages = new Map<string, Promise<string>>();
   private maxCacheSize = 200; // Максимальна кількість зображень в кеші
   private cacheExpiryTime = 30 * 60 * 1000; // 30 хвилин

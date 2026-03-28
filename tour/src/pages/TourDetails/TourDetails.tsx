@@ -27,7 +27,7 @@ export const TourDetails = () => {
   const { data: tour, isLoading, isError } = useQuery({
     queryKey: ['tourData', id],
     queryFn: async () => {
-      const res = await fetch(`http://127.0.0.1:1323/tours/${id}`);
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/tours/${id}`);
       if (!res.ok) throw new Error('Not found');
       const raw: any = await res.json();
       return {
@@ -45,7 +45,7 @@ export const TourDetails = () => {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`http://127.0.0.1:1323/tour-carousel/${id}`)
+    fetch(`${process.env.REACT_APP_API_URL}/tour-carousel/${id}`)
       .then(r => r.ok ? r.json() : [])
       .then((imgs: any[]) => {
         if (!Array.isArray(imgs) || !imgs.length) return;
@@ -266,7 +266,7 @@ export const TourDetails = () => {
               </div>
 
               {/* Form */}
-              <Form />
+              <Form tourTitle={tour.title} />
 
               <p className="td2__card-note">Безкоштовне скасування до підтвердження</p>
             </div>

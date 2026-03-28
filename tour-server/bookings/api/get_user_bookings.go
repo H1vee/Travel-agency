@@ -29,6 +29,7 @@ func GetUserBookings(db *gorm.DB) echo.HandlerFunc {
 		for _, booking := range bookings {
 			bookingDTO := dto.BookingResponse{
 				ID:            booking.ID,
+				TourID:        booking.TourDate.TourID,
 				TourTitle:     booking.TourDate.Tour.Title,
 				CustomerName:  booking.CustomerName,
 				CustomerEmail: booking.CustomerEmail,

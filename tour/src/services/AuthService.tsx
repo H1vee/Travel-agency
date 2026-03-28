@@ -32,7 +32,7 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  private baseURL = 'http://127.0.0.1:1323';
+  private baseURL = process.env.REACT_APP_API_URL!;
   private tokenKey = 'tour_auth_token';
   private userKey = 'tour_user_data';
 

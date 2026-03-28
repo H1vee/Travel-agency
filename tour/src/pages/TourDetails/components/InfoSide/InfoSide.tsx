@@ -212,7 +212,7 @@ export const InfoSide = () => {
           <span className="is__price">{formatPrice(data.price)}</span>
         </div>
         <div>
-          <Form />
+          <Form tourTitle={data.title} />
         </div>
       </div>
 

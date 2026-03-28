@@ -4,6 +4,7 @@ import "time"
 
 type BookingResponse struct {
 	ID            uint      `json:"id"`
+	TourID        uint      `json:"tour_id"`
 	TourTitle     string    `json:"tour_title"`
 	FromLocation  string    `json:"from_location,omitempty"`
 	ToLocation    string    `json:"to_location,omitempty"`

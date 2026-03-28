@@ -29,7 +29,7 @@ interface TourDateForm {
   date_to: string;
 }
 
-const API_BASE_URL = 'http://127.0.0.1:1323';
+const API_BASE_URL = process.env.REACT_APP_API_URL!;
 
 const uploadImage = async (file: File, type: 'card' | 'gallery'): Promise<string> => {
   const token = localStorage.getItem('tour_auth_token');

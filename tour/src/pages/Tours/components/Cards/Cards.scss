@@ -348,3 +348,34 @@
     &:hover { opacity: 0.85; }
   }
 }
+
+// ─── Updated badges ───────────────────────────────────────────────────────────
+
+.tc__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &--hit {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+  }
+
+  &--new {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    color: #fff;
+  }
+
+  &--pop {
+    background: #ef4444;
+    color: #fff;
+  }
+}
+
+// ─── Stars ────────────────────────────────────────────────────────────────────
+
+.tc__stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
