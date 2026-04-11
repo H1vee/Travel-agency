@@ -52,9 +52,13 @@ func GetTourComments(db *gorm.DB) echo.HandlerFunc {
 		tourID := c.Param("id")
 
 		page, _ := strconv.Atoi(c.QueryParam("page"))
-		if page <= 0 { page = 1 }
+		if page <= 0 {
+			page = 1
+		}
 		limit, _ := strconv.Atoi(c.QueryParam("limit"))
-		if limit <= 0 || limit > 50 { limit = 10 }
+		if limit <= 0 || limit > 50 {
+			limit = 10
+		}
 		offset := (page - 1) * limit
 
 		var currentUserID uint
@@ -84,10 +88,13 @@ func GetTourComments(db *gorm.DB) echo.HandlerFunc {
 			UpdatedAt       time.Time `gorm:"column:updated_at"`
 		}
 
-		likeSubquery := func(identityCol, identityVal, reactionType string) string {
-			return "EXISTS (SELECT 1 FROM tour_review_likes l WHERE l.review_id = tr.id AND l." +
-				identityCol + " = " + identityVal + " AND l.reaction_type = '" + reactionType + "')"
-		}
+		// ── Build SQL with parameterized identity checks ──────────────────
+		//
+		// OLD (vulnerable):
+		//   likedExpr = "EXISTS (... AND l.guest_token = '" + guestToken + "' ...)"
+		//
+		// NEW (safe):
+		//   liked/disliked use $N placeholders, identity value passed as argument
 
 		buildMainSQL := func(likedExpr, dislikedExpr string) string {
 			return `
@@ -123,21 +130,28 @@ func GetTourComments(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		var likedExpr, dislikedExpr string
-		var mainArgs, replyArgs []interface{}
+		var mainArgs, replyIdentityArgs []interface{}
 
 		if currentUserID > 0 {
-			id := strconv.FormatUint(uint64(currentUserID), 10)
-			likedExpr = likeSubquery("user_id", id, "like")
-			dislikedExpr = likeSubquery("user_id", id, "dislike")
-			mainArgs = []interface{}{tourID, limit, offset}
+			// Authenticated user — use parameterized user_id
+			likedExpr = "EXISTS (SELECT 1 FROM tour_review_likes l WHERE l.review_id = tr.id AND l.user_id = ? AND l.reaction_type = 'like')"
+			dislikedExpr = "EXISTS (SELECT 1 FROM tour_review_likes l WHERE l.review_id = tr.id AND l.user_id = ? AND l.reaction_type = 'dislike')"
+			// Args: liked_user_id, disliked_user_id, tour_id, limit, offset
+			mainArgs = []interface{}{currentUserID, currentUserID, tourID, limit, offset}
+			replyIdentityArgs = []interface{}{currentUserID, currentUserID}
 		} else if guestToken != "" {
-			likedExpr = likeSubquery("guest_token", "'"+guestToken+"'", "like")
-			dislikedExpr = likeSubquery("guest_token", "'"+guestToken+"'", "dislike")
-			mainArgs = []interface{}{tourID, limit, offset}
+			// Guest — use parameterized guest_token
+			likedExpr = "EXISTS (SELECT 1 FROM tour_review_likes l WHERE l.review_id = tr.id AND l.guest_token = ? AND l.reaction_type = 'like')"
+			dislikedExpr = "EXISTS (SELECT 1 FROM tour_review_likes l WHERE l.review_id = tr.id AND l.guest_token = ? AND l.reaction_type = 'dislike')"
+			// Args: liked_guest_token, disliked_guest_token, tour_id, limit, offset
+			mainArgs = []interface{}{guestToken, guestToken, tourID, limit, offset}
+			replyIdentityArgs = []interface{}{guestToken, guestToken}
 		} else {
+			// Anonymous — no identity, hardcode false
 			likedExpr = "false"
 			dislikedExpr = "false"
 			mainArgs = []interface{}{tourID, limit, offset}
+			replyIdentityArgs = nil
 		}
 
 		var rows []rawRow
@@ -146,14 +160,23 @@ func GetTourComments(db *gorm.DB) echo.HandlerFunc {
 		if len(rows) == 0 {
 			totalPages := (total + int64(limit) - 1) / int64(limit)
 			return c.JSON(http.StatusOK, map[string]interface{}{
-				"comments": []interface{}{},
+				"comments":   []interface{}{},
 				"pagination": map[string]interface{}{"page": page, "limit": limit, "total": total, "totalPages": totalPages},
 			})
 		}
 
 		parentIDs := make([]uint, 0, len(rows))
-		for _, r := range rows { parentIDs = append(parentIDs, r.ID) }
-		replyArgs = []interface{}{parentIDs}
+		for _, r := range rows {
+			parentIDs = append(parentIDs, r.ID)
+		}
+
+		// Reply args: identity params first, then parentIDs
+		var replyArgs []interface{}
+		if replyIdentityArgs != nil {
+			replyArgs = append(replyIdentityArgs, parentIDs)
+		} else {
+			replyArgs = []interface{}{parentIDs}
+		}
 
 		type rawReply struct {
 			ID              uint      `gorm:"column:id"`
@@ -177,9 +200,15 @@ func GetTourComments(db *gorm.DB) echo.HandlerFunc {
 
 		resolve := func(uid *uint, uname, gname, uavatar *string) (string, string) {
 			name := "Гість"
-			if gname != nil && *gname != "" { name = *gname } else if uname != nil { name = *uname }
+			if gname != nil && *gname != "" {
+				name = *gname
+			} else if uname != nil {
+				name = *uname
+			}
 			avatar := ""
-			if uavatar != nil { avatar = *uavatar }
+			if uavatar != nil {
+				avatar = *uavatar
+			}
 			return name, avatar
 		}
 
@@ -204,7 +233,9 @@ func GetTourComments(db *gorm.DB) echo.HandlerFunc {
 			isOwner := !isGuest && currentUserID > 0 && *r.UserID == currentUserID
 			name, avatar := resolve(r.UserID, r.UserName, r.GuestName, r.UserAvatar)
 			replies := repliesByParent[r.ID]
-			if replies == nil { replies = []ReplyRow{} }
+			if replies == nil {
+				replies = []ReplyRow{}
+			}
 			comments = append(comments, CommentRow{
 				ID: r.ID, TourID: r.TourID, UserID: r.UserID, UserName: name, UserAvatar: avatar,
 				GuestName: r.GuestName, Comment: r.Comment, Rating: r.Rating,
@@ -218,7 +249,7 @@ func GetTourComments(db *gorm.DB) echo.HandlerFunc {
 
 		totalPages := (total + int64(limit) - 1) / int64(limit)
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"comments": comments,
+			"comments":   comments,
 			"pagination": map[string]interface{}{"page": page, "limit": limit, "total": total, "totalPages": totalPages},
 		})
 	}

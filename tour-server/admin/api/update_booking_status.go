@@ -1,7 +1,9 @@
 package api
 
 import (
+	"log"
 	"net/http"
+	"tour-server/email"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -48,13 +50,17 @@ func UpdateBookingStatus(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		var booking struct {
-			ID         uint   `gorm:"column:id"`
-			TourDateID uint   `gorm:"column:tour_date_id"`
-			Seats      uint   `gorm:"column:seats"`
-			Status     string `gorm:"column:status"`
+			ID            uint    `gorm:"column:id"`
+			TourDateID    uint    `gorm:"column:tour_date_id"`
+			Seats         uint    `gorm:"column:seats"`
+			Status        string  `gorm:"column:status"`
+			CustomerName  string  `gorm:"column:customer_name"`
+			CustomerEmail string  `gorm:"column:customer_email"`
+			TotalPrice    float64 `gorm:"column:total_price"`
 		}
 		if err := tx.Raw(
-			"SELECT id, tour_date_id, seats, status FROM bookings WHERE id = ?",
+			`SELECT id, tour_date_id, seats, status, customer_name, customer_email, total_price
+			 FROM bookings WHERE id = ?`,
 			bookingID,
 		).Scan(&booking).Error; err != nil || booking.ID == 0 {
 			tx.Rollback()
@@ -133,8 +139,46 @@ func UpdateBookingStatus(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
+		// ── Email notification (async, non-blocking) ──────────────────────
+		if booking.CustomerEmail != "" {
+			tourTitle := getTourTitleByBooking(db, booking.ID)
+			notif := email.BookingNotification{
+				CustomerName: booking.CustomerName,
+				TourTitle:    tourTitle,
+				Seats:        int(booking.Seats),
+				TotalPrice:   booking.TotalPrice,
+				BookingID:    booking.ID,
+				Status:       newStatus,
+			}
+
+			switch newStatus {
+			case "confirmed":
+				email.NotifyBookingConfirmed(booking.CustomerEmail, notif)
+			case "cancelled":
+				email.NotifyBookingCancelled(booking.CustomerEmail, notif)
+			}
+
+			log.Printf("Email notification queued: booking #%d → %s → %s",
+				booking.ID, newStatus, booking.CustomerEmail)
+		}
+
 		return c.JSON(http.StatusOK, map[string]string{
 			"message": "Booking status updated",
 		})
 	}
+}
+
+// getTourTitleByBooking fetches the tour title for a given booking ID.
+func getTourTitleByBooking(db *gorm.DB, bookingID uint) string {
+	var title string
+	db.Raw(`
+		SELECT t.title FROM tours t
+		JOIN tour_dates td ON t.id = td.tour_id
+		JOIN bookings b ON b.tour_date_id = td.id
+		WHERE b.id = ?
+	`, bookingID).Scan(&title)
+	if title == "" {
+		title = "Тур"
+	}
+	return title
 }

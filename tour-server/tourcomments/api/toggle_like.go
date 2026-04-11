@@ -39,18 +39,25 @@ func ToggleLike(db *gorm.DB) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Потрібен токен або авторизація"})
 		}
 
-		// Find existing reaction
+		// ── Find existing reaction (parameterized queries) ────────────────
 		var existingType string
 		var existingID int64
 
 		if userID != nil {
-			db.Raw("SELECT id, reaction_type FROM tour_review_likes WHERE review_id = ? AND user_id = ?",
-				commentID, *userID).Row().Scan(&existingID, &existingType)
+			row := db.Raw(
+				"SELECT id, reaction_type FROM tour_review_likes WHERE review_id = ? AND user_id = ?",
+				commentID, *userID,
+			).Row()
+			_ = row.Scan(&existingID, &existingType)
 		} else {
-			db.Raw("SELECT id, reaction_type FROM tour_review_likes WHERE review_id = ? AND guest_token = ?",
-				commentID, guestToken).Row().Scan(&existingID, &existingType)
+			row := db.Raw(
+				"SELECT id, reaction_type FROM tour_review_likes WHERE review_id = ? AND guest_token = ?",
+				commentID, guestToken,
+			).Row()
+			_ = row.Scan(&existingID, &existingType)
 		}
 
+		// ── Toggle logic ──────────────────────────────────────────────────
 		if existingID > 0 {
 			if existingType == body.Type {
 				// Same reaction — remove it
@@ -62,18 +69,28 @@ func ToggleLike(db *gorm.DB) echo.HandlerFunc {
 		} else {
 			// New reaction
 			if userID != nil {
-				db.Exec("INSERT INTO tour_review_likes (review_id, user_id, reaction_type) VALUES (?, ?, ?)",
-					commentID, *userID, body.Type)
+				db.Exec(
+					"INSERT INTO tour_review_likes (review_id, user_id, reaction_type) VALUES (?, ?, ?)",
+					commentID, *userID, body.Type,
+				)
 			} else {
-				db.Exec("INSERT INTO tour_review_likes (review_id, guest_token, reaction_type) VALUES (?, ?, ?)",
-					commentID, guestToken, body.Type)
+				db.Exec(
+					"INSERT INTO tour_review_likes (review_id, guest_token, reaction_type) VALUES (?, ?, ?)",
+					commentID, guestToken, body.Type,
+				)
 			}
 		}
 
-		// Return updated counts
+		// ── Return updated counts ─────────────────────────────────────────
 		var likes, dislikes int64
-		db.Raw("SELECT COUNT(*) FROM tour_review_likes WHERE review_id = ? AND reaction_type = 'like'", commentID).Scan(&likes)
-		db.Raw("SELECT COUNT(*) FROM tour_review_likes WHERE review_id = ? AND reaction_type = 'dislike'", commentID).Scan(&dislikes)
+		db.Raw(
+			"SELECT COUNT(*) FROM tour_review_likes WHERE review_id = ? AND reaction_type = 'like'",
+			commentID,
+		).Scan(&likes)
+		db.Raw(
+			"SELECT COUNT(*) FROM tour_review_likes WHERE review_id = ? AND reaction_type = 'dislike'",
+			commentID,
+		).Scan(&dislikes)
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"likes_count":    likes,

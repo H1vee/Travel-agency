@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"tour-server/email"
 	"tour-server/liqpay"
 
 	"github.com/labstack/echo/v4"
@@ -54,10 +55,10 @@ func LiqPayCallback(db *gorm.DB) echo.HandlerFunc {
 		case "success", "sandbox":
 			if err := confirmBooking(db, orderID, paymentID); err != nil {
 				log.Printf("LiqPay callback: confirmBooking error: %v", err)
-				// Still return 200 to LiqPay — they will retry on non-200
-				// but log the error for manual inspection
 			} else {
 				log.Printf("Booking auto-confirmed: order=%s", orderID)
+				// Send payment confirmation email
+				sendPaymentEmail(db, orderID)
 			}
 
 		case "failure", "error":
@@ -72,6 +73,8 @@ func LiqPayCallback(db *gorm.DB) echo.HandlerFunc {
 				log.Printf("LiqPay callback: cancelBooking error: %v", err)
 			} else {
 				log.Printf("Booking cancelled (reversed): order=%s", orderID)
+				// Send cancellation email for reversed payment
+				sendReversalEmail(db, orderID)
 			}
 
 		default:
@@ -91,7 +94,6 @@ func confirmBooking(db *gorm.DB, orderID, paymentID string) error {
 		return tx.Error
 	}
 
-	// Load booking to verify it exists and check current status
 	var booking struct {
 		ID            uint   `gorm:"column:id"`
 		Status        string `gorm:"column:status"`
@@ -172,4 +174,74 @@ func cancelBookingByOrder(db *gorm.DB, orderID string) error {
 	}
 
 	return tx.Commit().Error
+}
+
+// ── Email helpers ─────────────────────────────────────────────────────────────
+
+func sendPaymentEmail(db *gorm.DB, orderID string) {
+	var info struct {
+		ID            uint    `gorm:"column:id"`
+		CustomerName  string  `gorm:"column:customer_name"`
+		CustomerEmail string  `gorm:"column:customer_email"`
+		Seats         uint    `gorm:"column:seats"`
+		TotalPrice    float64 `gorm:"column:total_price"`
+		TourTitle     string  `gorm:"column:tour_title"`
+	}
+
+	err := db.Raw(`
+		SELECT b.id, b.customer_name, b.customer_email, b.seats, b.total_price,
+		       t.title AS tour_title
+		FROM bookings b
+		JOIN tour_dates td ON b.tour_date_id = td.id
+		JOIN tours t ON td.tour_id = t.id
+		WHERE b.liqpay_order_id = ?
+	`, orderID).Scan(&info).Error
+
+	if err != nil || info.ID == 0 || info.CustomerEmail == "" {
+		return
+	}
+
+	email.NotifyPaymentReceived(info.CustomerEmail, email.BookingNotification{
+		CustomerName: info.CustomerName,
+		TourTitle:    info.TourTitle,
+		Seats:        int(info.Seats),
+		TotalPrice:   info.TotalPrice,
+		BookingID:    info.ID,
+		Status:       "paid",
+	})
+	log.Printf("Payment email queued: booking #%d → %s", info.ID, info.CustomerEmail)
+}
+
+func sendReversalEmail(db *gorm.DB, orderID string) {
+	var info struct {
+		ID            uint    `gorm:"column:id"`
+		CustomerName  string  `gorm:"column:customer_name"`
+		CustomerEmail string  `gorm:"column:customer_email"`
+		Seats         uint    `gorm:"column:seats"`
+		TotalPrice    float64 `gorm:"column:total_price"`
+		TourTitle     string  `gorm:"column:tour_title"`
+	}
+
+	err := db.Raw(`
+		SELECT b.id, b.customer_name, b.customer_email, b.seats, b.total_price,
+		       t.title AS tour_title
+		FROM bookings b
+		JOIN tour_dates td ON b.tour_date_id = td.id
+		JOIN tours t ON td.tour_id = t.id
+		WHERE b.liqpay_order_id = ?
+	`, orderID).Scan(&info).Error
+
+	if err != nil || info.ID == 0 || info.CustomerEmail == "" {
+		return
+	}
+
+	email.NotifyBookingCancelled(info.CustomerEmail, email.BookingNotification{
+		CustomerName: info.CustomerName,
+		TourTitle:    info.TourTitle,
+		Seats:        int(info.Seats),
+		TotalPrice:   info.TotalPrice,
+		BookingID:    info.ID,
+		Status:       "cancelled",
+	})
+	log.Printf("Reversal email queued: booking #%d → %s", info.ID, info.CustomerEmail)
 }
