@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"tour-server/config"
 	"tour-server/database"
+	"tour-server/email"
 	"tour-server/middleware"
 
 	adminAPI "tour-server/admin/api"
@@ -19,7 +20,7 @@ import (
 	tourcomments "tour-server/tourcomments/api"
 	liqpayAPI "tour-server/liqpay/api"
 	tourratings "tour-server/tourratings/api"
-	
+
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -48,6 +49,29 @@ func main() {
 
 	cfg := config.GetConfig()
 
+	// ========================================
+	// EMAIL SERVICE INITIALIZATION
+	// ========================================
+	if cfg.SMTP.User != "" && cfg.SMTP.Password != "" {
+		email.Init(email.SMTPConfig{
+			Host:     cfg.SMTP.Host,
+			Port:     cfg.SMTP.Port,
+			User:     cfg.SMTP.User,
+			Password: cfg.SMTP.Password,
+			From:     cfg.SMTP.From,
+		})
+	} else {
+		log.Println("SMTP credentials not set — email notifications disabled")
+	}
+
+	// ========================================
+	// RATE LIMITERS
+	// ========================================
+	authRL := middleware.AuthLimiter()         // 5 req/min per IP
+	bookingRL := middleware.BookingLimiter()    // 10 req/min per IP
+	paymentRL := middleware.PaymentLimiter()    // 5 req/min per IP
+	commentRL := middleware.CommentLimiter()    // 15 req/min per IP
+
 	e := echo.New()
 
 	e.Validator = &CustomValidator{validator: validator.New()}
@@ -66,6 +90,8 @@ func main() {
 			"http://127.0.0.1:3001",
 			"http://localhost:5173",
 			"http://127.0.0.1:5173",
+			"https://openworld.local",
+			"http://openworld.local",
 		},
 		AllowMethods: []string{
 			http.MethodGet,
@@ -138,10 +164,10 @@ func main() {
 	})
 
 	// ========================================
-	// AUTHENTICATION
+	// AUTHENTICATION (rate limited)
 	// ========================================
-	e.POST("/auth/register", tourusers.RegisterUser(database.DB))
-	e.POST("/auth/login", tourusers.LoginUser(database.DB))
+	e.POST("/auth/register", tourusers.RegisterUser(database.DB), authRL)
+	e.POST("/auth/login", tourusers.LoginUser(database.DB), authRL)
 
 	// ========================================
 	// PUBLIC ENDPOINTS
@@ -163,21 +189,20 @@ func main() {
 	optionalAuth := e.Group("")
 	optionalAuth.Use(middleware.OptionalJWTMiddleware())
 
-	optionalAuth.POST("/tour/bookings", bookings.PostBookings(database.DB))
+	// Booking — rate limited
+	optionalAuth.POST("/tour/bookings", bookings.PostBookings(database.DB), bookingRL)
 
+	// Comments — rate limited for writes
 	optionalAuth.GET("/tour-comments/:id", tourcomments.GetTourComments(database.DB))
-	optionalAuth.POST("/tour-comments", tourcomments.CreateComment(database.DB))
-	optionalAuth.POST("/tour-comments/:id/like", tourcomments.ToggleLike(database.DB))
+	optionalAuth.POST("/tour-comments", tourcomments.CreateComment(database.DB), commentRL)
+	optionalAuth.POST("/tour-comments/:id/like", tourcomments.ToggleLike(database.DB), commentRL)
 
 	// ========================================
-	// LIQPAY
+	// LIQPAY (rate limited)
 	// ========================================
-	// Callback is public — LiqPay server calls it directly (no auth)
 	e.POST("/liqpay/callback", liqpayAPI.LiqPayCallback(database.DB))
-	// Client-side confirmation
-	optionalAuth.POST("/liqpay/confirm", liqpayAPI.ConfirmPayment(database.DB))
-	// Create payment requires the booking to exist — optional auth (guests too)
-	optionalAuth.POST("/liqpay/create-payment", liqpayAPI.CreatePayment(database.DB))
+	optionalAuth.POST("/liqpay/confirm", liqpayAPI.ConfirmPayment(database.DB), paymentRL)
+	optionalAuth.POST("/liqpay/create-payment", liqpayAPI.CreatePayment(database.DB), paymentRL)
 
 	// ========================================
 	// PROTECTED ENDPOINTS (auth required)
@@ -188,15 +213,16 @@ func main() {
 	protected.GET("/profile", tourusers.GetProfile(database.DB))
 	protected.PUT("/profile", tourusers.UpdateProfile(database.DB))
 	protected.GET("/user-bookings", bookings.GetUserBookings(database.DB))
-	protected.POST("/tour-reviews", tourreviews.CreateTourReview(database.DB))
-	protected.PUT("/bookings/:id/cancel", bookings.CancelBooking(database.DB))
+	protected.POST("/tour-reviews", tourreviews.CreateTourReview(database.DB), commentRL)
+	protected.PUT("/bookings/:id/cancel", bookings.CancelBooking(database.DB), bookingRL)
 	protected.POST("/user-favorites", userfavorites.AddFavorite(database.DB))
 	protected.GET("/user-favorites", userfavorites.GetUserFavorites(database.DB))
 	protected.DELETE("/user-favorites/:tour_id", userfavorites.RemoveFavorite(database.DB))
-	protected.PUT("/tour-comments/:id", tourcomments.UpdateComment(database.DB))
-	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB))
+	protected.PUT("/tour-comments/:id", tourcomments.UpdateComment(database.DB), commentRL)
+	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB), commentRL)
 	protected.POST("/tour-ratings", tourratings.PostTourRating(database.DB))
 	protected.GET("/tour-ratings/:tour_id/my", tourratings.GetMyTourRating(database.DB))
+
 	// ========================================
 	// ADMIN ENDPOINTS (auth + admin role)
 	// ========================================
@@ -204,22 +230,18 @@ func main() {
 	admin.Use(middleware.JWTMiddleware())
 	admin.Use(middleware.AdminMiddleware())
 
-	// Analytics
 	admin.GET("/analytics/overview", adminAPI.GetAnalyticsOverview(database.DB))
 	admin.GET("/analytics/bookings-by-month", adminAPI.GetBookingsByMonth(database.DB))
 	admin.GET("/analytics/revenue-by-month", adminAPI.GetRevenueByMonth(database.DB))
 	admin.GET("/analytics/popular-tours", adminAPI.GetPopularTours(database.DB))
 
-	// Bookings management
 	admin.GET("/bookings", adminAPI.GetAdminBookings(database.DB))
 	admin.PUT("/bookings/:id/status", adminAPI.UpdateBookingStatus(database.DB))
 	admin.GET("/bookings/export", adminAPI.ExportBookingsCSV(database.DB))
 
-	// Users management
 	admin.GET("/users", adminAPI.GetAdminUsers(database.DB))
 	admin.GET("/users/:id", adminAPI.GetAdminUserDetail(database.DB))
 
-	// Tours management
 	admin.GET("/tours", adminAPI.GetAdminTours(database.DB))
 	admin.GET("/tours/:id", adminAPI.GetAdminTourDetail(database.DB))
 	admin.POST("/tours", adminAPI.CreateTour(database.DB))
