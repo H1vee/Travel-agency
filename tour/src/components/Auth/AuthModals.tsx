@@ -147,6 +147,16 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                   isRequired
                   variant="bordered"
                 />
+                <div className="text-right">
+                  <Link
+                    size="sm"
+                    className="cursor-pointer"
+                    href="/forgot-password"
+                    onClick={handleLoginClose}
+                  >
+                    Забули пароль?
+                  </Link>
+                </div>
                 {loginError && (
                   <p className="text-red-500 text-sm text-center">{loginError}</p>
                 )}
@@ -264,6 +274,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
                 >
                   Увійти
                 </Link>
+                
               </div>
             </ModalFooter>
           </form>

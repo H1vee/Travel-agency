@@ -15,6 +15,7 @@ import { UserProfile } from '../../pages/Profile/UserProfile';
 import { UserBookings } from '../../pages/Bookings/UserBookings';
 import { UserFavorites } from '../../pages/Favorites/UserFavorites';
 import { AdminLayout, Dashboard, AdminBookings, AdminTours, AdminUsers } from '../../pages/Admin';
+import { ForgotPasswordPage, ResetPasswordPage } from '../../pages/ResetPassword/ResetPassword';
 import {
   QueryClient,
   QueryClientProvider,
@@ -83,6 +84,8 @@ function App() {
                   </Route>
 
                   <Route path="*" element={<NotFound />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
                 </Routes>
               </main>
             </div>
