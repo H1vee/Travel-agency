@@ -10,6 +10,7 @@ import { imageService } from '../../services/ImageService';
 import { useAuth } from '../../context/AuthContext';
 import { useToggleFavorite, useIsFavorite } from '../../hooks/useFavorites';
 import { Form } from './components/Form/Form';
+import { useRecordView } from '../../hooks/useViewHistory';
 import './TourDetails.scss';
 
 export const TourDetails = () => {
@@ -42,7 +43,13 @@ export const TourDetails = () => {
     retry: 1,
     staleTime: 60000,
   });
+const recordView = useRecordView();
 
+useEffect(() => {
+  if (tour?.id && tourId > 0) {
+    recordView.mutate(tourId);
+  }
+}, [tour?.id]);
   useEffect(() => {
     if (!id) return;
     fetch(`${process.env.REACT_APP_API_URL}/tour-carousel/${id}`)

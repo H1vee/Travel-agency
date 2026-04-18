@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Cards } from "../Cards/Cards";
 import { useSearchTours } from "../../../../hooks/useSearchTours";
 import { Filters, SortOption, REGIONS, DURATIONS, RATINGS } from "../../../../types/tours";
+import { RecentlyViewed } from '../../../../components/RecentlyViewed/RecentlyViewed';
 import {
   Pagination,
   Select,
@@ -353,6 +354,7 @@ export const ToursPage: React.FC = () => {
       </div>
 
       {/* ── Results ── */}
+      <RecentlyViewed />
       <div className="tp__results">
         {/* Results header */}
         {!isLoading && !error && (

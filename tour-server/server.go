@@ -20,6 +20,7 @@ import (
 	tourcomments "tour-server/tourcomments/api"
 	liqpayAPI "tour-server/liqpay/api"
 	tourratings "tour-server/tourratings/api"
+	tourviews "tour-server/tourviews/api"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -168,6 +169,9 @@ func main() {
 	// ========================================
 	e.POST("/auth/register", tourusers.RegisterUser(database.DB), authRL)
 	e.POST("/auth/login", tourusers.LoginUser(database.DB), authRL)
+	e.POST("/auth/forgot-password", tourusers.ForgotPassword(database.DB), authRL)
+	e.POST("/auth/reset-password", tourusers.ResetPassword(database.DB), authRL)
+	e.GET("/auth/verify-reset-token", tourusers.VerifyResetToken(database.DB))
 
 	// ========================================
 	// PUBLIC ENDPOINTS
@@ -222,6 +226,10 @@ func main() {
 	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB), commentRL)
 	protected.POST("/tour-ratings", tourratings.PostTourRating(database.DB))
 	protected.GET("/tour-ratings/:tour_id/my", tourratings.GetMyTourRating(database.DB))
+	protected.POST("/tour-views/:tour_id", tourviews.RecordTourView(database.DB))
+	protected.GET("/tour-views", tourviews.GetRecentViews(database.DB))
+	protected.DELETE("/tour-views", tourviews.ClearViewHistory(database.DB))
+	protected.DELETE("/tour-views/:tour_id", tourviews.RemoveFromViewHistory(database.DB))
 
 	// ========================================
 	// ADMIN ENDPOINTS (auth + admin role)
