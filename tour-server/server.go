@@ -186,6 +186,7 @@ func main() {
 	e.GET("/tours-search-by-ids", api.GetToursForCardsByID(database.DB))
 	e.GET("/search", search.SearchTours(database.DB))
 	e.GET("/tour-reviews/:id", tourreviews.GetReviewsByTourID(database.DB))
+	e.GET("/stats", api.GetPublicStats(database.DB))
 
 	// ========================================
 	// OPTIONAL AUTH (guests + authorized users)
