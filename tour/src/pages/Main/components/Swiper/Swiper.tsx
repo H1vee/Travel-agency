@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Pagination, A11y, Autoplay, Navigation, EffectFade } from 'swiper/modules';
 import { Swiper as SwiperBase, SwiperSlide } from 'swiper/react';
-import { Button } from "@heroui/react";
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Loader } from '../Loader/Loader';
 import { imageService } from '../../../../services/ImageService';
+import { MapPin, ArrowRight, ChevronRight } from 'lucide-react';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -22,152 +22,135 @@ interface Tour {
 }
 
 export const Swiper: React.FC = () => {
-  const [imgError, setImgError] = useState<{[key: number]: boolean}>({});
-  const [cachedImageUrls, setCachedImageUrls] = useState<Map<number, string>>(new Map());
-  
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [imagesReady, setImagesReady] = useState(false);
+
   const { isPending, error, data } = useQuery({
     queryKey: ['toursData'],
-    queryFn: async() => {
-      try {
-        const response = await fetch('/api/tourswiper');
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        const tours: Tour[] = await response.json();
-        return tours;
-      } catch (err) {
-        console.error('Failed to fetch tours:', err);
-        throw err;
-      }
+    queryFn: async () => {
+      const response = await fetch('/api/tourswiper');
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      return response.json() as Promise<Tour[]>;
     },
   });
-  
-  const handleImageError = (tourId: number) => {
-    setImgError(prev => ({
-      ...prev,
-      [tourId]: true
-    }));
-  };
-  
-  const tours = data?.slice(0, 4) || [];
-  
-  // 🚀 ОПТИМІЗОВАНО: Легкий preload БЕЗ блокування
+
+  const tours = data?.slice(0, 5) || [];
+
   useEffect(() => {
     if (tours.length === 0) return;
+    // Preload first image immediately, rest in background
+    const first = tours[0];
+    if (first) {
+      imageService.preloadImage(first.imageSrc, { priority: 'high' })
+        .then(() => setImagesReady(true))
+        .catch(() => setImagesReady(true));
+    }
+    setTimeout(() => {
+      imageService.preloadImages(
+        tours.slice(1).map(t => t.imageSrc),
+        { priority: 'low', concurrency: 2 }
+      ).catch(() => {});
+    }, 300);
+  }, [tours.length]);
 
-    const lightPreload = async () => {
-      // Предзавантажуємо тільки перший слайд
-      if (tours[0]) {
-        imageService.preloadImage(tours[0].imageSrc, { priority: 'high' })
-          .catch(() => console.warn('First slide preload failed'));
-      }
-      
-      // Решту завантажуємо в фоні з затримкою
-      setTimeout(() => {
-        const remainingImages = tours.slice(1).map(t => t.imageSrc);
-        imageService.preloadImages(remainingImages, {
-          priority: 'low',
-          concurrency: 1 // Тільки 1 за раз
-        }).catch(() => console.warn('Background preload failed'));
-      }, 500); // Затримка 500ms
-
-      // Кешуємо URLs
-      const urlMap = new Map<number, string>();
-      tours.forEach(tour => {
-        urlMap.set(tour.id, imageService.getImageUrl(tour.imageSrc));
-      });
-      setCachedImageUrls(urlMap);
-    };
-
-    lightPreload();
-  }, [tours]);
-  
   if (isPending) {
-    return (
-      <div className="swiper-loader-container">
-        <Loader />
-      </div>
-    );
+    return <div className="hs__loading"><Loader /></div>;
   }
-  
-  if (error || !data) {
+
+  if (error || !data || tours.length === 0) {
     return (
-      <div className="swiper-error">
-        <h3>Не вдалося завантажити тури</h3>
-        <p>Спробуйте оновити сторінку або зв'яжіться з нами</p>
-        <Button color="primary" onClick={() => window.location.reload()}>
-          Спробувати знову
-        </Button>
-      </div>
-    );
-  }
-  
-  if (tours.length === 0) {
-    return (
-      <div className="swiper-empty">
-        <h3>Немає доступних турів</h3>
-        <Link to="/Tours">
-          <Button color="primary">Переглянути всі тури</Button>
-        </Link>
+      <div className="hs__empty">
+        <MapPin size={40} />
+        <h3>Тури скоро з'являться</h3>
+        <Link to="/Tours">Переглянути каталог</Link>
       </div>
     );
   }
 
   return (
-    <div className="swiper-container">
+    <section className="hs">
       <SwiperBase
         modules={[Pagination, Navigation, A11y, Autoplay, EffectFade]}
         slidesPerView={1}
-        pagination={{ 
-          clickable: true,
-          dynamicBullets: true
-        }}
-        navigation
         effect="fade"
-        className="swiper"
-        autoplay={{ 
-          delay: 5000,
-          disableOnInteraction: false
+        speed={800}
+        navigation={{
+          nextEl: '.hs__nav--next',
+          prevEl: '.hs__nav--prev',
         }}
+        pagination={{
+          el: '.hs__dots',
+          clickable: true,
+          bulletClass: 'hs__dot',
+          bulletActiveClass: 'hs__dot--active',
+        }}
+        autoplay={{ delay: 6000, disableOnInteraction: false }}
+        onSlideChange={(s: any) => setActiveIndex(s.activeIndex)}
+        className="hs__swiper"
       >
-        {tours.map((tour, index) => {
-          const imageUrl = cachedImageUrls.get(tour.id) || imageService.getImageUrl(tour.imageSrc);
-          
+        {tours.map((tour, i) => {
+          const imgUrl = imageService.getImageUrl(tour.imageSrc);
           return (
-            <SwiperSlide 
-              key={tour.id} 
-              className="swiper-slide"
-            >
-              <div 
-                className="swiper-slide-background" 
-                style={{
-                  backgroundImage: imgError[tour.id] 
-                    ? 'url("/images/fallback-tour.jpg")' 
-                    : `url(${imageUrl})`
-                }}
-              ></div>
-              <div className="swiper-slide-overlay"></div>
-              <div className="swiper-slide-wrapper">
-                <h2 className="swiper-slide-title">{tour.title}</h2>
-                <p className="swiper-slide-description">{tour.description}</p>
-                <Link to={`/TourDetails/${tour.id}`} className="swiper-slide-link">
-                  <Button
-                    className="swiper-slide-action"
-                    variant="shadow"
-                    color="secondary"
-                    radius="full"
-                    size="lg"
-                  >
+            <SwiperSlide key={tour.id} className="hs__slide">
+              {/* Background image */}
+              <div className="hs__bg">
+                <img
+                  src={imgUrl}
+                  alt={tour.title}
+                  className="hs__bg-img"
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                />
+              </div>
+
+              {/* Gradient overlay */}
+              <div className="hs__overlay" />
+
+              {/* Content */}
+              <div className="hs__content">
+                <h1 className="hs__title">{tour.title}</h1>
+                <p className="hs__desc">{tour.description}</p>
+                <div className="hs__actions">
+                  <Link to={`/TourDetails/${tour.id}`} className="hs__btn hs__btn--primary">
                     {tour.callToAction}
-                  </Button>
-                </Link>
+                    <ArrowRight size={18} />
+                  </Link>
+                  <Link to="/Tours" className="hs__btn hs__btn--ghost">
+                    Усі тури
+                    <ChevronRight size={16} />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Slide counter */}
+              <div className="hs__counter">
+                <span className="hs__counter-current">{String(i + 1).padStart(2, '0')}</span>
+                <span className="hs__counter-sep">/</span>
+                <span className="hs__counter-total">{String(tours.length).padStart(2, '0')}</span>
               </div>
             </SwiperSlide>
           );
         })}
       </SwiperBase>
-    </div>
+
+      {/* Custom navigation */}
+      <button className="hs__nav hs__nav--prev" aria-label="Previous">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <button className="hs__nav hs__nav--next" aria-label="Next">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+
+      {/* Custom dots */}
+      <div className="hs__dots" />
+
+      {/* Scroll hint */}
+      <div className="hs__scroll-hint">
+        <div className="hs__scroll-line" />
+      </div>
+    </section>
   );
 };
