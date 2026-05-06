@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"tour-server/email"
 
 	"github.com/labstack/echo/v4"
@@ -13,21 +14,15 @@ type UpdateStatusRequest struct {
 	Status string `json:"status"`
 }
 
-// Seat adjustment logic given DB triggers:
-//
-//   trg_decrease_seats  BEFORE INSERT  → decrements available_seats
-//   trg_restore_seats   AFTER DELETE   → restores available_seats
-//
-// Triggers fire only on INSERT/DELETE, NOT on UPDATE.
-// So status changes that affect seat availability must be handled manually:
-//
-//   pending/confirmed → cancelled : restore seats manually
-//   cancelled → pending/confirmed : decrement seats manually
-//   pending ↔ confirmed           : no seat change needed
-
 func UpdateBookingStatus(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		bookingID := c.Param("id")
+		idParam := c.Param("id")
+		bookingIDInt, err := strconv.Atoi(idParam)
+		if err != nil || bookingIDInt <= 0 {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "Невалідний ID бронювання",
+			})
+		}
 
 		var req UpdateStatusRequest
 		if err := c.Bind(&req); err != nil {
@@ -61,7 +56,7 @@ func UpdateBookingStatus(db *gorm.DB) echo.HandlerFunc {
 		if err := tx.Raw(
 			`SELECT id, tour_date_id, seats, status, customer_name, customer_email, total_price
 			 FROM bookings WHERE id = ?`,
-			bookingID,
+			bookingIDInt,
 		).Scan(&booking).Error; err != nil || booking.ID == 0 {
 			tx.Rollback()
 			return c.JSON(http.StatusNotFound, map[string]string{
@@ -118,7 +113,7 @@ func UpdateBookingStatus(db *gorm.DB) echo.HandlerFunc {
 
 		result := tx.Exec(
 			"UPDATE bookings SET status = ? WHERE id = ?",
-			newStatus, bookingID,
+			newStatus, bookingIDInt,
 		)
 		if result.Error != nil {
 			tx.Rollback()
@@ -139,7 +134,6 @@ func UpdateBookingStatus(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		// ── Email notification (async, non-blocking) ──────────────────────
 		if booking.CustomerEmail != "" {
 			tourTitle := getTourTitleByBooking(db, booking.ID)
 			notif := email.BookingNotification{
@@ -168,7 +162,6 @@ func UpdateBookingStatus(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-// getTourTitleByBooking fetches the tour title for a given booking ID.
 func getTourTitleByBooking(db *gorm.DB, bookingID uint) string {
 	var title string
 	db.Raw(`

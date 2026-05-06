@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"tour-server/email"
 
 	"github.com/labstack/echo/v4"
@@ -11,8 +12,26 @@ import (
 
 func CancelBooking(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		bookingID := c.Param("id")
-		userID := c.Get("user_id").(uint)
+		idParam := c.Param("id")
+		bookingIDInt, err := strconv.Atoi(idParam)
+		if err != nil || bookingIDInt <= 0 {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "Невалідний ID бронювання",
+			})
+		}
+
+		userIDVal := c.Get("user_id")
+		if userIDVal == nil {
+			return c.JSON(http.StatusUnauthorized, map[string]string{
+				"error": "Необхідна авторизація",
+			})
+		}
+		userID, ok := userIDVal.(uint)
+		if !ok || userID == 0 {
+			return c.JSON(http.StatusUnauthorized, map[string]string{
+				"error": "Невалідний user_id",
+			})
+		}
 
 		tx := db.Begin()
 		if tx.Error != nil {
@@ -35,7 +54,7 @@ func CancelBooking(db *gorm.DB) echo.HandlerFunc {
 			`SELECT id, tour_date_id, seats, status, user_id,
 			        customer_name, customer_email, total_price
 			 FROM bookings WHERE id = ?`,
-			bookingID,
+			bookingIDInt,
 		).Scan(&booking).Error; err != nil || booking.ID == 0 {
 			tx.Rollback()
 			return c.JSON(http.StatusNotFound, map[string]string{
@@ -74,7 +93,7 @@ func CancelBooking(db *gorm.DB) echo.HandlerFunc {
 
 		if err := tx.Exec(
 			"UPDATE bookings SET status = 'cancelled' WHERE id = ?",
-			bookingID,
+			bookingIDInt,
 		).Error; err != nil {
 			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -88,7 +107,6 @@ func CancelBooking(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		// ── Email notification ────────────────────────────────────────────
 		if booking.CustomerEmail != "" {
 			tourTitle := getTourTitle(db, booking.ID)
 			email.NotifyBookingCancelled(booking.CustomerEmail, email.BookingNotification{
