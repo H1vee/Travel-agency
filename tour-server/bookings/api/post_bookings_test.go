@@ -93,6 +93,7 @@ func TestPostBookings_ZeroSeats(t *testing.T) {
 	body := dto.BookingRequest{
 		TourDateID:    1,
 		CustomerName:  "Артем",
+		CustomerEmail: "user@example.com",
 		CustomerPhone: "+380951234567",
 		Seats:         0,
 	}
@@ -117,6 +118,7 @@ func TestPostBookings_TooManySeats(t *testing.T) {
 	body := dto.BookingRequest{
 		TourDateID:    1,
 		CustomerName:  "Артем",
+		CustomerEmail: "user@example.com",
 		CustomerPhone: "+380951234567",
 		Seats:         21,
 	}
@@ -141,6 +143,7 @@ func TestPostBookings_ZeroTourDateID(t *testing.T) {
 	body := dto.BookingRequest{
 		TourDateID:    0,
 		CustomerName:  "Артем",
+		CustomerEmail: "user@example.com",
 		CustomerPhone: "+380951234567",
 		Seats:         2,
 	}
@@ -156,6 +159,37 @@ func TestPostBookings_ZeroTourDateID(t *testing.T) {
 
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d", rec.Code)
+	}
+}
+
+func TestPostBookings_EmptyEmail(t *testing.T) {
+	e := setupEcho()
+
+	body := dto.BookingRequest{
+		TourDateID:    1,
+		CustomerName:  "Артем",
+		CustomerEmail: "",
+		CustomerPhone: "+380951234567",
+		Seats:         1,
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest(http.MethodPost, "/tour/bookings", strings.NewReader(string(jsonBody)))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	handler := PostBookings(nil)
+	handler(c)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", rec.Code)
+	}
+
+	var resp map[string]string
+	json.Unmarshal(rec.Body.Bytes(), &resp)
+	if resp["error"] == "" {
+		t.Error("expected error message for empty email")
 	}
 }
 
