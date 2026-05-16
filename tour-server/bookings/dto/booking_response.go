@@ -16,5 +16,6 @@ type BookingResponse struct {
 	Seats         int       `json:"seats"`
 	TotalPrice    float64   `json:"total_price"`
 	Status        string    `json:"status"`
+	PaymentStatus string    `json:"payment_status"`
 	BookedAt      time.Time `json:"booked_at"`
 }

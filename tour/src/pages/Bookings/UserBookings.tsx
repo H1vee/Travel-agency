@@ -11,6 +11,7 @@ import {
   CalendarDays, MapPin, Users, CreditCard, Clock, Phone, Mail,
   Eye, AlertCircle, CheckCircle, XCircle, User, Star,
 } from 'lucide-react';
+import { openLiqPayWidget } from '../../hooks/useLiqPay';
 
 const API = process.env.REACT_APP_API_URL!;
 
@@ -28,6 +29,7 @@ interface Booking {
   seats: number;
   total_price: number;
   status: 'pending' | 'confirmed' | 'cancelled';
+  payment_status?: 'pending' | 'paid' | 'failed' | 'reversed';
   booked_at: string;
 }
 
@@ -66,6 +68,8 @@ export const UserBookings: React.FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [isPaying, setIsPaying] = useState(false);
+  const [payError, setPayError] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Rating modal state
@@ -94,6 +98,36 @@ export const UserBookings: React.FC = () => {
       setError(err instanceof Error ? err.message : 'Помилка завантаження бронювань');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayBooking = async (booking: Booking) => {
+    setIsPaying(true);
+    setPayError('');
+    try {
+      const res = await fetch(`${API}/liqpay/create-payment`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ booking_id: booking.id }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Не вдалося ініціювати оплату'); }
+      const { data, signature } = await res.json();
+
+      await openLiqPayWidget({
+        data,
+        signature,
+        amount: booking.total_price,
+        tourTitle: booking.tour_title,
+        seats: booking.seats,
+        onSuccess: async () => {
+          await fetchBookings();
+          onClose();
+        },
+      });
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : 'Помилка оплати');
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -278,7 +312,7 @@ export const UserBookings: React.FC = () => {
                               Оцінити
                             </Button>
                           )}
-                          <Button isIconOnly variant="light" onClick={() => { setSelectedBooking(booking); setCancelError(''); onOpen(); }}>
+                          <Button isIconOnly variant="light" onClick={() => { setSelectedBooking(booking); setCancelError(''); setPayError(''); onOpen(); }}>
                             <Eye size={18} />
                           </Button>
                         </div>
@@ -308,7 +342,7 @@ export const UserBookings: React.FC = () => {
 
       {/* ── Details modal ── */}
       {selectedBooking && (
-        <Modal isOpen={isOpen} onClose={() => { onClose(); setCancelError(''); }} size="3xl" className="booking-modal" scrollBehavior="inside">
+        <Modal isOpen={isOpen} onClose={() => { onClose(); setCancelError(''); setPayError(''); }} size="3xl" className="booking-modal" scrollBehavior="inside">
           <ModalContent>
             <ModalHeader className="booking-modal__header">
               <div className="booking-modal__header-content">
@@ -375,16 +409,30 @@ export const UserBookings: React.FC = () => {
                         <div className="booking-modal__actions-info">
                           <AlertCircle size={20} className="booking-modal__actions-icon" />
                           <div>
-                            <h4>Очікує підтвердження</h4>
-                            <p>Ви можете скасувати бронювання до підтвердження.</p>
+                            <h4>{selectedBooking.payment_status === 'paid' ? 'Очікує підтвердження' : 'Очікує оплату'}</h4>
+                            <p>
+                              {selectedBooking.payment_status === 'paid'
+                                ? 'Оплату отримано, менеджер скоро підтвердить бронювання.'
+                                : 'Оплатіть зараз, щоб підтвердити бронювання. Інакше — можете скасувати.'}
+                            </p>
                             {cancelError && <p style={{ color: '#ef4444', marginTop: '0.5rem', fontSize: '0.875rem' }}>{cancelError}</p>}
+                            {payError && <p style={{ color: '#ef4444', marginTop: '0.5rem', fontSize: '0.875rem' }}>{payError}</p>}
                           </div>
                         </div>
-                        <Button color="danger" variant="light" startContent={<XCircle size={16} />}
-                          isLoading={isCancelling} isDisabled={isCancelling}
-                          onClick={() => handleCancelBooking(selectedBooking.id)}>
-                          Скасувати бронювання
-                        </Button>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {selectedBooking.payment_status !== 'paid' && (
+                            <Button color="primary" variant="solid" startContent={<CreditCard size={16} />}
+                              isLoading={isPaying} isDisabled={isPaying || isCancelling}
+                              onClick={() => handlePayBooking(selectedBooking)}>
+                              Оплатити
+                            </Button>
+                          )}
+                          <Button color="danger" variant="light" startContent={<XCircle size={16} />}
+                            isLoading={isCancelling} isDisabled={isCancelling || isPaying}
+                            onClick={() => handleCancelBooking(selectedBooking.id)}>
+                            Скасувати бронювання
+                          </Button>
+                        </div>
                       </div>
                     </CardBody>
                   </Card>
@@ -420,7 +468,7 @@ export const UserBookings: React.FC = () => {
               </div>
             </ModalBody>
             <ModalFooter className="booking-modal__footer">
-              <Button color="default" variant="light" onPress={() => { onClose(); setCancelError(''); }}>Закрити</Button>
+              <Button color="default" variant="light" onPress={() => { onClose(); setCancelError(''); setPayError(''); }}>Закрити</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>
