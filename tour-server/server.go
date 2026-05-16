@@ -188,6 +188,10 @@ func main() {
 	e.GET("/tour-reviews/:id", tourreviews.GetReviewsByTourID(database.DB))
 	e.GET("/stats", api.GetPublicStats(database.DB))
 
+	// Guest "pay later" magic-link endpoints (token-authenticated, no JWT)
+	e.GET("/bookings/by-token/:token", bookings.GetBookingByToken(database.DB))
+	e.POST("/liqpay/create-payment-by-token", liqpayAPI.CreatePaymentByToken(database.DB), paymentRL)
+
 	// ========================================
 	// OPTIONAL AUTH (guests + authorized users)
 	// ========================================

@@ -1,9 +1,14 @@
 package api
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 	"tour-server/bookings/dto"
 	"tour-server/bookings/models"
 	"tour-server/email"
@@ -122,6 +127,25 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 				"error": "Failed to create booking"})
 		}
 
+		// ── Magic-link payment token for guests ───────────────────────────
+		var paymentURL string
+		if isGuestBooking {
+			token, err := generatePaymentToken()
+			if err != nil {
+				log.Printf("Failed to generate payment token: %v", err)
+			} else {
+				expiresAt := time.Now().Add(7 * 24 * time.Hour)
+				if err := db.Exec(
+					"UPDATE bookings SET payment_token = ?, payment_token_expires_at = ? WHERE id = ?",
+					token, expiresAt, booking.ID,
+				).Error; err != nil {
+					log.Printf("Failed to save payment token: %v", err)
+				} else {
+					paymentURL = buildPaymentURL(token)
+				}
+			}
+		}
+
 		// ── Email notification (async) ────────────────────────────────────
 		tourTitle := getTourTitleByDateID(db, req.TourDateID)
 		email.NotifyBookingCreated(req.CustomerEmail, email.BookingNotification{
@@ -131,6 +155,7 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 			TotalPrice:   calculatedPrice,
 			BookingID:    booking.ID,
 			Status:       "pending",
+			PaymentURL:   paymentURL,
 		})
 		log.Printf("Booking created email queued: #%d → %s", booking.ID, req.CustomerEmail)
 
@@ -141,6 +166,22 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 			"total_price": calculatedPrice,
 		})
 	}
+}
+
+func generatePaymentToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+func buildPaymentURL(token string) string {
+	base := os.Getenv("FRONTEND_URL")
+	if base == "" {
+		base = "https://openworld.local"
+	}
+	return fmt.Sprintf("%s/pay/%s", base, token)
 }
 
 func getTourTitleByDateID(db *gorm.DB, tourDateID uint) string {
