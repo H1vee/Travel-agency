@@ -74,7 +74,7 @@ export const Form = ({ tourTitle = "Тур" }: FormProps) => {
     return '';
   };
   const validateEmail = (v: string) => {
-    if (!v.trim()) return '';
+    if (!v.trim()) return "Email обов'язковий";
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : 'Некоректний email';
   };
   const validatePhone = (v: string) => {
@@ -96,6 +96,7 @@ export const Form = ({ tourTitle = "Тур" }: FormProps) => {
   const isFormValid = () =>
     name.trim().length >= 2 &&
     validatePhone(phone) === '' &&
+    validateEmail(email) === '' &&
     !errors.name && !errors.email && !errors.phone &&
     seats >= 1 && seats <= available;
 
@@ -114,7 +115,7 @@ export const Form = ({ tourTitle = "Тур" }: FormProps) => {
     const emailErr = validateEmail(email);
     const phoneErr = validatePhone(phone);
     setErrors({ name: nameErr, email: emailErr, phone: phoneErr });
-    if (nameErr || phoneErr) return;
+    if (nameErr || emailErr || phoneErr) return;
     if (!tourDateId) { addToast({ title: 'Помилка', description: 'Не вдалося визначити дату туру', color: 'danger' }); return; }
 
     setStep('submitting');
@@ -324,7 +325,7 @@ export const Form = ({ tourTitle = "Тур" }: FormProps) => {
                     isDisabled={step === 'submitting'}
                     variant="bordered" startContent={<Phone size={16} className="text-default-400" />} />
 
-                  <Input label="Email (необов'язково)" placeholder="example@email.com"
+                  <Input isRequired label="Email" placeholder="example@email.com"
                     value={email}
                     onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: validateEmail(e.target.value) })); }}
                     isInvalid={!!errors.email} errorMessage={errors.email}
