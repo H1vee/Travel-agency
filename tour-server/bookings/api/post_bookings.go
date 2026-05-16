@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 	"net/http"
+	"strings"
 	"tour-server/bookings/dto"
 	"tour-server/bookings/models"
 	"tour-server/email"
@@ -32,10 +33,12 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": errMsg})
 		}
 
-		if req.CustomerEmail != "" {
-			if errMsg := middleware.ValidateEmail(req.CustomerEmail); errMsg != "" {
-				return c.JSON(http.StatusBadRequest, map[string]string{"error": errMsg})
-			}
+		if strings.TrimSpace(req.CustomerEmail) == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "Email обов'язковий"})
+		}
+		if errMsg := middleware.ValidateEmail(req.CustomerEmail); errMsg != "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": errMsg})
 		}
 
 		if req.Seats == 0 || req.Seats > 20 {
@@ -120,18 +123,16 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		// ── Email notification (async) ────────────────────────────────────
-		if req.CustomerEmail != "" {
-			tourTitle := getTourTitleByDateID(db, req.TourDateID)
-			email.NotifyBookingCreated(req.CustomerEmail, email.BookingNotification{
-				CustomerName: req.CustomerName,
-				TourTitle:    tourTitle,
-				Seats:        int(req.Seats),
-				TotalPrice:   calculatedPrice,
-				BookingID:    booking.ID,
-				Status:       "pending",
-			})
-			log.Printf("Booking created email queued: #%d → %s", booking.ID, req.CustomerEmail)
-		}
+		tourTitle := getTourTitleByDateID(db, req.TourDateID)
+		email.NotifyBookingCreated(req.CustomerEmail, email.BookingNotification{
+			CustomerName: req.CustomerName,
+			TourTitle:    tourTitle,
+			Seats:        int(req.Seats),
+			TotalPrice:   calculatedPrice,
+			BookingID:    booking.ID,
+			Status:       "pending",
+		})
+		log.Printf("Booking created email queued: #%d → %s", booking.ID, req.CustomerEmail)
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"message":     "Booking successful",
