@@ -25,6 +25,22 @@ func GetUserBookings(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
+		paymentStatuses := make(map[uint]string, len(bookings))
+		if len(bookings) > 0 {
+			ids := make([]uint, 0, len(bookings))
+			for _, b := range bookings {
+				ids = append(ids, b.ID)
+			}
+			var rows []struct {
+				ID            uint   `gorm:"column:id"`
+				PaymentStatus string `gorm:"column:payment_status"`
+			}
+			db.Raw("SELECT id, COALESCE(payment_status, 'pending') AS payment_status FROM bookings WHERE id IN ?", ids).Scan(&rows)
+			for _, r := range rows {
+				paymentStatuses[r.ID] = r.PaymentStatus
+			}
+		}
+
 		var response []dto.BookingResponse
 		for _, booking := range bookings {
 			bookingDTO := dto.BookingResponse{
@@ -37,9 +53,13 @@ func GetUserBookings(db *gorm.DB) echo.HandlerFunc {
 				Seats:         int(booking.Seats),
 				TotalPrice:    booking.TotalPrice,
 				Status:        booking.Status,
+				PaymentStatus: paymentStatuses[booking.ID],
 				BookedAt:      booking.BookedAt,
 				DateFrom:      booking.TourDate.DateFrom,
 				DateTo:        booking.TourDate.DateTo,
+			}
+			if bookingDTO.PaymentStatus == "" {
+				bookingDTO.PaymentStatus = "pending"
 			}
 
 			if booking.TourDate.FromLocation.ID != 0 {

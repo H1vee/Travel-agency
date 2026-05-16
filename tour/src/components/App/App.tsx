@@ -13,6 +13,7 @@ import { Tours } from '../../pages/Tours/Tours';
 import { TourDetails } from '../../pages/TourDetails/TourDetails';
 import { UserProfile } from '../../pages/Profile/UserProfile';
 import { UserBookings } from '../../pages/Bookings/UserBookings';
+import { GuestPay } from '../../pages/GuestPay/GuestPay';
 import { UserFavorites } from '../../pages/Favorites/UserFavorites';
 import { AdminLayout, Dashboard, AdminBookings, AdminTours, AdminUsers } from '../../pages/Admin';
 import { ForgotPasswordPage, ResetPasswordPage } from '../../pages/ResetPassword/ResetPassword';
@@ -72,6 +73,7 @@ function App() {
                   <Route path="/TourDetails/:id" element={<TourDetails />} />
                   <Route path="/profile" element={<UserProfile />} />
                   <Route path="/bookings" element={<UserBookings />} />
+                  <Route path="/pay/:token" element={<GuestPay />} />
                   <Route path="/favorites" element={<UserFavorites />} />
                   <Route path="/settings" element={<UserSettings />} />
 
