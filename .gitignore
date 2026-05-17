@@ -1,1 +1,9 @@
 node_modules
+
+.env
+.env.*
+tour-server/.env*
+tour/.env*
+tour/src/.env*
+.vagrant/
+Vagrantfile
