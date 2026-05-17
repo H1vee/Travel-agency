@@ -33,13 +33,13 @@ declare global {
 
 const API = process.env.REACT_APP_API_URL!;
 
-async function confirmPaymentOnServer(data: string, signature: string): Promise<void> {
+async function confirmPaymentOnServer(orderID: string): Promise<void> {
   const token = localStorage.getItem('tour_auth_token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${API}/liqpay/confirm`, {
     method: 'POST', headers,
-    body: JSON.stringify({ data, signature }),
+    body: JSON.stringify({ order_id: orderID }),
   });
   if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Confirmation failed'); }
 }
@@ -198,15 +198,23 @@ export async function openLiqPayWidget(opts: LiqPayWidgetOptions): Promise<void>
 
   widget
     .on('liqpay.callback', async (callbackData: any) => {
-      if (callbackData.status === 'success' || callbackData.status === 'sandbox') {
-        try {
-          await confirmPaymentOnServer(callbackData.data, callbackData.signature);
-        } catch (err) {
-          console.error('Payment confirmation error:', err);
-        }
-        if (document.body.contains(overlay)) document.body.removeChild(overlay);
-        opts.onSuccess?.();
+      if (callbackData.status !== 'success' && callbackData.status !== 'sandbox') {
+        return; // LiqPay сам покаже причину у віджеті
       }
+      const orderID = callbackData.order_id;
+      if (!orderID) {
+        console.error('LiqPay callback без order_id', callbackData);
+        return;
+      }
+      try {
+        await confirmPaymentOnServer(orderID);
+      } catch (err) {
+        console.error('Payment confirmation error:', err);
+        alert('Оплата пройшла, але сервер не зміг її підтвердити. Оновіть сторінку через хвилину.');
+        return; // НЕ закриваємо віджет і НЕ кличемо onSuccess
+      }
+      if (document.body.contains(overlay)) document.body.removeChild(overlay);
+      opts.onSuccess?.();
     })
     .on('liqpay.close', () => {
       if (document.body.contains(overlay)) document.body.removeChild(overlay);

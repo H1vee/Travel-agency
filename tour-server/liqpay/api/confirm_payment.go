@@ -1,9 +1,13 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 	"tour-server/liqpay"
 
@@ -12,62 +16,70 @@ import (
 )
 
 // POST /liqpay/confirm
-// Фронтенд викликає після успішної оплати з data+signature від LiqPay віджету
-// Верифікуємо підпис і підтверджуємо бронювання
+// Фронтенд викликає після успіху у віджеті, передаючи лише order_id.
+// Сервер сам звертається до LiqPay status API, щоб перевірити стан платежу,
+// бо подія liqpay.callback у віджеті не повертає підписаних data+signature.
 func ConfirmPayment(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req struct {
-			Data      string `json:"data"`
-			Signature string `json:"signature"`
+			OrderID string `json:"order_id"`
 		}
-		if err := c.Bind(&req); err != nil || req.Data == "" || req.Signature == "" {
+		if err := c.Bind(&req); err != nil || req.OrderID == "" {
 			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "data and signature required",
+				"error": "order_id required",
 			})
 		}
 
+		publicKey := os.Getenv("LIQPAY_PUBLIC_KEY")
 		privateKey := os.Getenv("LIQPAY_PRIVATE_KEY")
 
-		// Верифікуємо підпис — якщо підпис неправильний, відхиляємо
-		if !liqpay.Verify(req.Data, req.Signature, privateKey) {
-			return c.JSON(http.StatusForbidden, map[string]string{
-				"error": "invalid signature",
-			})
+		statusParams := liqpay.Params{
+			"public_key": publicKey,
+			"version":    "3",
+			"action":     "status",
+			"order_id":   req.OrderID,
 		}
-
-		// Декодуємо payload
-		payload, err := liqpay.Decode(req.Data)
+		data, err := liqpay.Encode(statusParams)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "decode error",
-			})
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "encode failed"})
+		}
+		signature := liqpay.Sign(data, privateKey)
+
+		form := url.Values{}
+		form.Set("data", data)
+		form.Set("signature", signature)
+
+		httpClient := &http.Client{Timeout: 10 * time.Second}
+		resp, err := httpClient.Post(
+			"https://www.liqpay.ua/api/request",
+			"application/x-www-form-urlencoded",
+			strings.NewReader(form.Encode()),
+		)
+		if err != nil {
+			return c.JSON(http.StatusBadGateway, map[string]string{"error": "liqpay unreachable"})
+		}
+		defer resp.Body.Close()
+
+		body, _ := io.ReadAll(resp.Body)
+		var payload map[string]interface{}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return c.JSON(http.StatusBadGateway, map[string]string{"error": "bad liqpay response"})
 		}
 
-		orderID, _ := payload["order_id"].(string)
 		status, _ := payload["status"].(string)
 		paymentID := ""
 		if pid, ok := payload["payment_id"].(float64); ok {
 			paymentID = fmt.Sprintf("%.0f", pid)
 		}
 
-		if orderID == "" {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": "missing order_id",
-			})
-		}
-
-		// Тільки success і sandbox вважаються успішною оплатою
 		if status != "success" && status != "sandbox" {
 			return c.JSON(http.StatusBadRequest, map[string]string{
 				"error": fmt.Sprintf("payment status is '%s', not successful", status),
 			})
 		}
 
-		// Підтверджуємо бронювання
-		if err := confirmBookingByOrder(db, orderID, paymentID); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": err.Error(),
-			})
+		if err := confirmBookingByOrder(db, req.OrderID, paymentID); err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -95,7 +107,6 @@ func confirmBookingByOrder(db *gorm.DB, orderID, paymentID string) error {
 		return fmt.Errorf("booking not found for order %s", orderID)
 	}
 
-	// Ідемпотентність
 	if booking.PaymentStatus == "paid" {
 		tx.Rollback()
 		return nil
