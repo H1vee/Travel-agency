@@ -17,12 +17,5 @@ database:
   sslmode: "disable"
 
 jwt:
-  secret: ""
+  secret: "712415f5ec16aee0df7f5882f2ef0c2cd9b8338bf0de32312e77b11d7828fec3"
   expiry_hour: 24
-
-smtp:
-  host: "smtp.gmail.com"
-  port: 587
-  user: ""       
-  password: ""   
-  from: "OpenWorld <ledynskyi.artem@chnu.edu.ua>"
