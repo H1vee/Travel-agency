@@ -8,14 +8,12 @@ import (
 )
 
 type TourCardResponse struct {
-	ID            uint    `json:"id"`
-	Title         string  `json:"title"`
-	Price         float64 `json:"price"`
-	Rating        float64 `json:"rating"`
-	ImageSrc      *string `json:"imageSrc"`
-	BookingsCount int     `json:"bookings_count"`
-	IsNew         bool    `json:"is_new"`
-	IsHit         bool    `json:"is_hit"`
+	ID       uint    `json:"id"`
+	Title    string  `json:"title"`
+	Price    float64 `json:"price"`
+	Rating   float64 `json:"rating"`
+	ImageSrc *string `json:"imageSrc"`
+	IsNew    bool    `json:"is_new"`
 }
 
 func GetToursForCards(db *gorm.DB) echo.HandlerFunc {
@@ -25,13 +23,12 @@ func GetToursForCards(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		type rawTour struct {
-			ID            uint    `gorm:"column:id"`
-			Title         string  `gorm:"column:title"`
-			Price         float64 `gorm:"column:price"`
-			Rating        float64 `gorm:"column:rating"`
-			ImageSrc      *string `gorm:"column:image_src"`
-			BookingsCount int     `gorm:"column:bookings_count"`
-			CreatedAt     string  `gorm:"column:created_at"`
+			ID        uint    `gorm:"column:id"`
+			Title     string  `gorm:"column:title"`
+			Price     float64 `gorm:"column:price"`
+			Rating    float64 `gorm:"column:rating"`
+			ImageSrc  *string `gorm:"column:image_src"`
+			CreatedAt string  `gorm:"column:created_at"`
 		}
 
 		var tours []rawTour
@@ -42,11 +39,6 @@ func GetToursForCards(db *gorm.DB) echo.HandlerFunc {
 				tours.price,
 				tours.rating,
 				COALESCE(tour_card_images.image_src, 'no-image.jpg') AS image_src,
-				COALESCE((
-					SELECT COUNT(*) FROM bookings b
-					JOIN tour_dates td ON b.tour_date_id = td.id
-					WHERE td.tour_id = tours.id AND b.status IN ('pending','confirmed')
-				), 0) AS bookings_count,
 				tours.created_at
 			`).
 			Joins("LEFT JOIN tour_card_images ON tours.id = tour_card_images.tour_id").
@@ -56,32 +48,6 @@ func GetToursForCards(db *gorm.DB) echo.HandlerFunc {
 
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch tours"})
-		}
-
-		// Визначаємо топ-3 за бронюваннями (хіти)
-		type tourWithIdx struct {
-			idx   int
-			count int
-		}
-		counts := make([]tourWithIdx, len(tours))
-		for i, t := range tours {
-			counts[i] = tourWithIdx{i, t.BookingsCount}
-		}
-		// Сортуємо для визначення хітів
-		topN := 3
-		hitSet := make(map[int]bool)
-		// Simple selection of top-N by bookings_count
-		for i := 0; i < topN && i < len(counts); i++ {
-			maxIdx := i
-			for j := i + 1; j < len(counts); j++ {
-				if counts[j].count > counts[maxIdx].count {
-					maxIdx = j
-				}
-			}
-			counts[i], counts[maxIdx] = counts[maxIdx], counts[i]
-			if counts[i].count > 0 {
-				hitSet[counts[i].idx] = true
-			}
 		}
 
 		// Визначаємо новинки — тури додані за останні 30 днів або топ-3 за id
@@ -108,14 +74,12 @@ func GetToursForCards(db *gorm.DB) echo.HandlerFunc {
 		result := make([]TourCardResponse, len(tours))
 		for i, t := range tours {
 			result[i] = TourCardResponse{
-				ID:            t.ID,
-				Title:         t.Title,
-				Price:         t.Price,
-				Rating:        t.Rating,
-				ImageSrc:      t.ImageSrc,
-				BookingsCount: t.BookingsCount,
-				IsNew:         newSet[t.ID],
-				IsHit:         hitSet[i],
+				ID:       t.ID,
+				Title:    t.Title,
+				Price:    t.Price,
+				Rating:   t.Rating,
+				ImageSrc: t.ImageSrc,
+				IsNew:    newSet[t.ID],
 			}
 		}
 

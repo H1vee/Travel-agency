@@ -10,16 +10,14 @@ import (
 )
 
 type SearchTourItem struct {
-	ID            uint    `json:"id" gorm:"column:id"`
-	Title         string  `json:"title" gorm:"column:title"`
-	Price         float64 `json:"price" gorm:"column:price"`
-	Rating        float64 `json:"rating" gorm:"column:rating"`
-	ImageSrc      string  `json:"image_src" gorm:"column:image_src"`
-	Duration      float64 `json:"duration" gorm:"column:duration"`
-	Location      string  `json:"location" gorm:"column:location"`
-	BookingsCount int     `json:"bookings_count" gorm:"column:bookings_count"`
-	IsHit         bool    `json:"is_hit" gorm:"-"`
-	IsNew         bool    `json:"is_new" gorm:"-"`
+	ID       uint    `json:"id" gorm:"column:id"`
+	Title    string  `json:"title" gorm:"column:title"`
+	Price    float64 `json:"price" gorm:"column:price"`
+	Rating   float64 `json:"rating" gorm:"column:rating"`
+	ImageSrc string  `json:"image_src" gorm:"column:image_src"`
+	Duration float64 `json:"duration" gorm:"column:duration"`
+	Location string  `json:"location" gorm:"column:location"`
+	IsNew    bool    `json:"is_new" gorm:"-"`
 }
 
 type SearchResult struct {
@@ -59,12 +57,7 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 					SELECT CONCAT(l.name, ', ', l.country)
 					FROM tour_dates td JOIN locations l ON td.to_location_id = l.id
 					WHERE td.tour_id = tours.id LIMIT 1
-				), '') AS location,
-				COALESCE((
-					SELECT COUNT(*) FROM bookings b
-					JOIN tour_dates td ON b.tour_date_id = td.id
-					WHERE td.tour_id = tours.id AND b.status IN ('pending','confirmed')
-				), 0) AS bookings_count
+				), '') AS location
 			`).
 			Joins("LEFT JOIN tour_card_images tci ON tci.tour_id = tours.id").
 			Where("tours.status_id = (SELECT id FROM statuses WHERE name = 'active')")
@@ -157,8 +150,6 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			base = base.Order("CASE WHEN tours.rating IS NULL OR tours.rating = 0 THEN 1 ELSE 0 END ASC, tours.rating DESC, tours.id DESC")
 		case "newest":
 			base = base.Order("tours.id DESC")
-		case "popular":
-			base = base.Order("bookings_count DESC, tours.rating DESC")
 		default:
 			base = base.Order("CASE WHEN tours.rating IS NULL OR tours.rating = 0 THEN 1 ELSE 0 END ASC, tours.rating DESC, tours.price ASC")
 		}
@@ -169,29 +160,10 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Search error"})
 		}
 
-		// Mark hits (top-3 by bookings) and new (top-3 by id)
-		// Find global top bookings for hit marking
+		// Mark new tours (top-3 by id)
 		type topTour struct {
-			ID            uint `gorm:"column:id"`
-			BookingsCount int  `gorm:"column:bookings_count"`
+			ID uint `gorm:"column:id"`
 		}
-		var topHits []topTour
-		db.Table("tours").
-			Select(`tours.id, COALESCE((
-				SELECT COUNT(*) FROM bookings b
-				JOIN tour_dates td ON b.tour_date_id = td.id
-				WHERE td.tour_id = tours.id AND b.status IN ('pending','confirmed')
-			), 0) AS bookings_count`).
-			Where("tours.status_id = (SELECT id FROM statuses WHERE name = 'active')").
-			Order("bookings_count DESC").
-			Limit(3).
-			Find(&topHits)
-
-		hitIDs := make(map[uint]bool)
-		for _, h := range topHits {
-			if h.BookingsCount >= 3 { hitIDs[h.ID] = true }
-		}
-
 		var topNew []topTour
 		db.Table("tours").Select("id").
 			Where("tours.status_id = (SELECT id FROM statuses WHERE name = 'active')").
@@ -200,7 +172,6 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 		for _, n := range topNew { newIDs[n.ID] = true }
 
 		for i := range tours {
-			tours[i].IsHit = hitIDs[tours[i].ID]
 			tours[i].IsNew = newIDs[tours[i].ID]
 		}
 

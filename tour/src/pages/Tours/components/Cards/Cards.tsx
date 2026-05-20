@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Heart, MapPin, Clock, Star, ArrowUpRight, TrendingUp, Sparkles } from "lucide-react";
+import { Heart, MapPin, Clock, Star, ArrowUpRight, Sparkles } from "lucide-react";
 import { useAuth } from '../../../../context/AuthContext';
 import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
 import { Tour } from '../../../../types/tours';
@@ -50,7 +50,6 @@ const TourCard: React.FC<{ tour: Tour; index: number }> = ({ tour, index }) => {
     ? tour.price * (1 - tour.discount / 100)
     : tour.price;
 
-  const isHit = (tour as any).is_hit || tour.isPopular;
   const isNew = (tour as any).is_new;
 
   return (
@@ -70,14 +69,9 @@ const TourCard: React.FC<{ tour: Tour; index: number }> = ({ tour, index }) => {
         <div className="tc__photo-grad" />
 
         {/* Badges */}
-        {(isHit || isNew || (tour.discount != null && tour.discount > 0)) && (
+        {(isNew || (tour.discount != null && tour.discount > 0)) && (
           <div className="tc__badges">
-            {isHit && (
-              <span className="tc__badge tc__badge--hit">
-                <TrendingUp size={10} /> Хіт
-              </span>
-            )}
-            {isNew && !isHit && (
+            {isNew && (
               <span className="tc__badge tc__badge--new">
                 <Sparkles size={10} /> Новинка
               </span>
