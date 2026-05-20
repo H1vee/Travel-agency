@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Heart, MapPin, Clock, Star, ArrowUpRight, Sparkles } from "lucide-react";
+import { Heart, MapPin, Clock, Star, ArrowUpRight } from "lucide-react";
 import { useAuth } from '../../../../context/AuthContext';
 import { useToggleFavorite, useIsFavorite } from '../../../../hooks/useFavorites';
 import { Tour } from '../../../../types/tours';
@@ -46,12 +46,6 @@ const TourCard: React.FC<{ tour: Tour; index: number }> = ({ tour, index }) => {
   const formatPrice = (p: number) =>
     new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH', minimumFractionDigits: 0 }).format(p);
 
-  const finalPrice = tour.discount != null && tour.discount > 0
-    ? tour.price * (1 - tour.discount / 100)
-    : tour.price;
-
-  const isNew = (tour as any).is_new;
-
   return (
     <Link to={`/TourDetails/${tour.id}`} className="tc" style={{ animationDelay: `${(index % 12) * 40}ms` }}>
       <div className="tc__photo">
@@ -67,20 +61,6 @@ const TourCard: React.FC<{ tour: Tour; index: number }> = ({ tour, index }) => {
         )}
 
         <div className="tc__photo-grad" />
-
-        {/* Badges */}
-        {(isNew || (tour.discount != null && tour.discount > 0)) && (
-          <div className="tc__badges">
-            {isNew && (
-              <span className="tc__badge tc__badge--new">
-                <Sparkles size={10} /> Новинка
-              </span>
-            )}
-            {tour.discount != null && tour.discount > 0 && (
-              <span className="tc__badge tc__badge--off">−{tour.discount}%</span>
-            )}
-          </div>
-        )}
 
         <button
           className={`tc__fav ${isFavorite ? 'tc__fav--on' : ''}`}
@@ -104,10 +84,7 @@ const TourCard: React.FC<{ tour: Tour; index: number }> = ({ tour, index }) => {
         <StarRating rating={tour.rating} />
         <div className="tc__price-row">
           <div className="tc__price-block">
-            {tour.discount != null && tour.discount > 0 && (
-              <span className="tc__price-was">{formatPrice(tour.price)}</span>
-            )}
-            <span className="tc__price">{formatPrice(finalPrice)}</span>
+            <span className="tc__price">{formatPrice(tour.price)}</span>
           </div>
           <div className="tc__go"><ArrowUpRight size={16} /></div>
         </div>

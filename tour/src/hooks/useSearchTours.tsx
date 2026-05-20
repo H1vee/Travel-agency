@@ -100,7 +100,6 @@ export const useSearchTours = (): SearchHookReturn => {
       description: '',
       location: item.location || '',
       duration: item.duration ? `${item.duration} днів` : '',
-      discount: 0,
     }));
   }, [searchResponse]);
 
@@ -121,7 +120,6 @@ export const useSearchTours = (): SearchHookReturn => {
         description: '',
         location: '',
         duration: '',
-        discount: 0,
       }));
     },
     staleTime: 10 * 60 * 1000,

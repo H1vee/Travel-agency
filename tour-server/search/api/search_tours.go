@@ -17,7 +17,6 @@ type SearchTourItem struct {
 	ImageSrc string  `json:"image_src" gorm:"column:image_src"`
 	Duration float64 `json:"duration" gorm:"column:duration"`
 	Location string  `json:"location" gorm:"column:location"`
-	IsNew    bool    `json:"is_new" gorm:"-"`
 }
 
 type SearchResult struct {
@@ -158,21 +157,6 @@ func SearchTours(db *gorm.DB) echo.HandlerFunc {
 		var tours []SearchTourItem
 		if err := base.Offset(offset).Limit(limit).Find(&tours).Error; err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Search error"})
-		}
-
-		// Mark new tours (top-3 by id)
-		type topTour struct {
-			ID uint `gorm:"column:id"`
-		}
-		var topNew []topTour
-		db.Table("tours").Select("id").
-			Where("tours.status_id = (SELECT id FROM statuses WHERE name = 'active')").
-			Order("id DESC").Limit(3).Find(&topNew)
-		newIDs := make(map[uint]bool)
-		for _, n := range topNew { newIDs[n.ID] = true }
-
-		for i := range tours {
-			tours[i].IsNew = newIDs[tours[i].ID]
 		}
 
 		totalPages := int((total + int64(limit) - 1) / int64(limit))

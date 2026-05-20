@@ -8,7 +8,6 @@ export interface Tour {
   duration?: string;
   rating?: number;
   location?: string;
-  discount?: number;
 }
 
 export interface SearchResult {
