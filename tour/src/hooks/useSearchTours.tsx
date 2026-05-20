@@ -66,7 +66,7 @@ export const useSearchTours = (): SearchHookReturn => {
   const [filters, setFilters] = useState<Filters>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [sortBy, setSortByState] = useState<SortOption>('popular');
+  const [sortBy, setSortByState] = useState<SortOption>('price_asc');
 
   // Always use /search — it handles both filtered and unfiltered requests
   const searchUrl = useMemo(
@@ -100,8 +100,6 @@ export const useSearchTours = (): SearchHookReturn => {
       description: '',
       location: item.location || '',
       duration: item.duration ? `${item.duration} днів` : '',
-      isPopular: (item.rating ?? 0) >= 4.5,
-      discount: 0,
     }));
   }, [searchResponse]);
 
@@ -122,8 +120,6 @@ export const useSearchTours = (): SearchHookReturn => {
         description: '',
         location: '',
         duration: '',
-        isPopular: false,
-        discount: 0,
       }));
     },
     staleTime: 10 * 60 * 1000,

@@ -8,8 +8,6 @@ export interface Tour {
   duration?: string;
   rating?: number;
   location?: string;
-  isPopular?: boolean;
-  discount?: number;
 }
 
 export interface SearchResult {
@@ -59,7 +57,7 @@ export interface PriceRange {
   max: number;
 }
 
-export type SortOption = 'price_asc' | 'price_desc' | 'rating_desc' | 'popular' | 'newest' | 'title_asc';
+export type SortOption = 'price_asc' | 'price_desc' | 'rating_desc' | 'newest' | 'title_asc';
 export type ViewMode = 'grid' | 'list';
 
 export const DURATIONS = [
