@@ -1,9 +1,14 @@
 package api
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 	"tour-server/bookings/dto"
 	"tour-server/bookings/models"
 	"tour-server/email"
@@ -123,26 +128,36 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		// ── Email notification ────────────────────────────────────────────
-		// Guests pay in the LiqPay widget right after booking. If a guest
-		// leaves the widget without paying, that is their decision — we do
-		// not chase them with a payment link. A guest receives an email only
-		// when payment actually goes through ("payment received").
-		// Registered users still get a booking-created notice, since they
-		// have a cabinet where the booking can be paid later.
-		if isGuestBooking {
-			log.Printf("Guest booking #%d created — awaiting payment, no email sent", booking.ID)
-		} else {
-			tourTitle := getTourTitleByDateID(db, req.TourDateID)
-			email.NotifyBookingCreated(req.CustomerEmail, email.BookingNotification{
-				CustomerName: req.CustomerName,
-				TourTitle:    tourTitle,
-				Seats:        int(req.Seats),
-				TotalPrice:   calculatedPrice,
-				BookingID:    booking.ID,
-				Status:       "pending",
-			})
-			log.Printf("Booking created email queued: #%d → %s", booking.ID, req.CustomerEmail)
+		notification := email.BookingNotification{
+			CustomerName: req.CustomerName,
+			TourTitle:    getTourTitleByDateID(db, req.TourDateID),
+			Seats:        int(req.Seats),
+			TotalPrice:   calculatedPrice,
+			BookingID:    booking.ID,
+			Status:       "pending",
 		}
+
+		// Guests have no account — give them a secret-token link to a page
+		// where they can pay or cancel this booking themselves. Registered
+		// users manage the booking from their cabinet, so they get no link.
+		if isGuestBooking {
+			if token, err := generateBookingToken(); err != nil {
+				log.Printf("Failed to generate booking token: %v", err)
+			} else {
+				expiresAt := time.Now().Add(7 * 24 * time.Hour)
+				if err := db.Exec(
+					"UPDATE bookings SET payment_token = ?, payment_token_expires_at = ? WHERE id = ?",
+					token, expiresAt, booking.ID,
+				).Error; err != nil {
+					log.Printf("Failed to save booking token: %v", err)
+				} else {
+					notification.PaymentURL = buildBookingURL(token)
+				}
+			}
+		}
+
+		email.NotifyBookingCreated(req.CustomerEmail, notification)
+		log.Printf("Booking created email queued: #%d → %s", booking.ID, req.CustomerEmail)
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"message":     "Booking successful",
@@ -151,6 +166,22 @@ func PostBookings(db *gorm.DB) echo.HandlerFunc {
 			"total_price": calculatedPrice,
 		})
 	}
+}
+
+func generateBookingToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+func buildBookingURL(token string) string {
+	base := os.Getenv("FRONTEND_URL")
+	if base == "" {
+		base = "https://openworld.local"
+	}
+	return fmt.Sprintf("%s/pay/%s", base, token)
 }
 
 func getTourTitleByDateID(db *gorm.DB, tourDateID uint) string {

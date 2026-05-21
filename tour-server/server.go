@@ -190,6 +190,7 @@ func main() {
 
 	// Guest "pay later" magic-link endpoints (token-authenticated, no JWT)
 	e.GET("/bookings/by-token/:token", bookings.GetBookingByToken(database.DB))
+	e.POST("/bookings/by-token/:token/cancel", bookings.CancelBookingByToken(database.DB), bookingRL)
 	e.POST("/liqpay/create-payment-by-token", liqpayAPI.CreatePaymentByToken(database.DB), paymentRL)
 
 	// ========================================

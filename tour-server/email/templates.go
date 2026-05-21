@@ -216,7 +216,7 @@ const cancelledTemplate = `<!DOCTYPE html>
 
 <tr><td style="padding:32px 40px;">
   <p style="color:#334155;font-size:16px;line-height:1.6;margin:0 0 24px;">
-    Привіт, <strong>{{.CustomerName}}</strong>! На жаль, ваше бронювання було скасовано. Зарезервовані місця повернуто у доступні.
+    Привіт, <strong>{{.CustomerName}}</strong>! На жаль, ваше бронювання було скасовано. Якщо у вас виникли запитання, зверніться до нашої служби підтримки.
   </p>
 
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;margin-bottom:24px;">
@@ -364,11 +364,11 @@ const createdTemplate = `<!DOCTYPE html>
   <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
   <tr><td align="center" style="padding:8px 0 4px;">
     <a href="{{.PaymentURL}}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;box-shadow:0 4px 12px rgba(99,102,241,0.3);">
-      💳 Перейти до оплати
+      Переглянути бронювання
     </a>
   </td></tr>
   <tr><td align="center" style="padding-top:10px;">
-    <p style="color:#94a3b8;font-size:12px;margin:0;">Посилання діє 7 днів. Після оплати бронювання буде підтверджено автоматично.</p>
+    <p style="color:#94a3b8;font-size:12px;margin:0;">За цим посиланням можна оплатити або скасувати бронювання. Діє 7 днів.</p>
   </td></tr>
   </table>
   {{else}}
