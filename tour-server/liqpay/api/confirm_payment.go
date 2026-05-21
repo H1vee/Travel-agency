@@ -78,8 +78,15 @@ func ConfirmPayment(db *gorm.DB) echo.HandlerFunc {
 			})
 		}
 
-		if err := confirmBookingByOrder(db, req.OrderID, paymentID); err != nil {
+		transitioned, err := confirmBookingByOrder(db, req.OrderID, paymentID)
+		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		}
+		// Send the confirmation email from whichever path (this call or the
+		// LiqPay server callback) first flips the booking to paid — the guest
+		// gets exactly one email even if the callback never reaches us.
+		if transitioned {
+			sendPaymentEmail(db, req.OrderID)
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -89,10 +96,13 @@ func ConfirmPayment(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-func confirmBookingByOrder(db *gorm.DB, orderID, paymentID string) error {
+// confirmBookingByOrder flips the booking to confirmed/paid. The bool result
+// reports whether this call performed the transition (false if the booking was
+// already paid) so the caller can send the confirmation email exactly once.
+func confirmBookingByOrder(db *gorm.DB, orderID, paymentID string) (bool, error) {
 	tx := db.Begin()
 	if tx.Error != nil {
-		return tx.Error
+		return false, tx.Error
 	}
 
 	var booking struct {
@@ -104,12 +114,12 @@ func confirmBookingByOrder(db *gorm.DB, orderID, paymentID string) error {
 		orderID,
 	).Scan(&booking).Error; err != nil || booking.ID == 0 {
 		tx.Rollback()
-		return fmt.Errorf("booking not found for order %s", orderID)
+		return false, fmt.Errorf("booking not found for order %s", orderID)
 	}
 
 	if booking.PaymentStatus == "paid" {
 		tx.Rollback()
-		return nil
+		return false, nil
 	}
 
 	now := time.Now()
@@ -122,8 +132,11 @@ func confirmBookingByOrder(db *gorm.DB, orderID, paymentID string) error {
 		WHERE liqpay_order_id = ?
 	`, paymentID, now, orderID).Error; err != nil {
 		tx.Rollback()
-		return err
+		return false, err
 	}
 
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		return false, err
+	}
+	return true, nil
 }

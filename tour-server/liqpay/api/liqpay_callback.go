@@ -53,11 +53,11 @@ func LiqPayCallback(db *gorm.DB) echo.HandlerFunc {
 
 		switch status {
 		case "success", "sandbox":
-			if err := confirmBooking(db, orderID, paymentID); err != nil {
+			transitioned, err := confirmBooking(db, orderID, paymentID)
+			if err != nil {
 				log.Printf("LiqPay callback: confirmBooking error: %v", err)
-			} else {
+			} else if transitioned {
 				log.Printf("Booking auto-confirmed: order=%s", orderID)
-				// Send payment confirmation email
 				sendPaymentEmail(db, orderID)
 			}
 
@@ -88,10 +88,12 @@ func LiqPayCallback(db *gorm.DB) echo.HandlerFunc {
 // confirmBooking sets status=confirmed, payment_status=paid.
 // Seats are already reserved (decremented by trigger on INSERT),
 // so no seat adjustment needed for pending→confirmed.
-func confirmBooking(db *gorm.DB, orderID, paymentID string) error {
+// The bool result reports whether this call performed the transition
+// (false if the booking was already paid) so the email is sent once.
+func confirmBooking(db *gorm.DB, orderID, paymentID string) (bool, error) {
 	tx := db.Begin()
 	if tx.Error != nil {
-		return tx.Error
+		return false, tx.Error
 	}
 
 	var booking struct {
@@ -104,14 +106,14 @@ func confirmBooking(db *gorm.DB, orderID, paymentID string) error {
 		orderID,
 	).Scan(&booking).Error; err != nil || booking.ID == 0 {
 		tx.Rollback()
-		return fmt.Errorf("booking not found for order %s", orderID)
+		return false, fmt.Errorf("booking not found for order %s", orderID)
 	}
 
 	// Idempotency — already confirmed, skip
 	if booking.PaymentStatus == "paid" {
 		tx.Rollback()
 		log.Printf("Booking already paid: order=%s", orderID)
-		return nil
+		return false, nil
 	}
 
 	now := time.Now()
@@ -124,10 +126,13 @@ func confirmBooking(db *gorm.DB, orderID, paymentID string) error {
 		WHERE liqpay_order_id = ?
 	`, paymentID, now, orderID).Error; err != nil {
 		tx.Rollback()
-		return err
+		return false, err
 	}
 
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // cancelBookingByOrder handles payment reversal:
