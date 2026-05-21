@@ -216,7 +216,7 @@ const cancelledTemplate = `<!DOCTYPE html>
 
 <tr><td style="padding:32px 40px;">
   <p style="color:#334155;font-size:16px;line-height:1.6;margin:0 0 24px;">
-    Привіт, <strong>{{.CustomerName}}</strong>! На жаль, ваше бронювання було скасовано. Зарезервовані місця повернуто у доступні.
+    Привіт, <strong>{{.CustomerName}}</strong>! На жаль, ваше бронювання було скасовано. Якщо у вас виникли запитання, зверніться до нашої служби підтримки.
   </p>
 
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;margin-bottom:24px;">
