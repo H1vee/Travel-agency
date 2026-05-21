@@ -40,6 +40,8 @@ export const GuestPay: React.FC = () => {
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState('');
   const [paid, setPaid] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +89,25 @@ export const GuestPay: React.FC = () => {
       setPayError(err instanceof Error ? err.message : 'Помилка оплати');
     } finally {
       setPaying(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!booking) return;
+    if (!window.confirm('Скасувати це бронювання? Дію не можна відмінити.')) return;
+    setCancelling(true);
+    setCancelError('');
+    try {
+      const res = await fetch(`${API}/bookings/by-token/${encodeURIComponent(token)}/cancel`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Не вдалося скасувати бронювання');
+      setBooking(prev => prev ? { ...prev, status: 'cancelled' } : prev);
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : 'Помилка скасування');
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -189,6 +210,21 @@ export const GuestPay: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#94a3b8', fontSize: 12, justifyContent: 'center' }}>
                 <ShieldCheck size={14} /> Оплата через LiqPay — захищено SSL
               </div>
+              {cancelError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 12, color: '#b91c1c', fontSize: 14 }}>
+                  {cancelError}
+                </div>
+              )}
+              <Button
+                variant="light"
+                color="danger"
+                startContent={<XCircle size={18} />}
+                isLoading={cancelling}
+                isDisabled={paying || cancelling}
+                onClick={handleCancel}
+              >
+                Скасувати бронювання
+              </Button>
             </>
           )}
         </CardBody>
@@ -200,7 +236,7 @@ export const GuestPay: React.FC = () => {
     <>
       <Navbar />
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '32px 16px 64px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 16, color: '#0f172a' }}>Оплата бронювання</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 16, color: '#0f172a' }}>Ваше бронювання</h1>
         {renderBody()}
       </div>
       <Footer />
