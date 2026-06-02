@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-# Runs hey against all three implementations sequentially.
-# Make sure all three servers are running BEFORE invoking this:
-#   - Go + Echo     on port 1323
-#   - FastAPI       on port 8000
-#   - Express       on port 3001
+# Runs hey against all three benchmark implementations sequentially.
+#
+# All three implementations are dedicated benchmark servers that execute
+# IDENTICAL SQL and serve IDENTICAL endpoint shapes (no middleware, no
+# auth, no extra logging). This isolates the comparison to the language
+# runtime + HTTP framework + database driver, which is what the apple-to-
+# apple benchmark is supposed to measure.
+#
+# Make sure all three benchmark servers are running BEFORE invoking this:
+#   - Go (database/sql + Echo)  on port 9000
+#   - FastAPI (asyncpg)         on port 8000
+#   - Express (node-postgres)   on port 3001
 
 set -euo pipefail
 
@@ -16,29 +23,19 @@ OUT="results_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$OUT"
 
 declare -A SERVERS=(
-  [go]="http://localhost:1323"
+  [go]="http://localhost:9000"
   [fastapi]="http://localhost:8000"
   [express]="http://localhost:3001"
 )
 
-declare -A ENDPOINTS_GO=(
-  [tours]="/cards"
-  [tour_by_id]="/tours/$TOUR_ID"
-  [search]="/search?title=$SEARCH_TITLE"
-)
-declare -A ENDPOINTS_OTHER=(
+declare -A ENDPOINTS=(
   [tours]="/tours"
   [tour_by_id]="/tours/$TOUR_ID"
   [search]="/search?title=$SEARCH_TITLE"
 )
 
 get_endpoint() {
-  local srv=$1 ep=$2
-  if [[ "$srv" == "go" ]]; then
-    echo "${ENDPOINTS_GO[$ep]}"
-  else
-    echo "${ENDPOINTS_OTHER[$ep]}"
-  fi
+  echo "${ENDPOINTS[$2]}"
 }
 
 # Warm-up pass (so the first measured run isn't biased by JIT / GC / connection pool warmup)
