@@ -1,0 +1,13 @@
+{
+  "name": "tour-benchmark-express",
+  "version": "1.0.0",
+  "description": "Express.js benchmark server (mirrors Go endpoints for apple-to-apple comparison)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "pg": "^8.13.0"
+  }
+}
