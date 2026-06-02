@@ -21,7 +21,7 @@ func GetTourById(db *gorm.DB) echo.HandlerFunc {
 
 		// Query the database for tour information with related data
 		// Using multiple joins to get status, date information, and seat availability
-		err := db.Table("tours").Debug().
+		err := db.Table("tours").
 			Select(`tours.id, tours.title, tours.description,
                 tours.call_to_action, tours.price, tours.rating,
                 tours.detailed_description, tours.status_id, statuses.name AS status,
