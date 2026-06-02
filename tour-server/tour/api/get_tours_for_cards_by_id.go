@@ -31,7 +31,7 @@ func GetToursForCardsByID(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		var toursWithImages []dto.TourCard
-		err := db.Debug().Table("tours").
+		err := db.Table("tours").
 			Select("tours.id, tours.title, tours.price, tours.rating, COALESCE(tour_card_images.image_src, 'no-image.jpg') AS image_src").
 			Joins("LEFT JOIN tour_card_images ON tours.id = tour_card_images.tour_id").
 			Where("tours.id IN ?", ids).

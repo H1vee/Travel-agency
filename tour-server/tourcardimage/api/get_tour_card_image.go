@@ -20,7 +20,7 @@ func GetTourCardImages(db *gorm.DB) echo.HandlerFunc {
 
 		// Query the database for all tour card images
 		var TourImage []models.TourCardImage
-		err := db.Debug().Table("tour_card_images").Select("*").Find(&TourImage).Error
+		err := db.Table("tour_card_images").Select("*").Find(&TourImage).Error
 
 		// Handle database errors
 		if err != nil {

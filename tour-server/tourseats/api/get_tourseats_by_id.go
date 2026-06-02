@@ -18,7 +18,7 @@ func GetTourSeatsByTourID(db *gorm.DB) echo.HandlerFunc {
 
 		// Query the database for seat availability across all dates for this tour
 		var tourSeats []dto.TourSeatsDTO
-		err := db.Table("tour_seats").Debug().
+		err := db.Table("tour_seats").
 			Select("tour_seats.id, tour_seats.tour_date_id, tour_seats.available_seats, tours.price").
 			Joins("JOIN tour_dates ON tour_seats.tour_date_id = tour_dates.id"). // Join to get date information
 			Joins("JOIN tours ON tour_dates.tour_id = tours.id").                // Join to get tour price
