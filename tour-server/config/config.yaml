@@ -1,5 +1,5 @@
 app:
-  name: "Tour Server API"
+  name: "AutoBoss Car Catalogue API"
   version: "1.0.0"
   environment: "production"
   debug: false

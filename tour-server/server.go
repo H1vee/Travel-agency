@@ -9,18 +9,10 @@ import (
 	"tour-server/middleware"
 
 	adminAPI "tour-server/admin/api"
-	bookings "tour-server/bookings/api"
+	carAPI "tour-server/car/api"
+	inquiryAPI "tour-server/inquiry/api"
 	search "tour-server/search/api"
-	"tour-server/tour/api"
-	tourcard "tour-server/tourcardimage/api"
-	tourreviews "tour-server/tourreviews/api"
-	tourseats "tour-server/tourseats/api"
 	tourusers "tour-server/tourusers/api"
-	userfavorites "tour-server/userfavorites/api"
-	tourcomments "tour-server/tourcomments/api"
-	liqpayAPI "tour-server/liqpay/api"
-	tourratings "tour-server/tourratings/api"
-	tourviews "tour-server/tourviews/api"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -68,10 +60,8 @@ func main() {
 	// ========================================
 	// RATE LIMITERS
 	// ========================================
-	authRL := middleware.AuthLimiter()         // 5 req/min per IP
-	bookingRL := middleware.BookingLimiter()    // 10 req/min per IP
-	paymentRL := middleware.PaymentLimiter()    // 5 req/min per IP
-	commentRL := middleware.CommentLimiter()    // 15 req/min per IP
+	authRL := middleware.AuthLimiter()       // auth endpoints
+	inquiryRL := middleware.BookingLimiter()  // inquiry submissions
 
 	e := echo.New()
 
@@ -80,7 +70,6 @@ func main() {
 	// ========================================
 	// MIDDLEWARE CONFIGURATION
 	// ========================================
-
 	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
 		AllowOrigins: []string{
 			"http://localhost:3000",
@@ -91,8 +80,6 @@ func main() {
 			"http://127.0.0.1:3001",
 			"http://localhost:5173",
 			"http://127.0.0.1:5173",
-			"https://openworld.local",
-			"http://openworld.local",
 		},
 		AllowMethods: []string{
 			http.MethodGet,
@@ -109,7 +96,6 @@ func main() {
 			"Accept",
 			"Authorization",
 			"X-Requested-With",
-			"X-Guest-Token",
 		},
 		ExposeHeaders: []string{
 			"X-Total-Count",
@@ -137,11 +123,10 @@ func main() {
 	e.Use(echomiddleware.Recover())
 
 	e.Use(echomiddleware.SecureWithConfig(echomiddleware.SecureConfig{
-		XSSProtection:         "1; mode=block",
-		ContentTypeNosniff:    "nosniff",
-		XFrameOptions:         "SAMEORIGIN",
-		HSTSMaxAge:            31536000,
-		ContentSecurityPolicy: "default-src 'self'",
+		XSSProtection:      "1; mode=block",
+		ContentTypeNosniff: "nosniff",
+		XFrameOptions:      "SAMEORIGIN",
+		HSTSMaxAge:         31536000,
 	}))
 
 	e.Static("/static", "static")
@@ -151,21 +136,23 @@ func main() {
 	// ========================================
 	e.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"message": "Welcome to Tour Server API",
+			"message": "Welcome to AutoBoss Car Catalogue API",
 			"app":     cfg.App.Name,
 			"version": cfg.App.Version,
 			"env":     cfg.App.Environment,
 			"endpoints": map[string]string{
-				"search":   "/search - Enhanced search with filters and pagination",
-				"cards":    "/cards - Get all tour cards",
-				"tours":    "/tours - Get all tours with details",
-				"carousel": "/tour-carousel/:id - Get tour gallery images",
+				"cards":          "/cards - Active cars (card view)",
+				"car":            "/cars/:id - Full car detail",
+				"carousel":       "/cars/:id/gallery - Car gallery images",
+				"search":         "/search - Catalogue search with filters",
+				"filterOptions":  "/filter-options - Available filter values",
+				"inquiries":      "POST /inquiries - Submit a contact request",
 			},
 		})
 	})
 
 	// ========================================
-	// AUTHENTICATION (rate limited)
+	// AUTHENTICATION (admin login, rate limited)
 	// ========================================
 	e.POST("/auth/register", tourusers.RegisterUser(database.DB), authRL)
 	e.POST("/auth/login", tourusers.LoginUser(database.DB), authRL)
@@ -174,68 +161,26 @@ func main() {
 	e.GET("/auth/verify-reset-token", tourusers.VerifyResetToken(database.DB))
 
 	// ========================================
-	// PUBLIC ENDPOINTS
+	// PUBLIC CATALOGUE ENDPOINTS
 	// ========================================
-	e.GET("/cards", api.GetToursForCards(database.DB))
-	e.GET("/tours", api.GetTours(database.DB))
-	e.GET("/tours/:id", api.GetTourById(database.DB))
-	e.GET("/tourimage", tourcard.GetTourCardImages(database.DB))
-	e.GET("/tourswiper", api.GetToursForSwiper(database.DB))
-	e.GET("/tour-seats/:id", tourseats.GetTourSeatsByTourID(database.DB))
-	e.GET("/tour-carousel/:id", api.GetToursCarouselByID(database.DB))
-	e.GET("/tours-search-by-ids", api.GetToursForCardsByID(database.DB))
-	e.GET("/search", search.SearchTours(database.DB))
-	e.GET("/tour-reviews/:id", tourreviews.GetReviewsByTourID(database.DB))
-	e.GET("/stats", api.GetPublicStats(database.DB))
+	e.GET("/cards", carAPI.GetCarsForCards(database.DB))
+	e.GET("/carswiper", carAPI.GetCarsForSwiper(database.DB))
+	e.GET("/cars/:id", carAPI.GetCarByID(database.DB))
+	e.GET("/cars/:id/gallery", carAPI.GetCarCarousel(database.DB))
+	e.GET("/search", search.SearchCars(database.DB))
+	e.GET("/filter-options", search.GetFilterOptions(database.DB))
+	e.GET("/stats", carAPI.GetPublicStats(database.DB))
 
-	// Guest "pay later" magic-link endpoints (token-authenticated, no JWT)
-	e.GET("/bookings/by-token/:token", bookings.GetBookingByToken(database.DB))
-	e.POST("/bookings/by-token/:token/cancel", bookings.CancelBookingByToken(database.DB), bookingRL)
-	e.POST("/liqpay/create-payment-by-token", liqpayAPI.CreatePaymentByToken(database.DB), paymentRL)
+	// Contact / lead submission (rate limited)
+	e.POST("/inquiries", inquiryAPI.CreateInquiry(database.DB), inquiryRL)
 
 	// ========================================
-	// OPTIONAL AUTH (guests + authorized users)
-	// ========================================
-	optionalAuth := e.Group("")
-	optionalAuth.Use(middleware.OptionalJWTMiddleware())
-
-	// Booking — rate limited
-	optionalAuth.POST("/tour/bookings", bookings.PostBookings(database.DB), bookingRL)
-
-	// Comments — rate limited for writes
-	optionalAuth.GET("/tour-comments/:id", tourcomments.GetTourComments(database.DB))
-	optionalAuth.POST("/tour-comments", tourcomments.CreateComment(database.DB), commentRL)
-	optionalAuth.POST("/tour-comments/:id/like", tourcomments.ToggleLike(database.DB), commentRL)
-
-	// ========================================
-	// LIQPAY (rate limited)
-	// ========================================
-	e.POST("/liqpay/callback", liqpayAPI.LiqPayCallback(database.DB))
-	optionalAuth.POST("/liqpay/confirm", liqpayAPI.ConfirmPayment(database.DB), paymentRL)
-	optionalAuth.POST("/liqpay/create-payment", liqpayAPI.CreatePayment(database.DB), paymentRL)
-
-	// ========================================
-	// PROTECTED ENDPOINTS (auth required)
+	// PROTECTED PROFILE ENDPOINTS (auth required)
 	// ========================================
 	protected := e.Group("")
 	protected.Use(middleware.JWTMiddleware())
-
 	protected.GET("/profile", tourusers.GetProfile(database.DB))
 	protected.PUT("/profile", tourusers.UpdateProfile(database.DB))
-	protected.GET("/user-bookings", bookings.GetUserBookings(database.DB))
-	protected.POST("/tour-reviews", tourreviews.CreateTourReview(database.DB), commentRL)
-	protected.PUT("/bookings/:id/cancel", bookings.CancelBooking(database.DB), bookingRL)
-	protected.POST("/user-favorites", userfavorites.AddFavorite(database.DB))
-	protected.GET("/user-favorites", userfavorites.GetUserFavorites(database.DB))
-	protected.DELETE("/user-favorites/:tour_id", userfavorites.RemoveFavorite(database.DB))
-	protected.PUT("/tour-comments/:id", tourcomments.UpdateComment(database.DB), commentRL)
-	protected.DELETE("/tour-comments/:id", tourcomments.DeleteComment(database.DB), commentRL)
-	protected.POST("/tour-ratings", tourratings.PostTourRating(database.DB))
-	protected.GET("/tour-ratings/:tour_id/my", tourratings.GetMyTourRating(database.DB))
-	protected.POST("/tour-views/:tour_id", tourviews.RecordTourView(database.DB))
-	protected.GET("/tour-views", tourviews.GetRecentViews(database.DB))
-	protected.DELETE("/tour-views", tourviews.ClearViewHistory(database.DB))
-	protected.DELETE("/tour-views/:tour_id", tourviews.RemoveFromViewHistory(database.DB))
 
 	// ========================================
 	// ADMIN ENDPOINTS (auth + admin role)
@@ -245,24 +190,19 @@ func main() {
 	admin.Use(middleware.AdminMiddleware())
 
 	admin.GET("/analytics/overview", adminAPI.GetAnalyticsOverview(database.DB))
-	admin.GET("/analytics/bookings-by-month", adminAPI.GetBookingsByMonth(database.DB))
-	admin.GET("/analytics/revenue-by-month", adminAPI.GetRevenueByMonth(database.DB))
-	admin.GET("/analytics/popular-tours", adminAPI.GetPopularTours(database.DB))
 
-	admin.GET("/bookings", adminAPI.GetAdminBookings(database.DB))
-	admin.PUT("/bookings/:id/status", adminAPI.UpdateBookingStatus(database.DB))
-	admin.GET("/bookings/export", adminAPI.ExportBookingsCSV(database.DB))
+	admin.GET("/cars", adminAPI.GetAdminCars(database.DB))
+	admin.GET("/cars/:id", adminAPI.GetAdminCarDetail(database.DB))
+	admin.POST("/cars", adminAPI.CreateCar(database.DB))
+	admin.PUT("/cars/:id", adminAPI.UpdateCar(database.DB))
+	admin.PUT("/cars/:id/status", adminAPI.UpdateCarStatus(database.DB))
+	admin.DELETE("/cars/:id", adminAPI.DeleteCar(database.DB))
 
-	admin.GET("/users", adminAPI.GetAdminUsers(database.DB))
-	admin.GET("/users/:id", adminAPI.GetAdminUserDetail(database.DB))
+	admin.GET("/statuses", adminAPI.GetStatuses(database.DB))
 
-	admin.GET("/tours", adminAPI.GetAdminTours(database.DB))
-	admin.GET("/tours/:id", adminAPI.GetAdminTourDetail(database.DB))
-	admin.POST("/tours", adminAPI.CreateTour(database.DB))
-	admin.PUT("/tours/:id", adminAPI.UpdateTour(database.DB))
-	admin.DELETE("/tours/:id", adminAPI.DeleteTour(database.DB))
+	admin.GET("/inquiries", adminAPI.GetAdminInquiries(database.DB))
+	admin.PUT("/inquiries/:id/status", adminAPI.UpdateInquiryStatus(database.DB))
 
-	admin.GET("/locations", adminAPI.GetLocations(database.DB))
 	admin.POST("/upload", adminAPI.UploadImage)
 
 	// ========================================

@@ -1,0 +1,10 @@
+# Compiled binaries
+/tour-server
+/car-server
+/main
+
+# Air live-reload temp dir
+/tmp/
+
+# Local config overrides
+config.local.yaml

@@ -8,31 +8,26 @@ import (
 )
 
 type OverviewStats struct {
-	TotalTours     int64   `json:"total_tours"`
-	TotalBookings  int64   `json:"total_bookings"`
-	TotalUsers     int64   `json:"total_users"`
-	TotalRevenue   float64 `json:"total_revenue"`
-	PendingCount   int64   `json:"pending_count"`
-	ConfirmedCount int64   `json:"confirmed_count"`
-	CancelledCount int64   `json:"cancelled_count"`
+	TotalCars       int64 `json:"total_cars"`
+	ActiveCars      int64 `json:"active_cars"`
+	HiddenCars      int64 `json:"hidden_cars"`
+	TotalInquiries  int64 `json:"total_inquiries"`
+	NewInquiries    int64 `json:"new_inquiries"`
+	ProcessedLeads  int64 `json:"processed_inquiries"`
 }
 
+// GetAnalyticsOverview returns headline figures for the admin dashboard.
 func GetAnalyticsOverview(db *gorm.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var stats OverviewStats
 
-		db.Table("tours").Count(&stats.TotalTours)
-		db.Table("bookings").Count(&stats.TotalBookings)
-		db.Table("tour_users").Count(&stats.TotalUsers)
+		db.Table("cars").Count(&stats.TotalCars)
+		db.Table("cars").Where("status_id = (SELECT id FROM statuses WHERE name = 'active')").Count(&stats.ActiveCars)
+		db.Table("cars").Where("status_id = (SELECT id FROM statuses WHERE name = 'hidden')").Count(&stats.HiddenCars)
 
-		db.Table("bookings").
-			Where("status = ?", "confirmed").
-			Select("COALESCE(SUM(total_price), 0)").
-			Scan(&stats.TotalRevenue)
-
-		db.Table("bookings").Where("status = ?", "pending").Count(&stats.PendingCount)
-		db.Table("bookings").Where("status = ?", "confirmed").Count(&stats.ConfirmedCount)
-		db.Table("bookings").Where("status = ?", "cancelled").Count(&stats.CancelledCount)
+		db.Table("inquiries").Count(&stats.TotalInquiries)
+		db.Table("inquiries").Where("status = ?", "new").Count(&stats.NewInquiries)
+		db.Table("inquiries").Where("status = ?", "processed").Count(&stats.ProcessedLeads)
 
 		return c.JSON(http.StatusOK, stats)
 	}
