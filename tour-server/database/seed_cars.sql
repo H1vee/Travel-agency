@@ -9,7 +9,7 @@
 INSERT INTO tour_users (email, password_hash, name, role, is_verified)
 VALUES (
     'admin@autoboss.local',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$v/MelKrkJPq3WsCwGQ4DbebnC0Cb4IfbST/aEhjWh9DlETcUIo.BG',
     'Administrator',
     'admin',
     TRUE
