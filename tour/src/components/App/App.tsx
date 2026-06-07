@@ -1,62 +1,35 @@
 import React from 'react';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route
-} from "react-router-dom";
-import { HeroUIProvider } from "@heroui/react";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HeroUIProvider } from '@heroui/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../../context/AuthContext';
+import { Home } from '../../pages/Home/Home';
+import { Catalog } from '../../pages/Catalog/Catalog';
+import { CarDetails } from '../../pages/CarDetails/CarDetails';
+import { About } from '../../pages/Static/About';
+import { Contacts } from '../../pages/Static/Contacts';
 import { Navbar } from '../../components/Navbar/Navbar';
-import { Main } from '../../pages/Main/Main';
-import { AboutUs } from '../../pages/AboutUs/AboutUs';
-import { Tours } from '../../pages/Tours/Tours';
-import { TourDetails } from '../../pages/TourDetails/TourDetails';
-import { UserProfile } from '../../pages/Profile/UserProfile';
-import { UserBookings } from '../../pages/Bookings/UserBookings';
-import { GuestPay } from '../../pages/GuestPay/GuestPay';
-import { UserFavorites } from '../../pages/Favorites/UserFavorites';
-import { AdminLayout, Dashboard, AdminBookings, AdminTours, AdminUsers } from '../../pages/Admin';
-import { ForgotPasswordPage, ResetPasswordPage } from '../../pages/ResetPassword/ResetPassword';
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
+import { AdminLayout, Dashboard, AdminCars, AdminInquiries } from '../../pages/Admin';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 3,
+      retry: 2,
       refetchOnWindowFocus: false,
     },
   },
 });
 
-const UserSettings = () => {
-  return (
-    <>
-      <Navbar />
-      <div className="container mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">Налаштування</h1>
-        <p>Тут будуть налаштування користувача</p>
-      </div>
-    </>
-  );
-};
-
-const NotFound = () => {
-  return (
-    <>
-      <Navbar />
-      <div className="container mx-auto p-6 text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl mb-4">Сторінку не знайдено</p>
-        <a href="/" className="text-blue-500 hover:underline">
-          Повернутися на головну
-        </a>
-      </div>
-    </>
-  );
-};
+const NotFound = () => (
+  <>
+    <Navbar />
+    <div className="container mx-auto p-6 text-center" style={{ padding: '4rem 1rem' }}>
+      <h1 style={{ fontSize: '2.5rem', fontWeight: 800 }}>404</h1>
+      <p style={{ margin: '1rem 0' }}>Сторінку не знайдено</p>
+      <a href="/" style={{ color: '#2563eb' }}>Повернутися на головну</a>
+    </div>
+  </>
+);
 
 function App() {
   return (
@@ -65,31 +38,22 @@ function App() {
         <AuthProvider>
           <Router>
             <div className="App">
-              <main className="main-content">
-                <Routes>
-                  <Route path="/" element={<Main />} />
-                  <Route path="/AboutUs" element={<AboutUs />} />
-                  <Route path="/Tours" element={<Tours />} />
-                  <Route path="/TourDetails/:id" element={<TourDetails />} />
-                  <Route path="/profile" element={<UserProfile />} />
-                  <Route path="/bookings" element={<UserBookings />} />
-                  <Route path="/pay/:token" element={<GuestPay />} />
-                  <Route path="/favorites" element={<UserFavorites />} />
-                  <Route path="/settings" element={<UserSettings />} />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/catalog" element={<Catalog />} />
+                <Route path="/cars/:id" element={<CarDetails />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contacts" element={<Contacts />} />
 
-                  {/* Admin routes */}
-                  <Route path="/admin" element={<AdminLayout />}>
-                    <Route index element={<Dashboard />} />
-                    <Route path="bookings" element={<AdminBookings />} />
-                    <Route path="tours" element={<AdminTours />} />
-                    <Route path="users" element={<AdminUsers />} />
-                  </Route>
+                {/* Admin */}
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="cars" element={<AdminCars />} />
+                  <Route path="inquiries" element={<AdminInquiries />} />
+                </Route>
 
-                  <Route path="*" element={<NotFound />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
-                </Routes>
-              </main>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
             </div>
           </Router>
         </AuthProvider>

@@ -1,5 +1,4 @@
 export { AdminLayout } from './AdminLayout';
 export { Dashboard } from './Dashboard';
-export { AdminBookings } from './AdminBookings';
-export { AdminTours } from './AdminTours';
-export { AdminUsers } from './AdminUsers';
+export { AdminCars } from './AdminCars';
+export { AdminInquiries } from './AdminInquiries';

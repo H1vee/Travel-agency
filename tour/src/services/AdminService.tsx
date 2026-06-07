@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL!;
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('tour_auth_token');
@@ -9,204 +9,159 @@ const getAuthHeaders = (): Record<string, string> => {
 };
 
 export interface OverviewStats {
-  total_tours: number;
-  total_bookings: number;
-  total_users: number;
-  total_revenue: number;
-  pending_count: number;
-  confirmed_count: number;
-  cancelled_count: number;
+  total_cars: number;
+  active_cars: number;
+  hidden_cars: number;
+  total_inquiries: number;
+  new_inquiries: number;
+  processed_inquiries: number;
 }
 
-export interface MonthlyBookings {
-  month: string;
-  confirmed: number;
-  pending: number;
-  cancelled: number;
-}
-
-export interface MonthlyRevenue {
-  month: string;
-  revenue: number;
-}
-
-export interface PopularTour {
+export interface Status {
   id: number;
-  title: string;
-  bookings_count: number;
-  revenue: number;
-}
-
-export interface AdminBooking {
-  id: number;
-  tour_title: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  seats: number;
-  total_price: number;
-  status: string;
-  booked_at: string;
-  user_id: number | null;
-  is_guest_booking: boolean;
-}
-
-export interface AdminUser {
-  id: number;
-  email: string;
   name: string;
+}
+
+export interface AdminCar {
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  mileage: number;
+  status_id: number;
+  status_name: string;
+}
+
+// Editable car payload sent to create/update endpoints.
+export interface CarInput {
+  make: string;
+  model: string;
+  year: number;
+  vin: string;
+  price: number;
+  mileage: number;
+  fuel_type: string;
+  engine: string;
+  engine_capacity: number | null;
+  battery_capacity: number | null;
+  transmission: string;
+  drive: string;
+  body_type: string;
+  color: string;
+  seats: number;
+  description: string;
+  status_id: number;
+  card_image: string;
+  gallery_images: string[];
+}
+
+export interface AdminInquiry {
+  id: number;
+  car_id: number | null;
+  car_label: string | null;
+  request_type: string;
+  contact_method: string;
   phone: string;
-  role: string;
-  is_verified: boolean;
+  name: string;
+  message: string;
+  status: string;
   created_at: string;
-  last_login: string;
-}
-
-export interface AdminTour {
-  id: number;
-  title: string;
-  price: number;
-  rating: number;
-  status_id: number;
-  status_name: string;
-  total_seats: number;
-  description: string;
-}
-
-export interface AdminTourDetail {
-  id: number;
-  title: string;
-  description: string;
-  call_to_action: string;
-  price: number;
-  rating: number;
-  status_id: number;
-  status_name: string;
-  detailed_description: string;
-  total_seats: number;
-}
-
-export interface PaginatedResponse<T> {
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-  [key: string]: T[] | number;
 }
 
 class AdminService {
-  // Analytics
   async getOverview(): Promise<OverviewStats> {
     const res = await fetch(`${API_BASE_URL}/admin/analytics/overview`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch overview');
     return res.json();
   }
 
-  async getBookingsByMonth(): Promise<MonthlyBookings[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/analytics/bookings-by-month`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch bookings by month');
+  async getStatuses(): Promise<Status[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/statuses`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch statuses');
     return (await res.json()) || [];
   }
 
-  async getRevenueByMonth(): Promise<MonthlyRevenue[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/analytics/revenue-by-month`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch revenue by month');
-    return (await res.json()) || [];
-  }
-
-  async getPopularTours(): Promise<PopularTour[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/analytics/popular-tours`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch popular tours');
-    return (await res.json()) || [];
-  }
-
-  // Bookings
-  async getBookings(page = 1, limit = 20, status?: string): Promise<{ bookings: AdminBooking[]; total: number; page: number; total_pages: number }> {
-    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
-    if (status) params.append('status', status);
-    const res = await fetch(`${API_BASE_URL}/admin/bookings?${params}`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch bookings');
+  // ---- Cars ----
+  async getCars(page = 1, limit = 20): Promise<{ cars: AdminCar[]; total: number; page: number; total_pages: number }> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    const res = await fetch(`${API_BASE_URL}/admin/cars?${params}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch cars');
     return res.json();
   }
 
-  async updateBookingStatus(id: number, status: string): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/admin/bookings/${id}/status`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) throw new Error('Failed to update booking status');
-  }
-
-  async exportBookingsCSV(status?: string): Promise<void> {
-    const params = new URLSearchParams();
-    if (status) params.append('status', status);
-    const token = localStorage.getItem('tour_auth_token');
-    const res = await fetch(`${API_BASE_URL}/admin/bookings/export?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error('Failed to export bookings');
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bookings_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  // Users
-  async getUsers(page = 1, limit = 20): Promise<{ users: AdminUser[]; total: number; page: number; total_pages: number }> {
-    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
-    const res = await fetch(`${API_BASE_URL}/admin/users?${params}`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch users');
+  async getCarDetail(id: number): Promise<{ car: Record<string, any>; card_image: string; gallery_images: string[] }> {
+    const res = await fetch(`${API_BASE_URL}/admin/cars/${id}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch car detail');
     return res.json();
   }
 
-  async getUserDetail(id: number): Promise<{ user: AdminUser & { bookings_count: number; total_spent: number }; bookings: AdminBooking[] }> {
-    const res = await fetch(`${API_BASE_URL}/admin/users/${id}`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch user detail');
-    return res.json();
-  }
-
-  // Tours
-  async getTours(page = 1, limit = 20): Promise<{ tours: AdminTour[]; total: number; page: number; total_pages: number }> {
-    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
-    const res = await fetch(`${API_BASE_URL}/admin/tours?${params}`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch tours');
-    return res.json();
-  }
-
-  async getTourDetail(id: number): Promise<{ tour: AdminTourDetail; bookings_count: number }> {
-    const res = await fetch(`${API_BASE_URL}/admin/tours/${id}`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch tour detail');
-    return res.json();
-  }
-
-async createTour(data: Record<string, any>): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/admin/tours`, {
+  async createCar(data: CarInput): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/admin/cars`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to create tour');
+    if (!res.ok) throw new Error('Failed to create car');
   }
 
-  async updateTour(id: number, data: Record<string, any>): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/admin/tours/${id}`, {
+  async updateCar(id: number, data: CarInput): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/admin/cars/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to update tour');
+    if (!res.ok) throw new Error('Failed to update car');
   }
 
-  async deleteTour(id: number): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/admin/tours/${id}`, {
+  async setCarStatus(id: number, statusId: number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/admin/cars/${id}/status`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status_id: statusId }),
+    });
+    if (!res.ok) throw new Error('Failed to update status');
+  }
+
+  async deleteCar(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/admin/cars/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete tour');
+    if (!res.ok) throw new Error('Failed to delete car');
+  }
+
+  // ---- Inquiries ----
+  async getInquiries(page = 1, limit = 20, status?: string): Promise<{ inquiries: AdminInquiry[]; total: number; page: number; total_pages: number }> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (status) params.append('status', status);
+    const res = await fetch(`${API_BASE_URL}/admin/inquiries?${params}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch inquiries');
+    return res.json();
+  }
+
+  async setInquiryStatus(id: number, status: string): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/admin/inquiries/${id}/status`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error('Failed to update inquiry');
+  }
+
+  // ---- Image upload ----
+  async uploadImage(file: File, type: 'card' | 'gallery'): Promise<string> {
+    const token = localStorage.getItem('tour_auth_token');
+    const form = new FormData();
+    form.append('image', file);
+    const res = await fetch(`${API_BASE_URL}/admin/upload?type=${type}`, {
+      method: 'POST',
+      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      body: form,
+    });
+    if (!res.ok) throw new Error('Failed to upload image');
+    const data = await res.json();
+    return data.url as string;
   }
 }
 

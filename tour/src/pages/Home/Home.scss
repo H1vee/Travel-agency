@@ -1,0 +1,133 @@
+.hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  color: #fff;
+
+  &__content {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 4.5rem 1rem 4rem;
+
+    h1 {
+      font-size: 2.75rem;
+      font-weight: 900;
+      margin: 0 0 1rem;
+      max-width: 720px;
+      line-height: 1.1;
+
+      @media (max-width: 620px) { font-size: 2rem; }
+    }
+
+    p {
+      font-size: 1.1rem;
+      color: #cbd5e1;
+      max-width: 600px;
+      margin: 0 0 2rem;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+  }
+
+  &__btn {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: transparent;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s;
+
+    &:hover { background: rgba(255, 255, 255, 0.12); }
+
+    &.primary {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      &:hover { background: #2563eb; }
+    }
+  }
+
+  &__stats {
+    display: flex;
+    gap: 2.5rem;
+    margin-top: 2.5rem;
+
+    div {
+      display: flex;
+      flex-direction: column;
+      strong { font-size: 1.8rem; font-weight: 800; }
+      span { color: #94a3b8; font-size: 0.9rem; }
+    }
+  }
+}
+
+.home-section {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 1.25rem;
+  }
+
+  &__empty {
+    color: #64748b;
+    text-align: center;
+    padding: 2rem 0;
+  }
+}
+
+.home-cta {
+  background: #f1f5f9;
+  text-align: center;
+  padding: 3.5rem 1rem;
+
+  h2 {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.5rem;
+  }
+  p {
+    color: #64748b;
+    margin: 0 0 1.5rem;
+  }
+
+  &__btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 0.85rem 2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    &:hover { background: #1d4ed8; }
+  }
+}
