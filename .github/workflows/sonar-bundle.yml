@@ -1,0 +1,42 @@
+name: Export SonarQube bundle
+
+on:
+  push:
+    branches: [claude/sonar-bundle]
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: tour-server/go.sum
+
+      - name: Go tests with coverage
+        working-directory: tour-server
+        run: go test ./... -coverprofile=../coverage.out -covermode=atomic || true
+
+      - name: Pull and save images
+        run: |
+          docker pull sonarqube:9.9-community
+          docker pull sonarsource/sonar-scanner-cli:5
+          docker save sonarqube:9.9-community | gzip -1 > sonarqube-image.tar.gz
+          docker save sonarsource/sonar-scanner-cli:5 | gzip -1 > sonar-scanner-image.tar.gz
+          ls -lh *.tar.gz coverage.out
+
+      - name: Publish bundle
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: sonar-bundle
+          name: SonarQube analysis bundle
+          prerelease: true
+          files: |
+            sonarqube-image.tar.gz
+            sonar-scanner-image.tar.gz
+            coverage.out
