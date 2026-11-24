@@ -1,0 +1,70 @@
+name: Export performance-testing bundle
+
+# Builds everything the load-testing lab needs in one run and publishes it as a
+# release: the Artillery CLI with its dependencies, the vendored Go modules of
+# tour-server, and a prebuilt server binary.
+
+on:
+  push:
+    branches: [claude/perf-bundle]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: tour-server/go.sum
+
+      - name: Vendor the Go modules
+        working-directory: tour-server
+        run: |
+          go mod vendor
+          tar czf ../go-vendor.tar.gz vendor
+
+      - name: Build the server binary
+        working-directory: tour-server
+        env:
+          CGO_ENABLED: 0
+        run: |
+          go build -mod=vendor -o ../tour-server-bin .
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Artillery with its dependencies
+        run: |
+          mkdir artillery-bundle
+          cd artillery-bundle
+          npm init -y >/dev/null
+          npm install artillery@2.0.21 --no-audit --no-fund
+          tar czf ../artillery.tar.gz package.json node_modules
+
+      - name: Report the sizes
+        run: ls -lh go-vendor.tar.gz artillery.tar.gz tour-server-bin
+
+      - name: Publish the bundle as a release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: perf-bundle
+          name: Performance testing bundle
+          prerelease: true
+          body: |
+            Artillery CLI, vendored Go modules and a prebuilt tour-server
+            binary for the load-testing lab. Generated automatically.
+          files: |
+            go-vendor.tar.gz
+            artillery.tar.gz
+            tour-server-bin
