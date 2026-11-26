@@ -1,0 +1,32 @@
+# Example configuration of tour-server.
+# Copy this file to config.yaml (it is excluded from git) and adjust the values:
+#   cp config/config.example.yaml config/config.yaml
+# Secrets should be supplied through environment variables (see ../.env.example);
+# JWT_SECRET, DB_PASSWORD, SMTP_USER, SMTP_PASSWORD and SMTP_FROM override the
+# values below.
+
+app:
+  name: "Tour Server API"
+  version: "1.0.0"
+  environment: "development"
+  debug: true
+
+server:
+  host: "127.0.0.1"
+  port: "1323"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "touruser"
+  password: ""            # set DB_PASSWORD in .env
+  dbname: "tourdb"
+  sslmode: "disable"
+
+jwt:
+  secret: ""              # set JWT_SECRET in .env (at least 32 random bytes)
+  expiry_hour: 24
+
+smtp:
+  host: "smtp.gmail.com"
+  port: 587

@@ -1,9 +1,71 @@
-node_modules
+# =============================================================================
+# OpenWorld: files that must not be stored in the repository
+# =============================================================================
 
+# ---- Secrets and local configuration ----------------------------------------
 .env
 .env.*
-tour-server/.env*
-tour/.env*
-tour/src/.env*
+!.env.example
+tour-server/config/config.yaml
+*.pem
+*.key
+
+# ---- Dependencies -----------------------------------------------------------
+node_modules/
+benchmark/fastapi/.venv/
+venv/
+__pycache__/
+*.pyc
+
+# ---- Build output and binaries ----------------------------------------------
+tour/build/
+tour-server/tmp/
+tour-server/tour-server
+tour-server/tour-server.exe
+benchmark/go/go
+benchmark/go/bench-go
+*.exe
+*.test
+*.out
+coverage/
+coverage.out
+
+# ---- Content uploaded by users at runtime -----------------------------------
+# The admin panel saves uploads as <name>_<unix-ms>.<ext>; avatars go to avatars/.
+tour-server/static/avatars/
+tour-server/static/*_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].*
+tour-server/static/carousel/*_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].*
+
+# ---- Local databases and dumps ----------------------------------------------
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.backup
+pgdata/
+
+# ---- Benchmark results ------------------------------------------------------
+benchmark/results_*/
+
+# ---- Logs ----------------------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- IDE and editor settings ------------------------------------------------
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# ---- Operating system files -------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Local virtual machines (not part of the project) -----------------------
 .vagrant/
 Vagrantfile
