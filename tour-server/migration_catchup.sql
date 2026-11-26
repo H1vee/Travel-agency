@@ -9,9 +9,9 @@
 -- Idempotent: re-runs are safe. Seed inserts are guarded by ON CONFLICT or
 -- existence checks so they won't duplicate rows.
 --
--- Run as:
---   PGPASSWORD=tourpass123 psql -h 127.0.0.1 -U touruser -d tourdb \
---     -f tour-server/migration_catchup.sql
+-- On a new installation run db/schema.sql first, then this file:
+--   psql -h 127.0.0.1 -U touruser -d tourdb -f tour-server/db/schema.sql
+--   psql -h 127.0.0.1 -U touruser -d tourdb -f tour-server/migration_catchup.sql
 -- =============================================================================
 
 BEGIN;
@@ -113,9 +113,10 @@ CREATE INDEX IF NOT EXISTS idx_review_likes_guest_token ON tour_review_likes(gue
 -- Only inserts if the table is empty (or uses ON CONFLICT). Re-running won't
 -- duplicate rows.
 
--- 3.1 statuses
+-- 3.1 statuses (names must match the backend filter name = 'active' and the
+--     fixed ids used by the admin panel: 1 = active, 2 = inactive, 3 = draft)
 INSERT INTO statuses (name) VALUES
-    ('Active'), ('Draft'), ('Archived')
+    ('active'), ('inactive'), ('draft')
 ON CONFLICT (name) DO NOTHING;
 
 -- 3.2 locations
@@ -160,7 +161,7 @@ BEGIN
         RETURN;
     END IF;
 
-    SELECT id INTO v_status_active FROM statuses WHERE name = 'Active';
+    SELECT id INTO v_status_active FROM statuses WHERE name = 'active';
     SELECT id INTO v_loc_kyiv      FROM locations WHERE name = 'Київ';
     SELECT id INTO v_loc_boston    FROM locations WHERE name = 'Бостон';
     SELECT id INTO v_loc_dubai     FROM locations WHERE name = 'Дубай';
